@@ -26,31 +26,46 @@ imbalance analysis, ISCN annotation, interactive plotting, and more.
 Install the latest version from GitHub using
 [devtools](https://github.com/r-lib/devtools):
 
-\#`{r}  # install.packages("devtools") #devtools::install_github("lingxi1002/XploR") #`
+``` r
+install.packages("devtools")
+devtools::install_github("lingxi1002/XploR")
+```
 
 ## Example
 
 This is a basic example to run the program:
 
-\#\`\`\`{r example} \#library(XploR)
+``` r
+library(XploR)
 
-# Example: Run main CNV workflow (see vignette for details)
+#Example: Run main CNV workflow (see vignette for details)
+result <- runAIsegmentation(
+ seg = "sample.seg", 
+  cov = "sample.counts",
+  ai = "sample.tumor.baf.bedgraph.gz",
+  gender = "female",
+  out_dir = "results/",
+  prefix = "Sample1"
+)
 
-\#result \<- runAIsegmentation( \# seg = “sample.seg”, \# cov =
-“sample.counts”, \# ai = “sample.tumor.baf.bedgraph.gz”, \# gender =
-“female”, \# out_dir = “results/”, \# prefix = “Sample1” \#)
-
-# Annotate segments with ISCN and gene information
-
-\#AnnotateSegments( \# input = “results/Sample1_GATK_DRAGEN_merge.tsv”,
-\# out_dir = “results/”, \# prefix = “Sample1”, \# cytoband =
-“data/cytoBand.txt”, \# whitelist_edge = “data/whitelist.txt”, \# gene =
-“data/gene_anno.txt” \#)
+#Annotate segments with ISCN and gene information
+AnnotateSegments(
+  input = "results/Sample1_GATK_DRAGEN_merge.tsv",
+  out_dir = "results/",
+  prefix = "Sample1",
+  cytoband = "data/cytoBand.txt",
+  whitelist_edge = "data/whitelist.txt",
+  gene = "data/gene_anno.txt"
+)
 
 # Plot results
-
-\#plot_cnv_profile( \# seg = “results/Sample1_CNV_annotation.tsv”, \#
-coverage = “sample.denoisedCR.tsv”, \# ballele =
-“sample.tumor.ballele.counts.gz”, \# whitelist = “data/whitelist.txt”,
-\# gender = “female”, \# out_dir = “results/”, \# prefix = “Sample1” \#)
-\#\`\`\`
+plot_cnv_profile(
+  seg = "results/Sample1_CNV_annotation.tsv",
+  coverage = "sample.denoisedCR.tsv",
+  ballele = "sample.tumor.ballele.counts.gz",
+  whitelist = "data/whitelist.txt",
+  gender = "female",
+  out_dir = "results/",
+  prefix = "Sample1"
+)
+```
