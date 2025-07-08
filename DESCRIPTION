@@ -1,0 +1,37 @@
+Package: XploR
+Type: Package
+Title: Large-Scale Allele-Specific CNV Detection Using Coverage and Allelic Imbalance in WES data
+Version: 0.1.0
+Author: Meiling Jin
+Maintainer: Meiling Jin <mjin47@stjude.org>
+Description: Detects large-scale, allele-specific copy number variations (CNVs) from
+    tumor-only sequencing data.
+    Leverages both coverage depth and allelic imbalance information to infer
+    genome-wide copy number states and allelic configurations. Designed for
+    whole-exome sequencing.
+    Suitable for detecting aneuploidy, large deletions or gains, and loss of heterozygosity (LOH) in cancer genomics applications.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    R (>= 3.5.0)
+Imports:
+  stringr,
+  GenomicRanges,
+  caret,
+  changepoint,
+  data.table,
+  doParallel,
+  dplyr,
+  ggplot2,
+  gridExtra,
+  htmlwidgets,
+  mclust,
+  optparse,
+  plotly,
+  purrr,
+  reshape2,
+  scales,
+  tidyr,
+  reshape2
+RoxygenNote: 7.3.2
