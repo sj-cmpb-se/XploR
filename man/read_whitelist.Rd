@@ -18,8 +18,10 @@ A data frame with columns: \code{seqnames}, \code{start}, \code{end}, \code{widt
 Reads a DRAGEN whitelist file and returns detected regions as GRanges-like segments for copy number analysis.
 }
 \details{
-- For "male", expects chromosome Y to be present; for "female", expects chromosome Y to be absent.
-- Splits regions by cytoband, detects gaps, and outputs non-gap regions.
+\itemize{
+\item For "male", expects chromosome Y to be present; for "female", expects chromosome Y to be absent.
+\item Splits regions by cytoband, detects gaps, and outputs non-gap regions.
+}
 }
 \examples{
 # read_whitelist("whitelist.csv", gender = "male")

@@ -17,15 +17,15 @@ SelectModelByDis(tier1, df, seg, opt)
 }
 \value{
 A data frame with one row per model, including columns:
-  \item{mu}{Mutation multiplicity.}
-  \item{rho}{Tumor purity.}
-  \item{total_log_likelihood}{Total log-likelihood for the model.}
-  \item{segments_n}{Number of segments.}
-  \item{diploid_n}{Number of diploid segments.}
-  \item{diploid_distance_to_integer}{Mean distance to integer CN for diploid segments.}
-  \item{nondiploid_n}{Number of non-diploid segments.}
-  \item{nondiploid_distance_to_integer}{Mean distance to integer CN for non-diploid segments.}
-  \item{total_distance_to_integer}{Sum of diploid and non-diploid mean distances.}
+\item{mu}{Mutation multiplicity.}
+\item{rho}{Tumor purity.}
+\item{total_log_likelihood}{Total log-likelihood for the model.}
+\item{segments_n}{Number of segments.}
+\item{diploid_n}{Number of diploid segments.}
+\item{diploid_distance_to_integer}{Mean distance to integer CN for diploid segments.}
+\item{nondiploid_n}{Number of non-diploid segments.}
+\item{nondiploid_distance_to_integer}{Mean distance to integer CN for non-diploid segments.}
+\item{total_distance_to_integer}{Sum of diploid and non-diploid mean distances.}
 }
 \description{
 For each candidate model in \code{tier1}, evaluates the mean distance to integer copy number for diploid and non-diploid segments, and returns a summary table sorted by total distance.

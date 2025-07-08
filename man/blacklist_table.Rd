@@ -7,10 +7,10 @@
 \format{
 A data frame with columns:
 \describe{
-  \item{chrom}{Chromosome name (character).}
-  \item{start}{Start coordinate (integer).}
-  \item{end}{End coordinate (integer).}
-  \item{tag}{ Could be ignored (character).}
+\item{chrom}{Chromosome name (character).}
+\item{start}{Start coordinate (integer).}
+\item{end}{End coordinate (integer).}
+\item{tag}{ Could be ignored (character).}
 }
 }
 \source{

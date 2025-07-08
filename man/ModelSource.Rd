@@ -18,9 +18,11 @@ Character. One of "Coverage", "Diploid", or "Coverage + BAF".
 Determines whether the model source for a segment should be "Coverage", "Diploid", or "Coverage + BAF", based on BAF and segment mean values.
 }
 \details{
-- If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
-- If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
-- Otherwise, returns "Coverage + BAF".
+\itemize{
+\item If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
+\item If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
+\item Otherwise, returns "Coverage + BAF".
+}
 }
 \examples{
 # seg_df must have columns: size, FILTER, MAF_Probes, MAF, Segment_Mean

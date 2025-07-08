@@ -13,11 +13,11 @@ EstimatePurityCov(seg)
 }
 \value{
 A list with elements:
-  \item{dis_df}{Data frame of model fit statistics for each purity.}
-  \item{Final_model}{List with \code{Final_mu} and \code{Final_rho} (the selected purity).}
-  \item{min_dis}{Minimum distance to integer copy numbers.}
-  \item{seg_call}{Segment calls for the selected purity.}
-  \item{Model_source}{String, always "Coverage".}
+\item{dis_df}{Data frame of model fit statistics for each purity.}
+\item{Final_model}{List with \code{Final_mu} and \code{Final_rho} (the selected purity).}
+\item{min_dis}{Minimum distance to integer copy numbers.}
+\item{seg_call}{Segment calls for the selected purity.}
+\item{Model_source}{String, always "Coverage".}
 }
 \description{
 Estimates tumor purity by fitting coverage and BAF segmentation data across a range of purity values, selecting the purity that best matches integer copy number models.

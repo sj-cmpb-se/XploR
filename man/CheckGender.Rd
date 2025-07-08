@@ -13,7 +13,7 @@ CheckGender(cov, seg, gender)
 
 \item{gender}{Expected gender (character, "male" or "female")}
 
-\item{opt}{List of options, must include `gender`}
+\item{opt}{List of options, must include \code{gender}}
 }
 \value{
 Modified segmentation seg data frame with gender columns

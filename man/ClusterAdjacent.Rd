@@ -15,8 +15,8 @@ ClusterAdjacent(values, weights, threshold = 0.01)
 }
 \value{
 A list with two elements:
-  \item{means}{Numeric vector of cluster means.}
-  \item{weights}{Numeric vector of aggregated cluster weights.}
+\item{means}{Numeric vector of cluster means.}
+\item{weights}{Numeric vector of aggregated cluster weights.}
 }
 \description{
 Groups adjacent values into clusters if their difference is less than a specified threshold,

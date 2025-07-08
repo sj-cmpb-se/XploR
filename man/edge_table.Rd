@@ -7,15 +7,15 @@
 \format{
 A data frame with columns:
 \describe{
-  \item{Chrom}{Chromosome name (character).}
-  \item{p_chromStart}{P arm chromosome Start coordinates (integer).}
-  \item{p_chromEnd}{P arm chromosome End coordinates (integer).}
-  \item{p_first_name}{P arm first cytoband name (character).}
-  \item{p_last_name}{P arm last cytoband name (character).}
-  \item{q_chromStart}{Q arm chromosome Start coordinates (integer).}
-  \item{q_chromEnd}{Q arm chromosome End coordinates (integer).}
-  \item{q_first_name}{Q arm first cytoband name (character).}
-  \item{q_last_name}{Q arm last cytoband name (character).}
+\item{Chrom}{Chromosome name (character).}
+\item{p_chromStart}{P arm chromosome Start coordinates (integer).}
+\item{p_chromEnd}{P arm chromosome End coordinates (integer).}
+\item{p_first_name}{P arm first cytoband name (character).}
+\item{p_last_name}{P arm last cytoband name (character).}
+\item{q_chromStart}{Q arm chromosome Start coordinates (integer).}
+\item{q_chromEnd}{Q arm chromosome End coordinates (integer).}
+\item{q_first_name}{Q arm first cytoband name (character).}
+\item{q_last_name}{Q arm last cytoband name (character).}
 }
 }
 \source{

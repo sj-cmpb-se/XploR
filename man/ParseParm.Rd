@@ -13,16 +13,18 @@ ParseParm(opt, models)
 }
 \value{
 A list with:
-  \item{final_purity}{Selected purity value.}
-  \item{final_sf}{Selected scale factor (mu) value.}
+\item{final_purity}{Selected purity value.}
+\item{final_sf}{Selected scale factor (mu) value.}
 }
 \description{
 Parses user-specified purity and scale factor (dicovsf) options, selects matching models, and returns the best match.
 }
 \details{
-- If \code{opt$purity} or \code{opt$dicovsf} are ranges (e.g., "0.6:0.8"), selects all models in the range.
-- Otherwise, selects the model(s) closest to the specified value.
-- Returns the model with minimal distance to integer and maximal likelihood.
+\itemize{
+\item If \code{opt$purity} or \code{opt$dicovsf} are ranges (e.g., "0.6:0.8"), selects all models in the range.
+\item Otherwise, selects the model(s) closest to the specified value.
+\item Returns the model with minimal distance to integer and maximal likelihood.
+}
 }
 \examples{
 # opt <- list(purity = "0.6:0.8", dicovsf = NULL)

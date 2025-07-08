@@ -25,13 +25,15 @@ SelectFinalModel(
 }
 \value{
 A list with:
-  \item{Final_model}{The final selected model (see \code{\link{ClusterModels}}).}
-  \item{models}{The full model table (before and after refinement).}
+\item{Final_model}{The final selected model (see \code{\link{ClusterModels}}).}
+\item{models}{The full model table (before and after refinement).}
 }
 \description{
 Selects the best model (mu, rho) based on total log-likelihood and distance to integer copy number, refines segment calls, and writes results to output files.
 }
 \details{
-- Refines calls and models through several selection and clustering steps.
-- Writes the model table and final calls to output files.
+\itemize{
+\item Refines calls and models through several selection and clustering steps.
+\item Writes the model table and final calls to output files.
+}
 }

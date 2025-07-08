@@ -18,8 +18,10 @@ A data frame with columns: \code{CONTIG}, \code{bin_start}, \code{bin_norm_id}, 
 Splits the coverage data by chromosome, bins into 300bp windows, and computes smoothed copy number values using a larger window size.
 }
 \details{
-- Bins are generated every 300bp within each region.
-- Smoothed copy number is computed as the median CNF within each larger (\code{cov_binsize}) window.
+\itemize{
+\item Bins are generated every 300bp within each region.
+\item Smoothed copy number is computed as the median CNF within each larger (\code{cov_binsize}) window.
+}
 }
 \examples{
 # cov_bin(cov, cov_binsize = 10000)

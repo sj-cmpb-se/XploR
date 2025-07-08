@@ -38,7 +38,7 @@ This is a basic example to run the program:
 ``` r
 library(XploR)
 
-#Example: Run main CNV workflow (see vignette for details)
+#Example: Run Allelic inbalance bases segmentation (see vignette for details)
 result <- runAIsegmentation(
  seg = "sample.seg", 
   cov = "sample.counts",
@@ -47,6 +47,24 @@ result <- runAIsegmentation(
   out_dir = "results/",
   prefix = "Sample1"
 )
+
+#Example: Run CNV calling (see vignette for details)
+runModelLikelihood(
+    seg = opt$seg,
+    out_dir = opt$out_dir,
+    prefix = opt$prefix,
+    gender = opt$gender,
+    lambda = 1,
+    gamma = 1,
+    epsilon = 0.01,
+    modelminprobes = 20,
+    modelminAIsize = 5000000,
+    minsf = 0.4,
+    callcov = 0.3,
+    thread = 4,
+    diploidweight = 0.5
+)
+
 
 #Annotate segments with ISCN and gene information
 AnnotateSegments(

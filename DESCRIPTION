@@ -13,6 +13,8 @@ Description: Detects large-scale, allele-specific copy number variations (CNVs) 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+URL: https://lingxi1002.github.io/XploR/
+Roxygen: list(markdown = TRUE)
 Depends: 
     R (>= 3.5.0)
 Imports:
@@ -30,7 +32,6 @@ Imports:
   optparse,
   plotly,
   purrr,
-  reshape2,
   scales,
   tidyr,
   reshape2

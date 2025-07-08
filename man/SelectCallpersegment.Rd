@@ -19,7 +19,9 @@ For each segment, selects the allele combination (major/minor) with the highest 
 with special handling for subclonal events and cases where minor allele is zero.
 }
 \details{
-- Assigns a minimum likelihood for cases where \code{BAF_likelihood} is zero.
-- If possible subclonal events are present, compares top two likelihoods and may select the second as a subclonal event.
-- For segments where \code{minor == 0}, the call is refined using coverage difference.
+\itemize{
+\item Assigns a minimum likelihood for cases where \code{BAF_likelihood} is zero.
+\item If possible subclonal events are present, compares top two likelihoods and may select the second as a subclonal event.
+\item For segments where \code{minor == 0}, the call is refined using coverage difference.
+}
 }

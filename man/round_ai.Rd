@@ -16,8 +16,10 @@ A data frame with columns: \code{contig}, \code{start}, \code{stop}, \code{allel
 For each chromosome, rounds the B-allele frequency (BAF, or \code{af}) values into 20 bins (increments of 0.05).
 }
 \details{
-- BAF values (\code{af}) are rounded to the nearest 0.05.
-- Output is a single data frame combining all chromosomes.
+\itemize{
+\item BAF values (\code{af}) are rounded to the nearest 0.05.
+\item Output is a single data frame combining all chromosomes.
+}
 }
 \examples{
 # ai_list <- list(chr1 = data.frame(af = runif(10), contig = "1", start = 1:10, stop = 11:20, allele1Count = 1:10, allele2Count = 11:20))

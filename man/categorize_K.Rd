@@ -18,10 +18,10 @@ Categorizes a numeric K value (e.g., from a beta distribution) into bins based o
 \details{
 The function computes quantiles of \code{K} (using default quartiles), then assigns each value to a category:
 \itemize{
-  \item 50: lowest quantile
-  \item 100: 2nd quantile
-  \item 200: 3rd quantile
-  \item 300: highest quantile
+\item 50: lowest quantile
+\item 100: 2nd quantile
+\item 200: 3rd quantile
+\item 300: highest quantile
 }
 }
 \examples{

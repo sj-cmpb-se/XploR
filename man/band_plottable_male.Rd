@@ -7,8 +7,8 @@
 \format{
 A data frame with columns:
 \describe{
-  \item{cytoband}{cytoband name (character).}
-  \item{coordinates}{ coordinates binned 300nt (integer).}
+\item{cytoband}{cytoband name (character).}
+\item{coordinates}{ coordinates binned 300nt (integer).}
 }
 }
 \source{

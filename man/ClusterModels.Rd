@@ -11,11 +11,11 @@ ClusterModels(models_dis)
 }
 \value{
 A list with:
-  \item{Final_mu}{Best model's mutation multiplicity.}
-  \item{Final_rho}{Best model's tumor purity.}
-  \item{total_distance_to_integer}{Total distance to integer copy number for the best model.}
-  \item{total_likelihood}{Total log-likelihood for the best model.}
-  \item{models}{The full, clustered, and sorted model data frame.}
+\item{Final_mu}{Best model's mutation multiplicity.}
+\item{Final_rho}{Best model's tumor purity.}
+\item{total_distance_to_integer}{Total distance to integer copy number for the best model.}
+\item{total_likelihood}{Total log-likelihood for the best model.}
+\item{models}{The full, clustered, and sorted model data frame.}
 }
 \description{
 Clusters models by total likelihood, diploid and nondiploid distance to integer copy number, and selects the best (mu, rho) model.

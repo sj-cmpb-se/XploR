@@ -7,7 +7,7 @@
 Callikelihood(mu, rho, data, sigma_C, lambda, gamma, epsilon)
 }
 \arguments{
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).}
+\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 

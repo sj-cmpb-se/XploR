@@ -20,8 +20,10 @@ A data frame with columns: \code{seqnames}, \code{bin_start}, \code{bin_end}, an
 Smooths allelic imbalance (AI) bins by a specified window size, keeping up to 30 data points per bin using frequency-based downsampling.
 }
 \details{
-- Splits the data by chromosome.
-- For each bin, keeps up to 30 values using \code{\link{ai_bin_smooth}}.
+\itemize{
+\item Splits the data by chromosome.
+\item For each bin, keeps up to 30 values using \code{\link{ai_bin_smooth}}.
+}
 }
 \examples{
 # smooth_ai(df, ai_binsize = 10000, gender = "female")

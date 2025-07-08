@@ -18,9 +18,11 @@ Numeric. The estimated coverage scale factor (covsf) for the specified region.
 Estimates the coverage scale factor (covsf) for a specified chromosome or region, based on segment mean and probe count.
 }
 \details{
-- If only \code{chromosome} is defined, uses the entire chromosome.
-- If \code{start} is defined, uses regions from \code{start} to the end (or to \code{end} if provided).
-- If \code{end} is defined, uses regions from chromosome start to \code{end}.
+\itemize{
+\item If only \code{chromosome} is defined, uses the entire chromosome.
+\item If \code{start} is defined, uses regions from \code{start} to the end (or to \code{end} if provided).
+\item If \code{end} is defined, uses regions from chromosome start to \code{end}.
+}
 }
 \examples{
 # opt <- list(chromosome = "3", start = NULL, end = NULL)

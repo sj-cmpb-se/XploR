@@ -11,9 +11,9 @@ GenerateCombinations(total_cn)
 }
 \value{
 A data frame with columns:
-  \item{major}{Major allele copy number.}
-  \item{minor}{Minor allele copy number.}
-  \item{total_cn}{Sum of major and minor (equals input \code{total_cn}).}
+\item{major}{Major allele copy number.}
+\item{minor}{Minor allele copy number.}
+\item{total_cn}{Sum of major and minor (equals input \code{total_cn}).}
 }
 \description{
 Generates all valid combinations of major and minor allele copy numbers that sum to the specified total copy number, with the constraint that major >= minor.

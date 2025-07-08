@@ -18,8 +18,10 @@ The (potentially modified) \code{opt} list.
 Checks required options for 'model' or 'region' mode and sets defaults if needed.
 }
 \details{
-- If \code{mode == "model"}: requires at least one of \code{purity} or \code{dicovsf}.
-- If \code{mode == "region"}: requires \code{chromosome}; if \code{dicovsf} is missing, it is estimated from \code{call}.
+\itemize{
+\item If \code{mode == "model"}: requires at least one of \code{purity} or \code{dicovsf}.
+\item If \code{mode == "region"}: requires \code{chromosome}; if \code{dicovsf} is missing, it is estimated from \code{call}.
+}
 }
 \examples{
 # opt <- list(mode = "model", purity = NULL, dicovsf = NULL)

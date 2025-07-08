@@ -9,7 +9,7 @@ Calccf(total_cn, mu, rho, C_i)
 \arguments{
 \item{total_cn}{Numeric. The total copy number in the segment.}
 
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).}
+\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 

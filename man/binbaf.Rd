@@ -13,14 +13,14 @@ binbaf(data, bin_size)
 }
 \value{
 A tibble with one row per bin and columns:
-  \item{Chromosome}{Chromosome identifier.}
-  \item{bin}{Bin start coordinate.}
-  \item{Start}{Minimum \code{End} value in the bin.}
-  \item{End}{Maximum \code{End} value in the bin.}
-  \item{Estimated_baf}{List column with GMM-based BAF estimation results.}
-  \item{nonzero_count}{Number of nonzero BAF values in the bin.}
-  \item{each_baf}{Semicolon-separated string of nonzero BAF values in the bin.}
-  \item{gmm_mean, gmm_weight, gmm_G}{Unnested BAF GMM metrics.}
+\item{Chromosome}{Chromosome identifier.}
+\item{bin}{Bin start coordinate.}
+\item{Start}{Minimum \code{End} value in the bin.}
+\item{End}{Maximum \code{End} value in the bin.}
+\item{Estimated_baf}{List column with GMM-based BAF estimation results.}
+\item{nonzero_count}{Number of nonzero BAF values in the bin.}
+\item{each_baf}{Semicolon-separated string of nonzero BAF values in the bin.}
+\item{gmm_mean, gmm_weight, gmm_G}{Unnested BAF GMM metrics.}
 }
 \description{
 Bins input BAF data into fixed-size windows and calculates summary metrics (e.g., estimated BAF, nonzero counts) for each bin.

@@ -18,9 +18,11 @@ The corrected coverage data frame or tibble.
 Adjusts the X chromosome log2 copy ratio in the coverage data if the gender assigned by GATK and the pipeline do not match.
 }
 \details{
-- If GATK gender is "male" and pipeline gender is "female", subtracts 1 from X chromosome log2 copy ratio.
-- If GATK gender is "female" and pipeline gender is "male", adds 1 to X chromosome log2 copy ratio.
-- Otherwise, returns the input coverage unchanged.
+\itemize{
+\item If GATK gender is "male" and pipeline gender is "female", subtracts 1 from X chromosome log2 copy ratio.
+\item If GATK gender is "female" and pipeline gender is "male", adds 1 to X chromosome log2 copy ratio.
+\item Otherwise, returns the input coverage unchanged.
+}
 }
 \examples{
 # CorrectGender(cov, seg)

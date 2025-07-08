@@ -11,7 +11,7 @@ CalSegmentLikelihood(C_i, B_i, mu, rho, sigma_C, k, lambda, gamma, epsilon)
 
 \item{B_i}{Numeric. Observed B-allele frequency (BAF) for the segment.}
 
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).}
+\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 
@@ -26,8 +26,25 @@ CalSegmentLikelihood(C_i, B_i, mu, rho, sigma_C, k, lambda, gamma, epsilon)
 \item{epsilon}{Numeric. Small value to avoid log(0) and zero parameters in beta.}
 }
 \value{
-A data frame with all valid (major, minor) combinations and columns:
-  \item{major, minor, total_cn, ccf, Bio_diff, prior, expected_baf, baf_ll, weighted_prior, exp_baf_ll, exp_prior, BAF_likelihood, Segcov, BAF, mu, rho}
+A data frame with columns:
+\describe{
+\item{major}{Major allele count}
+\item{minor}{Minor allele count}
+\item{total_cn}{Total copy number}
+\item{ccf}{Cancer cell fraction}
+\item{Bio_diff}{Biological difference}
+\item{prior}{Prior probability}
+\item{expected_baf}{Expected BAF}
+\item{baf_ll}{BAF log-likelihood}
+\item{weighted_prior}{Weighted prior}
+\item{exp_baf_ll}{Expected BAF log-likelihood}
+\item{exp_prior}{Expected prior}
+\item{BAF_likelihood}{BAF likelihood}
+\item{Segcov}{Segment coverage}
+\item{BAF}{Observed BAF}
+\item{mu}{Mutation multiplicity}
+\item{rho}{Tumor purity}
+}
 }
 \description{
 Computes the marginal likelihood for a segment given copy number, BAF, purity, and model parameters.

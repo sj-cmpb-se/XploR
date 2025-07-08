@@ -22,8 +22,10 @@ The coverage data frame or tibble with additional columns \code{Segcov}, updated
 Adjusts the log2 copy ratio and computes the copy number fraction (CNF) for each region, given sample purity and scale factor.
 }
 \details{
-- Adjusts the log2 copy ratio using the scale factor.
-- Calculates CNF differently for sex chromosomes in males.
+\itemize{
+\item Adjusts the log2 copy ratio using the scale factor.
+\item Calculates CNF differently for sex chromosomes in males.
+}
 }
 \examples{
 # correct_purity(cov, gender = "female", purity = 0.7, sf = 1)

@@ -7,11 +7,11 @@
 \format{
 A data frame with columns:
 \describe{
-  \item{chrom}{Chromosome name (character).}
-  \item{start}{Start coordinate (integer).}
-  \item{end}{End coordinate (integer).}
-  \item{band}{Cytoband name (character).}
-  \item{gieStain}{Giemsa stain (character).}
+\item{chrom}{Chromosome name (character).}
+\item{start}{Start coordinate (integer).}
+\item{end}{End coordinate (integer).}
+\item{band}{Cytoband name (character).}
+\item{gieStain}{Giemsa stain (character).}
 }
 }
 \source{

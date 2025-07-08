@@ -186,23 +186,26 @@ GenerateCombinations <- function(total_cn) {
 #'
 #' Assigns prior probabilities to major/minor allele combinations using an exponential decay model that incorporates biological plausibility.
 #'
-#' @param combinations Data frame. Output from \code{\link{GenerateCombinations}}, with columns \code{major}, \code{minor}, and \code{total_cn}.
+#' @param combinations Data frame. Output from [GenerateCombinations()], with columns `major`, `minor`, and `total_cn`.
 #' @param lambda Numeric. Decay rate parameter for the exponential prior.
 #'
 #' @return A data frame with the input columns plus:
-#'   \item{Bio_diff}{Assigned biological difficulty score.}
-#'   \item{prior}{Normalized prior probability for each combination.}
-#'
+#' \describe{
+#'   \item{Bio\_diff}{Assigned biological difficulty score}
+#'   \item{prior}{Normalized prior probability for each combination}
+#' }
 #' @details
 #' The function assigns a biological difficulty score to each combination. For unlisted combinations, the score is set according to rules based on \code{total_cn}, \code{major}, and \code{minor}.
-#' The prior is then calculated as \code{exp(-lambda * Bio_diff)} and normalized to sum to 1.
+#' The prior is then calculated as \eqn{\exp(-\lambda \times \text{Bio\_diff})}{exp(-lambda * Bio_diff)} and normalized to sum to 1.
 #'
 #' @importFrom dplyr left_join mutate rowwise ungroup select
+#'
 #' @examples
 #' combos <- GenerateCombinations(3)
 #' AssignPriors(combos, lambda = 0.5)
 #'
 #' @export
+
 AssignPriors <- function(combinations, lambda ) {
   # prior assigned by exponential decay, lambda controls decay rate
   # Complex model will have lower weight
@@ -372,8 +375,25 @@ ModelSource <- function( seg_df, opt ) {
 #' @param gamma Numeric. Weight for the prior in the likelihood calculation.
 #' @param epsilon Numeric. Small value to avoid log(0) and zero parameters in beta.
 #'
-#' @return A data frame with all valid (major, minor) combinations and columns:
-#'   \item{major, minor, total_cn, ccf, Bio_diff, prior, expected_baf, baf_ll, weighted_prior, exp_baf_ll, exp_prior, BAF_likelihood, Segcov, BAF, mu, rho}
+#' @return A data frame with columns:
+#' \describe{
+#'   \item{major}{Major allele count}
+#'   \item{minor}{Minor allele count}
+#'   \item{total_cn}{Total copy number}
+#'   \item{ccf}{Cancer cell fraction}
+#'   \item{Bio_diff}{Biological difference}
+#'   \item{prior}{Prior probability}
+#'   \item{expected_baf}{Expected BAF}
+#'   \item{baf_ll}{BAF log-likelihood}
+#'   \item{weighted_prior}{Weighted prior}
+#'   \item{exp_baf_ll}{Expected BAF log-likelihood}
+#'   \item{exp_prior}{Expected prior}
+#'   \item{BAF_likelihood}{BAF likelihood}
+#'   \item{Segcov}{Segment coverage}
+#'   \item{BAF}{Observed BAF}
+#'   \item{mu}{Mutation multiplicity}
+#'   \item{rho}{Tumor purity}
+#' }
 #'
 #' @details
 #' The function explores all possible (major, minor) combinations for the given segment, assigns priors based on biological plausibility, and computes the likelihood of observing the segment's BAF under a beta-binomial model.

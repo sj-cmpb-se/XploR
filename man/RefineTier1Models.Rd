@@ -28,8 +28,8 @@ RefineTier1Models(
 }
 \value{
 A list of length equal to \code{nrow(tier1)}. Each element is a list with:
-  \item{calls}{Refined segment calls for the model.}
-  \item{model}{Summary statistics for the model (data.frame).}
+\item{calls}{Refined segment calls for the model.}
+\item{model}{Summary statistics for the model (data.frame).}
 }
 \description{
 For each candidate (mu, rho) model in \code{tier1}, extracts and refines segment calls, computes fit statistics, and returns a list of calls and model summaries.

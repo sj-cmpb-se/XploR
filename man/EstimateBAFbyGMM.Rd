@@ -11,9 +11,9 @@ EstimateBAFbyGMM(baf_values)
 }
 \value{
 Named numeric vector with elements:
-  \item{gmm_mean}{The mean of the most prominent cluster (capped at 0.5).}
-  \item{gmm_weight}{The mixture weight of the most prominent cluster.}
-  \item{gmm_G}{Number of clusters after merging adjacent means.}
+\item{gmm_mean}{The mean of the most prominent cluster (capped at 0.5).}
+\item{gmm_weight}{The mixture weight of the most prominent cluster.}
+\item{gmm_G}{Number of clusters after merging adjacent means.}
 }
 \description{
 Fits a Gaussian mixture model (GMM) to B-allele frequency (BAF) values and returns the most prominent cluster's mean and weight.
