@@ -18,7 +18,7 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Large-Scale Allele-Specific CNV Detection Using Coverage and Allelic Imbalance in WES data">
 <meta name="description" content="Detects large-scale, allele-specific copy number variations (CNVs) from tumor-only sequencing data. Leverages both coverage depth and allelic imbalance information to infer genome-wide copy number states and allelic configurations. Designed for whole-exome sequencing. Suitable for detecting aneuploidy, large deletions or gains, and loss of heterozygosity (LOH) in cancer genomics applications.">
 <meta property="og:description" content="Detects large-scale, allele-specific copy number variations (CNVs) from tumor-only sequencing data. Leverages both coverage depth and allelic imbalance information to infer genome-wide copy number states and allelic configurations. Designed for whole-exome sequencing. Suitable for detecting aneuploidy, large deletions or gains, and loss of heterozygosity (LOH) in cancer genomics applications.">
-<meta property="og:image" content="https://lingxi1002.github.io/XploR/logo.png">
+<meta property="og:image" content="https://sj-cmpb-se.github.io/XploR/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -43,6 +43,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/sj-cmpb-se/XploR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -74,14 +75,14 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <p>Install the latest version from GitHub using <a href="https://github.com/r-lib/devtools" class="external-link">devtools</a>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"lingxi1002/XploR"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"sj-cmpb-se/XploR"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <p>This is a basic example to run the program:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lingxi1002.github.io/XploR/">XploR</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sj-cmpb-se.github.io/XploR/">XploR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Example: Run main CNV workflow (see vignette for details)</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/runAIsegmentation.html">runAIsegmentation</a></span><span class="op">(</span></span>
@@ -115,7 +116,15 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 
-  </main><aside class="col-md-3"><div class="license">
+  </main><aside class="col-md-3"><div class="links">
+<h2 data-toc-skip>Links</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/sj-cmpb-se/XploR/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/sj-cmpb-se/XploR/issues" class="external-link">Report a bug</a></li>
+</ul>
+</div>
+
+<div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
