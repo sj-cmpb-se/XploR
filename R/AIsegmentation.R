@@ -1,24 +1,85 @@
+#' Read and Standardize Allelic Imbalance Data
+#'
+#' Reads allelic imbalance (AI) data from different input formats and standardizes the output.
+#'
+#' @param aitype Character. Type of AI input file. Supported values are:
+#'   \itemize{
+#'     \item \code{"gatk"}: Tab-separated file with columns \code{Chromosome}, \code{Pos}, \code{REF_NUCLEOTIDE}, \code{ALT_NUCLEOTIDE}, \code{REF_COUNT}, \code{ALT_COUNT}.
+#'     \item \code{"dragen"}: the input must include columns \code{contig}, \code{start}, \code{stop}, \code{refAllele}, \code{allele1}, \code{allele2}, \code{allele1Count}, \code{allele2Count}, \code{allele1AF}, and \code{allele2AF}.
+#'     \item \code{"other"}: Tab-separated file with columns \code{Chromosome}, \code{Pos}, \code{REF_NUCLEOTIDE}, \code{ALT_NUCLEOTIDE}, \code{REF_COUNT}, \code{ALT_COUNT}.
+#'   }
+#' @param ballele Character. Path to the input allelic count file.
+#'
+#' @return A data frame with columns \code{Chromosome}, \code{Pos}, and \code{maf}, containing only autosomal positions (\code{Chromosome} not X or Y), with minor allele frequency (\code{maf}) between 0 and 0.5.
+#'
+#' @details
+#' For \code{aitype = "gatk"}, the function reads the file, filters for loci with at least 10 total counts, calculates the B-allele frequency (\code{baf}), and computes the minor allele frequency (\code{maf}).
+#'
+#' For \code{aitype = "dragen"}, the function extracts the first, second, and fourth columns, and renames them as \code{Chromosome}, \code{Pos}, and \code{baf}.
+#'
+#' For \code{aitype = "other"}, the function expects columns \code{Chromosome}, \code{Pos}, and \code{baf}.
+#'
+#' @examples
+#' \dontrun{
+#' # Read AI data from a count file
+#' maf_df <- ReadAI("gatk", "sample.allele_counts")
+#'
+#' # Read AI data from a DRAGEN file
+#' maf_df <- ReadAI("dragen", "sample_dragen.tumor.ballele.counts.gz")
+#'
+#' # Read AI data from a BAF file
+#' maf_df <- ReadAI("other", "sample.tsv")
+#' }
+#'
+#' @importFrom dplyr filter mutate select
+#' @export
+ReadAI <- function(aitype, ballele){
+  if( aitype == "gatk"){
+    filtered_lines <- grep("^[^@]", readLines(ballele), value = TRUE)
+    baf <- read.table(text = paste(filtered_lines, collapse = "\n"), sep = "\t", header = TRUE)
+    baf <- baf %>%
+      dplyr::filter( REF_COUNT + ALT_COUNT >= 10) %>%
+      dplyr::mutate( baf = ALT_COUNT/(ALT_COUNT + REF_COUNT)) %>%
+      dplyr::select( -ALT_COUNT, -REF_COUNT, -REF_NUCLEOTIDE, -ALT_NUCLEOTIDE )
+  }else if( aitype == "dragen" ){
+    baf <- read.table(ballele, sep = "\t", header = TRUE,stringsAsFactors = F)
+    baf <- baf %>%
+      dplyr::filter( allele1Count + allele2Count >= 10 ) %>%
+      dplyr::mutate( baf = allele2Count/(allele2Count + allele1Count))
+    baf <- baf[,c("contig","start","baf")]
+  }else{ baf <- read.table(ballele, sep = "\t", header = TRUE,stringsAsFactors = F)}
+  colnames(baf) <- c("Chromosome", "Pos", "baf")
+  maf <- baf %>%
+    dplyr::filter(!Chromosome %in% c("X", "Y")) %>%
+    dplyr::filter(baf != 0 & baf != 1) %>%
+    dplyr::mutate(maf = ifelse(baf > 0.5, 1 - baf, baf)) %>%
+    dplyr::select( -baf )
+  return(maf)
+}
+
+
 #' Check Whether Two AI Segments Should Be Merged
 #'
 #' This function determines whether two adjacent AI (allelic imbalance) segments should be merged,
 #' based on the difference in their GMM means and quality thresholds.
 #'
-#' @param cur_row A data frame row (list or tibble row) representing the current segment.
-#' @param next_row A data frame row (list or tibble row) representing the next segment.
-#' @param opt A list of options, must include \code{mergeai} (numeric threshold for mean difference) and \code{snpmin} (minimum SNP count).
+#' @param cur_row A data frame row (as a list or tibble row) representing the current segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).
+#' @param next_row A data frame row (as a list or tibble row) representing the next segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).
+#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
+#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
 #'
 #' @return Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.
 #'
 #' @export
 
-MergeAICheck <- function(cur_row,next_row,opt){
+MergeAICheck <- function(cur_row,next_row, mergeai, snpmin){
   # Merge if
   # ai segment diff <= mergeai or one of the ai segment quality is fail
-  if(abs( as.numeric(cur_row$gmm_mean) - as.numeric(next_row$gmm_mean)) <= opt$mergeai ){
+  if(abs( as.numeric(cur_row$gmm_mean) - as.numeric(next_row$gmm_mean)) <= mergeai ){
     re <- TRUE
   }else if( !is.na(cur_row$gmm_weight) & !is.na(next_row$gmm_weight)){
-    if(min(cur_row$gmm_weight , next_row$gmm_weight ) <= 0.35 ||
-       min(cur_row$nonzero_count, next_row$nonzero_count) < 2*opt$snpmin ){ re <- TRUE }else{re <- FALSE}
+    if(min(cur_row$gmm_weight , next_row$gmm_weight ) <= 0.2||
+       min(cur_row$nonzero_count, next_row$nonzero_count) < 2*snpmin ){ re <- TRUE }else{re <- FALSE}
   } else{ re <- FALSE}
   return(re)
 }
@@ -70,12 +131,12 @@ ClusterAdjacent <- function(values, weights, threshold = 0.01) {
 
 
 
-#' Estimate BAF Cluster Mean and Weight Using Gaussian Mixture Modeling
+#' Estimate MAF Cluster Mean and Weight Using Gaussian Mixture Modeling
 #'
-#' Fits a Gaussian mixture model (GMM) to B-allele frequency (BAF) values and returns the most prominent cluster's mean and weight.
+#' Fits a Gaussian mixture model (GMM) to Minor allele frequency (MAF) values and returns the most prominent cluster's mean and weight.
 #' Clusters with similar means (within a threshold) are merged. If there are insufficient values or nearly no variance, a simple mean is returned.
 #'
-#' @param baf_values Numeric vector of BAF values.
+#' @param maf_values Numeric vector of MAF values.
 #'
 #' @return Named numeric vector with elements:
 #'   \item{gmm_mean}{The mean of the most prominent cluster (capped at 0.5).}
@@ -83,16 +144,17 @@ ClusterAdjacent <- function(values, weights, threshold = 0.01) {
 #'   \item{gmm_G}{Number of clusters after merging adjacent means.}
 #'
 #' @details
-#' Uses \code{\link[mclust]{Mclust}} for Gaussian mixture modeling and \code{\link{ClusterAdjacent}} to merge similar clusters.
+#' Uses \code{\link[mclust]{Mclust}} for Gaussian mixture modeling.
 #'
-#' @importFrom mclust Mclust
+#' @import mclust
+#' @importFrom mclust Mclust mclustBIC
 #' @export
-EstimateBAFbyGMM <- function(baf_values){
+EstimateMAFbyGMM <- function(maf_values){
 
-  n_bafs <- length(baf_values)
-  sd <- sd( baf_values, na.rm = T )
-  if( n_bafs >= 3 && sd >= 1e-6 ){
-    gmm_model <- mclust::Mclust(baf_values, G = 1:10)
+  n_mafs <- length(maf_values)
+  sd <- sd( maf_values, na.rm = T )
+  if( n_mafs >= 3 && sd >= 1e-6 ){
+    gmm_model <- mclust::Mclust(maf_values, G = 1:10)
     means <- gmm_model$parameters$mean
     weights <- gmm_model$parameters$pro
     if(gmm_model$G >= 2){
@@ -115,16 +177,16 @@ EstimateBAFbyGMM <- function(baf_values){
     # gmm_variance <- variances[sorted_indices][1]
     gmm_weight <- weights[sorted_indices][1]
 
-    Estimated_baf <- c(
+    Estimated_maf <- c(
       "gmm_mean" = gmm_mean,
       #"gmm_variance" = gmm_variance,
       "gmm_weight" = gmm_weight,
       "gmm_G" = num_components
     )}else{
-      gmm_mean <- mean(baf_values,na.rm = T)
+      gmm_mean <- mean(maf_values,na.rm = T)
       gmm_mean <- ifelse( gmm_mean > 0.48, 0.5, gmm_mean )
       gmm_mean <- min( gmm_mean, 0.5 )
-      Estimated_baf <- c(
+      Estimated_maf <- c(
         "gmm_mean" =  gmm_mean,
         #"gmm_variance" = sd,
         "gmm_weight" = 1,
@@ -132,7 +194,7 @@ EstimateBAFbyGMM <- function(baf_values){
 
     }
 
-  return(Estimated_baf)
+  return(Estimated_maf)
 
 }
 
@@ -140,23 +202,24 @@ EstimateBAFbyGMM <- function(baf_values){
 #' Merge Adjacent AI Segments Based on Similarity Criteria
 #'
 #' Iteratively merges adjacent rows in a data frame of AI segments if they meet criteria defined by \code{MergeAICheck}.
-#' For merged segments, BAF values are re-estimated and segment information is updated.
+#' For merged segments, MAF values are re-estimated and segment information is updated.
 #'
-#' @param df A data frame or tibble of AI segments, with columns such as Chromosome, bin, Start, End, nonzero_count, each_baf, etc.
-#' @param opt A list of options, must include \code{mergeai} (threshold for merging) and \code{snpmin} (minimum SNP count).
-#' @param tmp_baf A data frame or tibble containing BAF values and genomic coordinates (must include Chromosome, Start, End, baf).
+#' @param df A data frame or tibble of AI segments, with columns such as Chromosome, bin, Start, End, snp_count, each_maf, etc.
+#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
+#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
+#' @param tmp_maf A data frame or tibble containing maf values and genomic coordinates (must include Chromosome, Start, End, maf).
 #'
-#' @return A data frame or tibble with merged AI segments, updated BAF estimates, and segment information.
+#' @return A data frame or tibble with merged AI segments, updated maf estimates, and segment information.
 #'
 #' @details
 #' This function uses \code{\link{MergeAICheck}} to determine if two adjacent segments should be merged.
-#' For merged segments, BAF values are re-estimated using \code{\link{EstimateBAFbyGMM}}.
+#' For merged segments, maf values are re-estimated using \code{\link{EstimateMAFbyGMM}}.
 #'
 #' @importFrom dplyr filter arrange
 #' @importFrom tibble tibble
 #' @importFrom tidyr unnest_wider
 #' @export
-MergeAIRow <- function(df, opt, tmp_baf  ) {
+MergeAIRow <- function(df, mergeai, snpmin, tmp_maf  ) {
 
   if(nrow(df) > 1 ){
     i <- 1
@@ -164,30 +227,30 @@ MergeAIRow <- function(df, opt, tmp_baf  ) {
 
       cur_row <- df[i,]
       next_row <- df[ i+1,]
-
-      if (  MergeAICheck(cur_row = cur_row, next_row = next_row, opt) ) {
-        #cur_row_bafs = str_split(cur_row$each_baf, pattern = ";", simplify = TRUE) %>% as.numeric() %>% na.omit()
-        #next_row_bafs = str_split(next_row$each_baf, pattern = ";", simplify = TRUE ) %>% as.numeric() %>% na.omit()
-        cur_next_bafs <- tmp_baf %>%
+      if (  MergeAICheck(cur_row = cur_row, next_row = next_row, mergeai = mergeai, snpmin = snpmin) ) {
+        #cur_row_mafs = str_split(cur_row$each_maf, pattern = ";", simplify = TRUE) %>% as.numeric() %>% na.omit()
+        #next_row_mafs = str_split(next_row$each_maf, pattern = ";", simplify = TRUE ) %>% as.numeric() %>% na.omit()
+        cur_next_mafs <- tmp_maf %>%
           dplyr::filter( Chromosome == cur_row$Chromosome) %>%
-          dplyr::filter( Start >= cur_row$Start & End <= next_row$End)
+          dplyr::filter( Pos >= cur_row$Start & Pos <= next_row$End)
 
         new_df <- tibble::tibble(
           Chromosome = cur_row$Chromosome,
           bin = paste(c(cur_row$bin, next_row$bin),collapse = ";"),
           Start = cur_row$Start,
           End = next_row$End,
-          #Estimated_baf= list(EstimateBAFbyGMM(baf_values = c(cur_row_bafs, next_row_bafs))) ,
-          Estimated_baf = list(EstimateBAFbyGMM(baf_values = cur_next_bafs$baf )),
+          #Estimated_maf= list(EstimateMAFbyGMM(maf_values = c(cur_row_mafs, next_row_mafs))) ,
+          Estimated_maf = list(EstimateMAFbyGMM(maf_values = cur_next_mafs$maf )),
           nonzero_count = cur_row$nonzero_count + next_row$nonzero_count,
-          each_baf = paste( cur_next_bafs$baf , collapse = ";")
+          each_maf = paste( cur_next_mafs$maf , collapse = ";")
         ) %>%
-          tidyr::unnest_wider(col = Estimated_baf)
+          tidyr::unnest_wider(col = Estimated_maf)
 
         df <- rbind(new_df, df[-c(i,i+1),])
         df <- df %>% arrange(by=Chromosome,Start,na.last = T)
         i <- 1
-      }else{i <- i+1}
+      }else{
+        i <- i+1}
     }
   }
   return(df)
@@ -200,8 +263,10 @@ MergeAIRow <- function(df, opt, tmp_baf  ) {
 #'
 #' @param data A data frame or tibble containing segment or AI information. Must include a \code{Chromosome} column.
 #' @param AIorSeg Character string, either \code{"AI"} to merge AI rows or \code{"Seg"} to merge segments.
-#' @param opt A list of options to be passed to the merge functions.
-#' @param tmp_baf A data frame for use with \code{MergeAIRow}. Not used if \code{AIorSeg == "Seg"}.
+#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
+#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
+#' @param tmp_maf A data frame for use with \code{MergeAIRow}. Not used if \code{AIorSeg == "Seg"}.
+#' @param merge_cov Numeric. Threshold for the difference in segment mean (gmm_mean) between adjacent segments to allow merging.
 #'
 #' @return A data frame or tibble with merged segments or AI rows for each chromosome.
 #'
@@ -210,25 +275,30 @@ MergeAIRow <- function(df, opt, tmp_baf  ) {
 #'
 #' @importFrom dplyr arrange
 #' @export
-CallMerge <- function(data,AIorSeg,opt, tmp_baf){
-  data<- data %>%
-    dplyr::arrange(by=Chromosome, Start, na.last = T)
-  bychr <- split(data,f=data$Chromosome)
+CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
+
   if(AIorSeg == "AI"){
-    bychr <- lapply(bychr,function(x) MergeAIRow(df = x,opt, tmp_baf = tmp_baf))}
+    data<- data %>%
+      dplyr::arrange(by=Chromosome, Start, na.last = T)
+    bychr <- split(data,f=data$Chromosome)
+    bychr <- lapply(bychr,function(x) MergeAIRow(df = x, tmp_maf = tmp_maf, snpmin = snpmin, mergeai = mergeai))
+    }
   if(AIorSeg == "Seg"){
-    bychr <- lapply(bychr,function(x) MergeSegRow(df = x,opt))
+    data<- data %>%
+      dplyr::arrange(by=Chromosome, Start, na.last = T)
+    bychr <- split(data,f=data$Chromosome)
+    bychr <- lapply(bychr,function(x) MergeSegRow(df = x, mergecov = mergecov ))
   }
   processed_df <- do.call(rbind,bychr)
   return(processed_df)
 }
 
 
-#' Bin BAF Data and Estimate BAF Metrics per Bin
+#' Bin MAF Data and Estimate MAF Metrics per Bin
 #'
-#' Bins input BAF data into fixed-size windows and calculates summary metrics (e.g., estimated BAF, nonzero counts) for each bin.
+#' Bins input MAF data into fixed-size windows and calculates summary metrics (e.g., estimated MAF, nonzero counts) for each bin.
 #'
-#' @param data A data frame or tibble containing at least \code{Chromosome}, \code{End}, and \code{baf} columns.
+#' @param data A data frame or tibble containing at least \code{Chromosome}, \code{Start}, and \code{maf} columns.
 #' @param bin_size Numeric. The bin size to use (e.g., 1e6 for 1Mb bins).
 #'
 #' @return A tibble with one row per bin and columns:
@@ -236,27 +306,28 @@ CallMerge <- function(data,AIorSeg,opt, tmp_baf){
 #'   \item{bin}{Bin start coordinate.}
 #'   \item{Start}{Minimum \code{End} value in the bin.}
 #'   \item{End}{Maximum \code{End} value in the bin.}
-#'   \item{Estimated_baf}{List column with GMM-based BAF estimation results.}
-#'   \item{nonzero_count}{Number of nonzero BAF values in the bin.}
-#'   \item{each_baf}{Semicolon-separated string of nonzero BAF values in the bin.}
-#'   \item{gmm_mean, gmm_weight, gmm_G}{Unnested BAF GMM metrics.}
+#'   \item{Estimated_maf}{List column with GMM-based maf estimation results.}
+#'   \item{nonzero_count}{Number of nonzero maf values in the bin.}
+#'   \item{each_maf}{Semicolon-separated string of nonzero maf values in the bin.}
+#'   \item{gmm_mean, gmm_weight, gmm_G}{Unnested maf GMM metrics.}
 #'
 #' @importFrom dplyr mutate group_by summarise ungroup filter
 #' @importFrom tidyr unnest_wider
 #' @export
-binbaf <- function(data, bin_size){
+BinMaf <- function(data, bin_size){
 
   # Bin the data and calculate the desired metrics
   binned_data <- data %>%
-    dplyr::mutate(bin = floor(End / bin_size) * bin_size) %>%
+    dplyr::mutate(bin = floor(Pos / bin_size) * bin_size) %>%
     dplyr::group_by(Chromosome, bin) %>%
     dplyr::summarise(
-      Start = min(End),
-      End = max(End),
-      Estimated_baf = list(EstimateBAFbyGMM(baf_values = baf[baf != 0] )),
-      nonzero_count = sum(baf != 0),
-      each_baf = paste(baf[baf != 0 ], collapse = ";")
-    ) %>% tidyr::unnest_wider(col = "Estimated_baf")%>%
+      Start = min(Pos),
+      End = max(Pos),
+      Estimated_maf = list(EstimateMAFbyGMM(maf_values = maf[maf != 0] )),
+      nonzero_count = sum(maf != 0),
+      each_maf = paste(maf[maf != 0 ], collapse = ";"),
+      .groups = "drop"
+    ) %>% tidyr::unnest_wider(col = "Estimated_maf")%>%
     dplyr::ungroup() %>%
     dplyr::filter( !is.na( gmm_mean))
 
@@ -265,15 +336,13 @@ binbaf <- function(data, bin_size){
 }
 
 
-#' Estimate BAF Shift Scaling Factor
+#' Estimate MAF Shift Scaling Factor
 #'
-#' Estimates a scaling factor to correct B-allele frequency (BAF) shift using Gaussian mixture modeling.
-#' The function selects BAF values greater than 0.4, fits a GMM (1-3 components), and computes the scaling factor as 0.5 divided by the maximum GMM mean.
-#' If there are fewer than 500 SNPs above the threshold, returns \code{NA}.
+#' Estimates a scaling factor to correct MAF shift.
 #'
-#' @param baf A data frame or tibble with at least a \code{baf} column (numeric BAF values).
+#' @param maf A data frame or tibble with at least a \code{maf} column (numeric MAF values).
 #'
-#' @return Numeric. The estimated BAF scaling factor, or \code{NA} if there are not enough SNPs.
+#' @return Numeric. The estimated MAF scaling factor, or \code{NA} if there are not enough SNPs.
 #'
 #' @details
 #' Uses \code{\link[mclust]{Mclust}} for Gaussian mixture modeling.
@@ -281,60 +350,64 @@ binbaf <- function(data, bin_size){
 #' @importFrom dplyr filter
 #' @importFrom mclust Mclust
 #' @export
-EstimateBAFshift <- function( baf){
+EstimateMAFshift <- function( maf){
 
-  tmp_baf <- baf %>%
-    dplyr::filter( baf > 0.4)
-  if( nrow( tmp_baf ) >= 500 ){
-    #baf_shift <- mean(tmp_baf$baf)
-    baf_shift <- mclust::Mclust(data = tmp_baf$baf, G = c(1:3))
-    baf_shift <- max(baf_shift$parameters$mean,na.rm = T)
-    baf_scale <- 0.5/baf_shift
+  tmp_maf <- maf %>%
+    dplyr::filter( maf > 0.4)
+  if( nrow( tmp_maf ) >= 500 ){
+    #maf_shift <- mean(tmp_maf$maf)
+    maf_shift <- mclust::Mclust(data = tmp_maf$maf, G = c(1:3))
+    maf_shift <- max(maf_shift$parameters$mean,na.rm = T)
+    maf_scale <- 0.5/maf_shift
   }else{
-    print( " Not enough SNP sites to estimate the BAF variance, skipping")
-    baf_scale <- NA
+    print( " Not enough SNP sites to estimate the maf variance, skipping")
+    maf_scale <- NA
   }
-  return(baf_scale)
+  return(maf_scale)
 
 }
 
 
 
-#' Correct BAF Values Using a Scaling Factor
+#' Correct MAF Values Using a Scaling Factor
 #'
-#' Applies a scaling factor to B-allele frequency (BAF) values greater than 0.4, and caps all BAF values at 0.5.
+#' Applies a scaling factor to MAF values.
 #'
-#' @param baf A data frame or tibble with a numeric column named \code{baf}.
-#' @param baf_scale Numeric. The scaling factor to be applied to BAF values greater than 0.4.
+#' @param maf A data frame or tibble with a numeric column named \code{maf}.
+#' @param maf_scale Numeric. The scaling factor to be applied to MAF values.
 #'
-#' @return A data frame or tibble with the corrected \code{baf} column.
+#' @return A data frame or tibble with the corrected \code{maf} column.
 #'
 #' @importFrom dplyr mutate rowwise
 #' @export
-CorrectBAF <- function( baf , baf_scale){
-  baf <- baf %>%
-    dplyr::mutate( baf = ifelse( baf > 0.4, baf * baf_scale, baf ) )%>%
+CorrectMAF <- function( maf , maf_scale){
+  maf <- maf %>%
+    dplyr::mutate( maf = ifelse( maf > 0.4, maf * maf_scale, maf ) )%>%
     dplyr::rowwise() %>%
-    dplyr::mutate( baf = pmin( baf, 0.5 ) )
-  return(baf)
+    dplyr::mutate( maf = pmin( maf, 0.5 ) )
+  return(maf)
 }
 
 
 
-#' Search for Breakpoints within a Segment Using BAF Data
+#' Search for Breakpoints within a Segment Using MAF Data
 #'
-#' Refines breakpoints within a segment using B-allele frequency (BAF) data and AI binning/merging procedures.
-#' If enough informative BAF sites are present, the segment may be split into finer regions based on BAF clustering and merging.
+#' Refines breakpoints within a segment using MAF data.
+#' If enough informative MAF sites are present, the segment may be split into finer regions based on MAF clustering and merging.
 #'
 #' @param seg_row A data frame row (list or tibble row) representing a single segment. Must have columns: Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, Segment_Mean_raw, Count, Baseline_cov, gatk_gender, pipeline_gender, size.
-#' @param baf A data frame or tibble containing BAF data. Must include columns: Chromosome, Start, End, baf.
-#' @param opt A list of options. Must include \code{aibinsize} (bin size for AI), \code{snpmin} (minimum SNP count), and \code{minaisize} (minimum AI size).
+#' @param maf A data frame or tibble containing MAF data. Must include columns: Chromosome, Start, End, maf.
+#' @param aibinsize Numeric, AI bin size (default: 500000).
+#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
+#' @param minaisize Numeric, smallest AI segment size (default: 1000000).
+#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
 #'
-#' @return A data frame with the refined segment(s), including updated breakpoints, BAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
+#'
+#' @return A data frame with the refined segment(s), including updated breakpoints, MAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
 #'
 #' @importFrom dplyr filter select mutate
 #' @export
-SearchBreakpoint <- function(seg_row, baf, opt ){
+SearchBreakpoint <- function(seg_row, maf, mergeai, snpmin, minaisize, aibinsize ){
   tmp_seg <- data.frame(
     Sample = seg_row$Sample,
     Chromosome = seg_row$Chromosome,
@@ -354,21 +427,21 @@ SearchBreakpoint <- function(seg_row, baf, opt ){
     #MAF_gmm_variance = NA,
     size = seg_row$size)
 
-  tmp_baf <- baf %>%
-    dplyr::filter( Chromosome == seg_row$Chromosome & Start >= seg_row$Start & End <= seg_row$End ) %>%
-    dplyr::filter( baf != 0 )
-  n_baf <- nrow(tmp_baf)
-  if( is.null(n_baf) ){ n_baf <- 0}
-  if(n_baf > 0 ){
-    binned_data <- binbaf(data = tmp_baf, bin_size = opt$aibinsize)
+  tmp_maf <- maf %>%
+    dplyr::filter( Chromosome == seg_row$Chromosome & Pos >= seg_row$Start & Pos <= seg_row$End ) %>%
+    dplyr::filter( maf != 0 )
+  n_maf <- nrow(tmp_maf)
+  if( is.null(n_maf) ){ n_maf <- 0}
+  if(n_maf > 0 ){
+    binned_data <- BinMaf(data = tmp_maf, bin_size = aibinsize)
     max_nonzero_n <- max(binned_data$nonzero_count,na.rm = T)
-    for ( min_prob in c(0: min(opt$snpmin, max_nonzero_n - 1 ) ) ){
+    for ( min_prob in c(0: min( snpmin, max_nonzero_n - 1 ) ) ){
       binned_data <- binned_data %>% filter(nonzero_count >= min_prob )
-      binned_data <- CallMerge(data = binned_data,AIorSeg = "AI",opt = opt, tmp_baf = tmp_baf)
+      binned_data <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai = mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
     }
-    binned_data <- binned_data %>% filter( End - Start >= opt$minaisize)
+    binned_data <- binned_data %>% filter( End - Start >= minaisize)
     if( nrow(binned_data) > 0 ){
-      merge_ai <- CallMerge(data = binned_data, AIorSeg = "AI", opt = opt, tmp_baf = tmp_baf)
+      merge_ai <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai= mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
       merge_ai <- merge_ai %>%
         dplyr::select(-bin) %>%
         dplyr::mutate(size = End - Start)
@@ -409,21 +482,27 @@ SearchBreakpoint <- function(seg_row, baf, opt ){
 }
 
 
-#' Assign Quality Tag to a Segment Based on BAF GMM Metrics
+#' Assign Quality Tag to a Segment Based on maf GMM Metrics
 #'
-#' Assigns a quality tag ("PASS" or "FAILED") to a segment based on the BAF GMM weight, probe count, and number of clusters.
+#' Assigns a quality tag ("PASS" or "FAILED") to a segment based on the maf GMM weight and probe count thresholds.
 #'
-#' @param MAF_gmm_weight Numeric. The mixture weight of the most prominent BAF GMM cluster.
-#' @param MAF_Probes Integer. The number of nonzero BAF probes in the segment.
-#' @param MAF_gmm_G Integer. Number of BAF GMM clusters.
-#' @param snpmin Integer. The minimum SNP count (should be passed from \code{opt$snpmin}).
+#'A segment is marked as "PASS" if the maf GMM weight is at least 0.35 and the probe count is at least twice the minimum SNP count (\code{snpmin}). Otherwise, it is marked as "FAILED".
+#'
+#' @param MAF_gmm_weight Numeric. The mixture weight of the most prominent maf GMM cluster.
+#' @param MAF_Probes Integer. The number of nonzero maf probes in the segment.
+#' @param MAF_gmm_G Integer. Number of maf GMM clusters.
+#' @param snpmin Integer. The minimum nonzero SNP count.
 #'
 #' @return Character. "PASS" if the segment passes quality checks, "FAILED" otherwise.
 #'
+#' @examples
+#' AddQualTag(MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
+#' AddQualTag(MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
+#'
 #' @export
-AddQualTag <- function(MAF_gmm_weight, MAF_Probes, MAF_gmm_G){
+AddQualTag <- function(MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin){
   if(!is.na(MAF_gmm_G)){
-    if( MAF_Probes >= 2*opt$snpmin ){
+    if( MAF_Probes >= 2*snpmin ){
       if( MAF_gmm_weight >= 0.35){Qualtag <- "PASS" }
       else{ Qualtag <- "FAILED" }
 

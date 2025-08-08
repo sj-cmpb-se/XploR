@@ -24,16 +24,20 @@ Imports:
   caret,
   changepoint,
   data.table,
+  foreach,
   doParallel,
   dplyr,
   ggplot2,
   gridExtra,
   htmlwidgets,
   mclust,
-  optparse,
   plotly,
   purrr,
   scales,
   tidyr,
-  reshape2
+  hdf5r,
+  IRanges,
+  tibble,
+  zoo,
+  magrittr
 RoxygenNote: 7.3.2

@@ -7,7 +7,7 @@
 AssignPriors(combinations, lambda)
 }
 \arguments{
-\item{combinations}{Data frame. Output from \code{\link[=GenerateCombinations]{GenerateCombinations()}}, with columns \code{major}, \code{minor}, and \code{total_cn}.}
+\item{combinations}{Data frame. Output from \code{\link[=GenerateCombinations]{GenerateCombinations()}}, with columns \code{major}, \code{minor}, and \code{CN}.}
 
 \item{lambda}{Numeric. Decay rate parameter for the exponential prior.}
 }
@@ -22,7 +22,7 @@ A data frame with the input columns plus:
 Assigns prior probabilities to major/minor allele combinations using an exponential decay model that incorporates biological plausibility.
 }
 \details{
-The function assigns a biological difficulty score to each combination. For unlisted combinations, the score is set according to rules based on \code{total_cn}, \code{major}, and \code{minor}.
+The function assigns a biological difficulty score to each combination. For unlisted combinations, the score is set according to rules based on \code{CN}, \code{major}, and \code{minor}.
 The prior is then calculated as \eqn{\exp(-\lambda \times \text{Bio\_diff})}{exp(-lambda * Bio_diff)} and normalized to sum to 1.
 }
 \examples{

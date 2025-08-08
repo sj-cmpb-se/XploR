@@ -1,3 +1,8 @@
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
+
+
 #' Calculate Segment Mean Adjusted by Scale Factor
 #'
 #' @param Segcov Numeric. The observed segment coverage.
@@ -62,43 +67,54 @@ CorrectPurity <- function(chromosome, cov_segmentmean, MAF_observe, gender, puri
 
 #' Assign Copy Number Call Without Model
 #'
-#' @param chromosome Character. Chromosome name.
-#' @param CNF_correct Numeric. Corrected CNF.
-#' @param MAF_correct Numeric. Corrected MAF.
-#' @param MAF_gmm_G Integer. Number of GMM clusters.
-#' @param MAF_Probes Integer. Number of probes used for MAF.
-#' @param MAF_gmm_weight Numeric. GMM weight.
-#' @param opt List. Must include \code{gender}, \code{callcovcutoff}, \code{callaicutoff}, \code{minsnpcallaicutoff}.
+#' Assigns a copy number call ("GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH") to a segment based on corrected copy number fraction (CNF), minor allele frequency (MAF), and probe characteristics, using user-defined thresholds.
 #'
-#' @return Character. Copy number call: "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".
+#' @param chromosome Character. Chromosome name (e.g., "1", "X", "Y").
+#' @param CNF_correct Numeric. Corrected copy number fraction (CNF).
+#' @param MAF_correct Numeric. Corrected minor allele frequency (MAF).
+#' @param MAF_gmm_G Integer. Number of GMM clusters (not directly used in logic, but included for compatibility).
+#' @param MAF_Probes Integer. Number of probes used for MAF estimation.
+#' @param MAF_gmm_weight Numeric. GMM weight (not directly used in logic, but included for compatibility).
+#' @param gender Character. Sample gender ("male" or "female").
+#' @param callcovcutoff Numeric. Threshold for CNF to call gain or loss (default: 0.3).
+#' @param callaicutoff Numeric. Threshold for MAF to call gain with loss of heterozygosity (GAINLOH) (default: 0.3).
+#' @param minsnpcallaicutoff Integer. Minimum number of SNP probes to call CNLOH (default: 10).
+#'
+#' @return Character. Copy number call: one of "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".
+#'
+#' @details
+#' Calls are made according to CNF and MAF thresholds:
+#' - For sex chromosomes in males, thresholds are adjusted for haploid status.
+#' - "GAINLOH" is called if CNF is high and MAF is below a dynamic cutoff.
+#' - "CNLOH" is called if MAF is low and probe count meets the minimum threshold.
+#'
+#' @examples
+#' CallwoModel("1", CNF_correct = 2.8, MAF_correct = 0.1, MAF_gmm_G = 2, MAF_Probes = 15, MAF_gmm_weight = 0.5, gender = "female")
 #'
 #' @export
-CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, opt) {
-  opt$callcovcutoff <- 0.3
-  opt$callaicutoff <- 0.3
-  opt$minsnpcallaicutoff <- 10
-  if (opt$gender == "male" && chromosome %in% c("X", "Y")) {
-    if (CNF_correct >= (1 + opt$callcovcutoff)) {
+CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, callcovcutoff = 0.3, callaicutoff = 0.3, minsnpcallaicutoff = 10 ) {
+  if ( gender == "male" && chromosome %in% c("X", "Y")) {
+    if (CNF_correct >= (1 + callcovcutoff)) {
       Call <- "GAIN"
-    } else if (CNF_correct < (1 - opt$callcovcutoff)) {
+    } else if (CNF_correct < (1 - callcovcutoff)) {
       Call <- "LOSS"
     } else {
       Call <- "REF"
     }
   } else {
-    if (CNF_correct >= (2 + opt$callcovcutoff)) {
+    if (CNF_correct >= (2 + callcovcutoff)) {
       MAF_expected <- 1 / ceiling(CNF_correct)
-      gainlohcutoff <- MAF_expected - opt$callaicutoff
+      gainlohcutoff <- MAF_expected - callaicutoff
       gainlohcutoff <- ifelse(gainlohcutoff < 0.1, 0.1, gainlohcutoff)
       if (MAF_correct <= gainlohcutoff && MAF_Probes >= 10) {
         Call <- "GAINLOH"
       } else {
         Call <- "GAIN"
       }
-    } else if (CNF_correct < (2 - opt$callcovcutoff)) {
+    } else if (CNF_correct < (2 - callcovcutoff)) {
       Call <- "LOSS"
     } else {
-      if (MAF_correct <= 0.3 && MAF_Probes >= opt$minsnpcallaicutoff) {
+      if (MAF_correct <= 0.3 && MAF_Probes >= minsnpcallaicutoff) {
         Call <- "CNLOH"
       } else {
         Call <- "REF"
@@ -118,7 +134,7 @@ CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Pro
 #' @return Integer. Rounded copy number.
 #'
 #' @export
-roundcn <- function(gender, Chrom, Call, CNF) {
+RoundCN <- function(gender, Chrom, Call, CNF) {
   diff_cn <- abs(round(CNF) - CNF)
   if (diff_cn < 0.3) {
     CN <- round(CNF)

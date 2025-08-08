@@ -4,7 +4,7 @@
 #'
 #' @param input_dir Path to the directory containing the QC files.
 #' @param prefix Sample ID and file prefix.
-#' @param output_dir Output directory.
+#' @param out_dir Output directory.
 #'
 #' @return Invisibly returns the QC summary data frame.
 #'
@@ -12,7 +12,7 @@
 #' @importFrom data.table fread
 #' @importFrom utils read.csv write.table
 #' @export
-SummarizeMapQC <- function(input_dir, prefix, output_dir) {
+SummarizeMapQC <- function(input_dir, prefix, out_dir) {
   header <- c("info", "value", "pct")
   map_file <- file.path(input_dir, paste0(prefix, ".mapping_metrics.csv"))
   map <- utils::read.csv(map_file, header = FALSE)
@@ -41,13 +41,23 @@ SummarizeMapQC <- function(input_dir, prefix, output_dir) {
     pct = bin_cov(Coverage = cov2, windows = bins)
   )
   cov_hist$value <- NA
+  map_extract_id <- c("Total input reads","duplicate marked reads","Number of unique reads",
+                      "QC-failed reads","Mapped reads","rRNA","Unmapped reads","Singleton","Properly paired reads",
+                      "discordant","multiple locations","Reads with MAPQ","Total alignments","Secondary alignments",
+                      "chimeric","read length","Insert length","contamination")
+  map_extract_id <- paste0(map_extract_id,collapse = "|")
 
-  map <- map[c(1,2,4,5,7,8,15,24,26,27,31:36,46,56,63,70:75), ]
-  cov <- cov[c(2,3,4,5,34), ]
+  #map <- map[c(1,2,4,5,7,8,15,24,26,27,31:36,46,56,63,70:75), ]
+  map <- map[grep(map_extract_id, map$info),]
+  cov_extract_id <- paste0(c("Average alignment coverage over target region","Uniformity",
+                           "10x: inf","20x: inf","50x: inf","100x: inf","Aligned reads in target region"),collapse = "|")
+  #cov <- cov[c(2,3,4,5,34), ]
+  cov <- cov[grep(cov_extract_id, cov$info),]
+  cov[grep("PCT|pct",cov$info),"pct"] <-  cov[grep("PCT|pct",cov$info),"value"]
   qc <- rbind(map, cov, cov_hist)
   qc$sample <- prefix
 
-  outFile <- file.path(output_dir, paste0(prefix, "_QC_summary.tsv"))
+  outFile <- file.path(out_dir, paste0(prefix, "_QC_summary.tsv"))
   utils::write.table(qc, file = outFile, sep = "\t", quote = FALSE, row.names = FALSE)
   invisible(qc)
 }

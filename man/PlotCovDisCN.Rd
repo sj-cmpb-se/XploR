@@ -4,24 +4,26 @@
 \alias{PlotCovDisCN}
 \title{Plot Coverage Distance to Integer Copy Number vs. Purity}
 \usage{
-PlotCovDisCN(dis, opt, purity, min_dis)
+PlotCovDisCN(dis, purity, min_dis, prefix, out_dir)
 }
 \arguments{
 \item{dis}{Data frame or tibble. Must include columns \code{rho} and \code{dis_integer_CN}.}
 
-\item{opt}{List of options. Must include \code{out_dir} and \code{prefix}.}
-
 \item{purity}{Numeric. The selected purity value to highlight.}
 
 \item{min_dis}{Numeric. The minimum distance to integer copy number to highlight.}
+
+\item{prefix}{Character. Output file prefix.}
+
+\item{out_dir}{Character. Output directory for saving the plot.}
 }
 \value{
-Invisibly returns the ggplot object (or \code{FALSE} if plotting failed).
+Invisibly returns the ggplot object (or \code{FALSE} if plotting failed). The plot is saved as a PNG file in the output directory.
 }
 \description{
-Plots the distance to integer copy number (\code{dis_integer_CN}) against purity (\code{rho}) and highlights the minimum distance.
+Plots the distance to integer copy number (\code{dis_integer_CN}) as a function of purity (\code{rho}), with the minimum distance point highlighted.
 }
 \examples{
-# PlotCovDisCN(dis, opt, purity = 0.7, min_dis = 2)
+# PlotCovDisCN(dis, purity = 0.7, min_dis = 2, prefix = "Sample1", out_dir = "results/")
 
 }

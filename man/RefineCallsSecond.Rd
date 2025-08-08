@@ -2,29 +2,33 @@
 % Please edit documentation in R/Modeling.R
 \name{RefineCallsSecond}
 \alias{RefineCallsSecond}
-\title{Second Refinement of Segment Calls for Cov/AI Profile Mismatches}
+\title{Second Refinement of Segment Calls for Coverage/AI Profile Mismatches}
 \usage{
-RefineCallsSecond(df, results, final_mu, final_rho, opt)
+RefineCallsSecond(df, results, final_mu, final_rho, gender, callcov)
 }
 \arguments{
 \item{df}{Data frame or tibble. Refined segment calls (see \code{\link{RefineCalls}}), must include columns as in \code{col_name}.}
 
-\item{results}{Data frame or tibble. All likelihood results for possible copy number states, must include columns \code{rho}, \code{mu}, \code{index}, \code{total_cn}, etc.}
+\item{results}{Data frame or tibble. All likelihood results for possible copy number states, must include columns \code{rho}, \code{mu}, \code{index}, \code{CN}, etc.}
 
-\item{final_mu}{Numeric. The selected value of mutation multiplicity (\code{mu}).}
+\item{final_mu}{Numeric. The selected value of scale factor (\code{mu}).}
 
 \item{final_rho}{Numeric. The selected value of tumor purity (\code{rho}).}
 
-\item{opt}{List of options, must include \code{gender} and \code{callcov}.}
+\item{gender}{Character. Sample gender ("male" or "female").}
+
+\item{callcov}{Numeric. Subclonal events calling cutoff based on coverage.}
 }
 \value{
-A data frame or tibble with further refined segment calls, including new columns \code{ccf_COV}, \code{ccf_final}, and \code{CN_mix}.
+A data frame or tibble with further refined segment calls, including updated columns such as \code{ccf_COV}, \code{ccf_final}, and \code{CN_mix}.
 }
 \description{
-Further refines segment calls for segments where the coverage profile and allelic imbalance (AI) profile do not match,
-by considering alternative copy number states from the likelihood results.
+Further refines segment calls where the coverage profile and allelic imbalance (AI) profile do not match, by considering alternative copy number states and updating calls and expected values.
+}
+\details{
+Segments with discordant coverage and AI profiles are re-evaluated by searching for alternative copy number states in the likelihood results, and calls are updated accordingly.
 }
 \examples{
-# RefineCallsSecond(df, results, final_mu = 1, final_rho = 0.7, opt)
+# RefineCallsSecond(df, results, final_mu = 1, final_rho = 0.7, gender = "female", callcov = 0.3)
 
 }

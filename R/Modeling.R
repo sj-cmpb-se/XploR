@@ -18,10 +18,10 @@
 #' @examples
 #' set.seed(1)
 #' K <- rbeta(100, 2, 5)
-#' categorize_K(K)
+#' CategorizeK(K)
 #'
 #' @export
-categorize_K <- function( K ) {
+CategorizeK <- function( K ) {
   breaks_level <- stats::quantile(K, probs = seq(0, 1, by = 0.25), na.rm = TRUE)
   breaks <- c( breaks_level[1:4], Inf)
   values <- c(50, 100, 200, 300 )
@@ -75,40 +75,42 @@ SegmentMeanToOriCov <- function( SM, gender, chromosome, diploid_cov ){
 #' This function computes the sample variance using \code{var(x)} and returns its square root.
 #'
 #' @examples
-#' EstimateSFVariance(c(1, 2, 3, 4, 5))
+#' EstimateVariance(c(1, 2, 3, 4, 5))
 #'
 #' @export
-EstimateSFVariance <- function(x){
+EstimateVariance <- function(x){
   # Estimate variance and standard deviation
-  variance_sf <- var(x)  # Variance
-  sigma_sf <- sqrt(variance_sf)          # Standard deviation
-  return(sigma_sf)
+  variance_x <- var(x)  # Variance
+  sigma_x <- sqrt(variance_x)          # Standard deviation
+  return(sigma_x)
 }
 
 
 #' Calculate Cancer Cell Fraction (CCF)
 #'
-#' Computes the cancer cell fraction (CCF) based on total copy number, mutation multiplicity, tumor purity, and integer copy number.
+#' @description
+#' Computes the cancer cell fraction (CCF) based on total copy number,
+#' mutation multiplicity, tumor purity, and integer copy number.
 #'
-#' @param total_cn Numeric. The total copy number in the segment.
-#' @param mu Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).
+#' @param CN Numeric. The total copy number in the segment.
+#' @param mu Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).
 #' @param rho Numeric. Tumor purity (fraction between 0 and 1).
 #' @param C_i Numeric. Integer copy number of the mutation.
 #'
-#' @return Numeric. The estimated cancer cell fraction (CCF), with Inf and -Inf values capped at 1 and 0.01, respectively.
-#'
 #' @details
 #' The formula is: \cr
-#' \code{ccf = ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2)) / (rho * (total_cn - 2))} \cr
+#' \code{ccf = ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2)) / (rho * (CN - 2))} \cr
 #' If CCF is \code{-Inf}, returns 0.01; if \code{Inf}, returns 1; otherwise returns the computed value.
 #'
+#' @return Numeric. The estimated cancer cell fraction (CCF), with Inf and -Inf values capped at 1 and 0.01, respectively.
+#'
 #' @examples
-#' Calccf(total_cn = 4, mu = 100, rho = 0.6, C_i = 2)
+#' Calccf(CN = 4, mu = 100, rho = 0.6, C_i = 2)
 #'
 #' @export
-Calccf <- function(total_cn, mu, rho, C_i){
+Calccf <- function(CN, mu, rho, C_i){
 
-  ccf <- ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2))/(rho* ((total_cn ) -2))
+  ccf <- ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2))/(rho* ((CN ) -2))
   if( !is.na(ccf) && ccf == -Inf){
     ccf <- 0.01
   }else if( !is.na(ccf) && ccf == Inf ){
@@ -124,32 +126,32 @@ Calccf <- function(total_cn, mu, rho, C_i){
 
 #' Calculate Cancer Cell Fraction (CCF) from Allelic Imbalance (LOH)
 #'
-#' Estimates the cancer cell fraction (CCF) based on minor and major allele copy numbers, tumor purity, and observed B-allele frequency (BAF).
+#' Estimates the cancer cell fraction (CCF) based on minor and major allele copy numbers, tumor purity, and observed minor-allele frequency (MAF).
 #'
 #' @param minor Numeric. Minor allele copy number.
 #' @param major Numeric. Major allele copy number.
 #' @param rho Numeric. Tumor purity (fraction between 0 and 1).
-#' @param BAF Numeric. Observed B-allele frequency.
+#' @param MAF Numeric. Observed B-allele frequency.
 #'
 #' @return Numeric. The estimated cancer cell fraction (CCF), with \code{Inf} replaced by 1, \code{-Inf} and \code{NA} replaced by 0.
 #'
 #' @details
-#' The expected BAF is calculated as \code{BAF_ex = minor / (minor + major)}.
+#' The expected MAF is calculated as \code{MAF_ex = minor / (minor + major)}.
 #' The formula for CCF is: \cr
-#' \code{ccf = (BAF - 0.5) / ((BAF_ex - 0.5) * rho)} \cr
+#' \code{ccf = (MAF - 0.5) / ((MAF_ex - 0.5) * rho)} \cr
 #' If CCF is \code{Inf}, returns 1; if \code{-Inf} or \code{NA}, returns 0.
 #'
 #' @examples
-#' CcfLOH(minor = 1, major = 2, rho = 0.7, BAF = 0.6)
+#' CcfLOH(minor = 1, major = 2, rho = 0.7, MAF = 0.6)
 #'
 #' @export
-CcfLOH <- function(minor, major, rho, BAF  ){
+CcfLOH <- function(minor, major, rho, MAF  ){
   # ccf from AI information
-  # if BAF_ex is 0.5 then ccf is 0
-  # if BAF is 0.5 then ccf is 0
-  BAF_ex <- minor/(minor + major)
+  # if MAF_ex is 0.5 then ccf is 0
+  # if MAF is 0.5 then ccf is 0
+  MAF_ex <- minor/(minor + major)
 
-  ccf <- (BAF - 0.5 )/( ( BAF_ex - 0.5) * rho )
+  ccf <- (MAF - 0.5 )/( ( MAF_ex - 0.5) * rho )
   ccf <- ifelse(is.infinite(ccf), ifelse(ccf > 0, 1, 0), ccf)
   ccf <- ifelse( is.na(ccf), 0 , ccf)
   return(ccf)
@@ -161,32 +163,32 @@ CcfLOH <- function(minor, major, rho, BAF  ){
 #'
 #' Generates all valid combinations of major and minor allele copy numbers that sum to the specified total copy number, with the constraint that major >= minor.
 #'
-#' @param total_cn Integer. The total copy number.
+#' @param CN Integer. The total copy number.
 #'
 #' @return A data frame with columns:
 #'   \item{major}{Major allele copy number.}
 #'   \item{minor}{Minor allele copy number.}
-#'   \item{total_cn}{Sum of major and minor (equals input \code{total_cn}).}
+#'   \item{CN}{Sum of major and minor (equals input \code{CN}).}
 #'
 #' @importFrom dplyr mutate
 #' @examples
 #' GenerateCombinations(3)
 #'
 #' @export
-GenerateCombinations <- function(total_cn) {
+GenerateCombinations <- function(CN) {
   tmp <- expand.grid(
-    major = 0:total_cn,
-    minor = 0:total_cn
+    major = 0:CN,
+    minor = 0:CN
   ) %>%
-    subset(major >= minor & major + minor == total_cn) %>%
-    dplyr::mutate( total_cn = major + minor )
+    subset(major >= minor & major + minor == CN) %>%
+    dplyr::mutate( CN = major + minor )
   return(tmp) }
 
 #' Assign Priors to Major/Minor Allele Combinations Based on Biological Difficulty
 #'
 #' Assigns prior probabilities to major/minor allele combinations using an exponential decay model that incorporates biological plausibility.
 #'
-#' @param combinations Data frame. Output from [GenerateCombinations()], with columns `major`, `minor`, and `total_cn`.
+#' @param combinations Data frame. Output from [GenerateCombinations()], with columns `major`, `minor`, and `CN`.
 #' @param lambda Numeric. Decay rate parameter for the exponential prior.
 #'
 #' @return A data frame with the input columns plus:
@@ -195,7 +197,7 @@ GenerateCombinations <- function(total_cn) {
 #'   \item{prior}{Normalized prior probability for each combination}
 #' }
 #' @details
-#' The function assigns a biological difficulty score to each combination. For unlisted combinations, the score is set according to rules based on \code{total_cn}, \code{major}, and \code{minor}.
+#' The function assigns a biological difficulty score to each combination. For unlisted combinations, the score is set according to rules based on \code{CN}, \code{major}, and \code{minor}.
 #' The prior is then calculated as \eqn{\exp(-\lambda \times \text{Bio\_diff})}{exp(-lambda * Bio_diff)} and normalized to sum to 1.
 #'
 #' @importFrom dplyr left_join mutate rowwise ungroup select
@@ -219,9 +221,9 @@ AssignPriors <- function(combinations, lambda ) {
   combinations <- combinations %>%
     dplyr::left_join( bio_diff, by = c("major","minor")) %>%
     dplyr::rowwise() %>%
-    dplyr::mutate( Bio_diff = ifelse( is.na(Bio_diff), ifelse(minor == 0, total_cn + 1, ifelse( major == minor, total_cn, total_cn - 1) ), Bio_diff ) ) %>%
+    dplyr::mutate( Bio_diff = ifelse( is.na(Bio_diff), ifelse(minor == 0, CN + 1, ifelse( major == minor, CN, CN - 1) ), Bio_diff ) ) %>%
     dplyr::mutate( Bio_diff_prior = exp(-lambda * Bio_diff) ) %>%
-    dplyr::ungroup %>%
+    dplyr::ungroup() %>%
     dplyr::mutate( prior = Bio_diff_prior/sum(Bio_diff_prior,na.rm = T)) %>%
     dplyr::select( -Bio_diff_prior)
 
@@ -233,10 +235,10 @@ AssignPriors <- function(combinations, lambda ) {
 
 #' Estimate Tumor Purity from Coverage and Segmentation Data
 #'
-#' Estimates tumor purity by fitting coverage and BAF segmentation data across a range of purity values, selecting the purity that best matches integer copy number models.
+#' Estimates tumor purity by fitting coverage and MAF segmentation data across a range of purity values, selecting the purity that best matches integer copy number models.
 #'
 #' @param seg A data frame or tibble of segment data, with columns: Chromosome, Segment_Mean, MAF, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, size, etc.
-#' @param opt A list of options, must include \code{gender}.
+#' @param gender Gender male or femal.
 #'
 #' @return A list with elements:
 #'   \item{dis_df}{Data frame of model fit statistics for each purity.}
@@ -252,7 +254,7 @@ AssignPriors <- function(combinations, lambda ) {
 #' @importFrom tidyr unnest_wider
 #' @importFrom tibble as_tibble
 #' @export
-EstimatePurityCov <- function( seg ){
+EstimatePurityCov <- function( seg, gender ){
   seg_df <- seg
   purity_array <- seq(0.02, 1, by = 0.02)
   models_cov <- lapply(purity_array,function(p){
@@ -261,7 +263,7 @@ EstimatePurityCov <- function( seg ){
       dplyr::mutate( correct = list(CorrectPurity(chromosome = Chromosome,
                                            cov_segmentmean = Segment_Mean,
                                            MAF_observe = MAF,
-                                           gender = opt$gender,
+                                           gender = gender,
                                            purity = p ))) %>%
       tidyr::unnest_wider(col = "correct") %>%
       dplyr::rowwise() %>%
@@ -270,9 +272,9 @@ EstimatePurityCov <- function( seg ){
                                  MAF_correct = MAF_correct,
                                  MAF_gmm_G = MAF_gmm_G,
                                  MAF_Probes = MAF_Probes,
-                                 MAF_gmm_weight = MAF_gmm_weight,
-                                 opt = opt )) %>%
-      dplyr::mutate( CN = roundcn(Chrom = Chromosome, Call = Call, CNF = CNF_correct)) %>%
+                                 MAF_gmm_weight = MAF_gmm_weight
+                                  )) %>%
+      dplyr::mutate( CN = RoundCN(Chrom = Chromosome, Call = Call, CNF = CNF_correct)) %>%
       dplyr::mutate( rho = p )
 
     tmp_dis <- tmp %>%
@@ -311,49 +313,48 @@ EstimatePurityCov <- function( seg ){
 
 
 
-#' Determine Model Source Based on BAF and Coverage Information
+#' Determine Model Source Based on MAF and Coverage Information
 #'
-#' Determines whether the model source for a segment should be "Coverage", "Diploid", or "Coverage + BAF", based on BAF and segment mean values.
+#' Determines whether the model source for a segment should be "Coverage", "Diploid", or "Coverage + MAF", based on MAF and segment mean values.
 #'
 #' @param seg_df A data frame or tibble containing segment information, including columns: \code{size}, \code{FILTER}, \code{MAF_Probes}, \code{MAF}, and \code{Segment_Mean}.
-#' @param opt A list of options, must include \code{modelminprobes} (minimum number of probes for model decision).
+#' @param modelminprobes Numeric. minimum number of probes for a segment to include for model decision
 #'
-#' @return Character. One of "Coverage", "Diploid", or "Coverage + BAF".
+#' @return Character. One of "Coverage", "Diploid", or "Coverage + MAF".
 #'
 #' @details
-#' - If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
-#' - If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
-#' - Otherwise, returns "Coverage + BAF".
+#' - If all segments with sufficient probes have minimum MAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
+#' - If all segments with sufficient probes have minimum MAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
+#' - Otherwise, returns "Coverage + MAF".
 #'
 #' @importFrom dplyr filter arrange
 #' @examples
 #' # seg_df must have columns: size, FILTER, MAF_Probes, MAF, Segment_Mean
-#' # opt <- list(modelminprobes = 7)
-#' # ModelSource(seg_df, opt)
+#' # ModelSource(seg_df, modelminprobes)
 #'
 #' @export
-ModelSource <- function( seg_df, opt ) {
-  # Define model source according to BAF
-  # If all 0.5 >= BAF > 0.4 and abs(Segment_Mean) >= 0.1, then Coverage otherwise Coverage + BAF
+ModelSource <- function( seg_df, modelminprobes  ) {
+  # Define model source according to MAF
+  # If all 0.5 >= MAF > 0.4 and abs(Segment_Mean) >= 0.1, then Coverage otherwise Coverage + MAF
   seg_df <- seg_df %>%
     dplyr::filter( size >= 10000000 )
 
 
-  min_baf <- seg_df %>%
-    dplyr::filter( FILTER != "FAILED" & MAF_Probes >= opt$modelminprobes ) %>%
+  min_MAF <- seg_df %>%
+    dplyr::filter( FILTER != "FAILED" & MAF_Probes >= modelminprobes ) %>%
     dplyr::arrange(MAF)
-  min_baf <- min(min_baf$MAF,na.rm = T)
+  min_MAF <- min(min_MAF$MAF,na.rm = T)
   max_cov <- max(abs(seg_df$Segment_Mean), na.rm = T)
 
 
-  if( min_baf > 0.4 ){
+  if( min_MAF > 0.4 ){
     if( max_cov >= 0.2 ){
       model_source <- "Coverage"
     }else{
       model_source <- "Diploid"
     }
 
-  }else{model_source <- "Coverage + BAF"}
+  }else{model_source <- "Coverage + MAF"}
 
   return(model_source)
 }
@@ -362,12 +363,11 @@ ModelSource <- function( seg_df, opt ) {
 
 #' Calculate Marginal Likelihood for a Single Segment
 #'
-#' Computes the marginal likelihood for a segment given copy number, BAF, purity, and model parameters.
-#' Considers all possible major/minor allele combinations for the segment, assigns priors, and computes likelihoods under a beta-binomial model.
+#' Computes the marginal likelihood for a segment given copy number, MAF, purity, and model parameters.
 #'
 #' @param C_i Numeric. Integer copy number for the segment.
-#' @param B_i Numeric. Observed B-allele frequency (BAF) for the segment.
-#' @param mu Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).
+#' @param B_i Numeric. Observed B-allele frequency (MAF) for the segment.
+#' @param mu Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).
 #' @param rho Numeric. Tumor purity (fraction between 0 and 1).
 #' @param sigma_C Numeric. Not directly used in this function, but included for compatibility.
 #' @param k Numeric. Beta distribution concentration parameter.
@@ -375,31 +375,29 @@ ModelSource <- function( seg_df, opt ) {
 #' @param gamma Numeric. Weight for the prior in the likelihood calculation.
 #' @param epsilon Numeric. Small value to avoid log(0) and zero parameters in beta.
 #'
-#' @return A data frame with columns:
-#' \describe{
-#'   \item{major}{Major allele count}
-#'   \item{minor}{Minor allele count}
-#'   \item{total_cn}{Total copy number}
-#'   \item{ccf}{Cancer cell fraction}
-#'   \item{Bio_diff}{Biological difference}
-#'   \item{prior}{Prior probability}
-#'   \item{expected_baf}{Expected BAF}
-#'   \item{baf_ll}{BAF log-likelihood}
-#'   \item{weighted_prior}{Weighted prior}
-#'   \item{exp_baf_ll}{Expected BAF log-likelihood}
-#'   \item{exp_prior}{Expected prior}
-#'   \item{BAF_likelihood}{BAF likelihood}
-#'   \item{Segcov}{Segment coverage}
-#'   \item{BAF}{Observed BAF}
-#'   \item{mu}{Mutation multiplicity}
-#'   \item{rho}{Tumor purity}
-#' }
+#' @return A data frame with columns: major, minor, CN, ccf, Bio_diff, prior, expected_MAF, MAF_ll, weighted_prior, exp_MAF_ll, exp_prior, MAF_likelihood, Segcov, MAF, mu, rho.
 #'
 #' @details
-#' The function explores all possible (major, minor) combinations for the given segment, assigns priors based on biological plausibility, and computes the likelihood of observing the segment's BAF under a beta-binomial model.
+#' The returned data frame contains the following columns:
+#' \itemize{
+#'   \item major: Major allele count
+#'   \item minor: Minor allele count
+#'   \item CN: Total copy number
+#'   \item ccf: Cancer cell fraction
+#'   \item Bio_diff: Biological difference
+#'   \item prior: Prior probability
+#'   \item expected_MAF: Expected MAF
+#'   \item MAF_ll: MAF log-likelihood
+#'   \item weighted_prior: Weighted prior
+#'   \item exp_MAF_ll: Expected MAF log-likelihood
+#'   \item exp_prior: Expected prior
+#'   \item MAF_likelihood: MAF likelihood
+#'   \item Segcov: Segment coverage
+#'   \item MAF: Observed MAF
+#'   \item mu: Mutation multiplicity
+#'   \item rho: Tumor purity
+#' }
 #'
-#' @importFrom dplyr rowwise mutate arrange filter distinct_all ungroup select
-#' @importFrom tidyr unnest_wider
 #' @export
 CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, epsilon ) {
 
@@ -414,18 +412,18 @@ CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, 
   CN_tumor <- c(floor(min(CN_tumor_min,CN_tumor_max)): ceiling(max(CN_tumor_max, CN_tumor_min)))
   CN_tumor <- CN_tumor[which(CN_tumor<= 10 & CN_tumor >= 0 )]
   if( length(CN_tumor) > 0){
-    combinations <- GenerateCombinations( total_cn = CN_tumor[1] )
+    combinations <- GenerateCombinations( CN = CN_tumor[1] )
     combinations<- combinations %>%
       dplyr::rowwise() %>%
-      dplyr::mutate( ccf = Calccf( total_cn = total_cn, mu = mu, rho = rho, C_i = C_i) )
+      dplyr::mutate( ccf = Calccf( CN = CN, mu = mu, rho = rho, C_i = C_i) )
   }else{combinations <- NA}
 
   if(length(CN_tumor) > 1){
     for ( tumor_n in CN_tumor[-1]) {
-      combinations2 <- GenerateCombinations( total_cn = tumor_n )
+      combinations2 <- GenerateCombinations( CN = tumor_n )
       combinations2 <- combinations2 %>%
         dplyr::rowwise() %>%
-        dplyr::mutate( ccf = Calccf( total_cn = total_cn, mu = mu, rho = rho, C_i = C_i) )
+        dplyr::mutate( ccf = Calccf( CN = CN, mu = mu, rho = rho, C_i = C_i) )
       combinations <- rbind(combinations,combinations2)
       combinations <- combinations %>%
         dplyr::distinct_all() %>%
@@ -436,66 +434,66 @@ CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, 
 
 
     combinations <- AssignPriors(combinations = combinations, lambda = lambda)
-    combinations$BAF_likelihood <- apply(combinations, 1, function(row) {
+    combinations$MAF_likelihood <- apply(combinations, 1, function(row) {
       m <- as.numeric(row["major"])
       n <- as.numeric(row["minor"])
       prior <- as.numeric(row["prior"])
       ccf <- as.numeric(row["ccf"])
 
       # Calculate likelihood according to the possible combinations determined from CNF
-      # baf = 0 leads to alpha = 0 , the gamma funcfion will be seperately defined to avoid an infinite log-gamma term [ lgamma(alpha) ]
+      # MAF = 0 leads to alpha = 0 , the gamma funcfion will be seperately defined to avoid an infinite log-gamma term [ lgamma(alpha) ]
       # when the total copy number is 2, the ccf value will be NA, so here we assume ccf is 1 for all diploid segments
 
       if( m + n > 0 ){
         if( ccf < 0.1 & m + n == 2 & n ==0){
           ccf <- 1
         }
-        baf <- (1 - rho) * 0.5 + rho * ( ccf*( n / (m + n) ) + (1-ccf) * 0.5 )
-        alpha <- k * baf + epsilon
-        beta <- k * (1 - baf) + epsilon
-        baf_ll <- lgamma(alpha + beta) - lgamma(alpha) - lgamma(beta) +
+        maf <- (1 - rho) * 0.5 + rho * ( ccf*( n / (m + n) ) + (1-ccf) * 0.5 )
+        alpha <- k * maf + epsilon
+        beta <- k * (1 - maf) + epsilon
+        maf_ll <- lgamma(alpha + beta) - lgamma(alpha) - lgamma(beta) +
           (alpha - 1) * log(max(B_i,epsilon,na.rm = T)) + (beta - 1) * log(max(1 - B_i, epsilon, na.rm = T))
 
         # Introduce a weighted score that combines both the likelihood and the prior
-        combine_baf_ll <- baf_ll + gamma * log(prior)
-        expected_baf = baf
+        combine_maf_ll <- maf_ll + gamma * log(prior)
+        expected_maf = maf
       }else{
-        expected_baf = NA
-        baf_ll <- NA
-        combine_baf_ll <- NA}
+        expected_maf = NA
+        maf_ll <- NA
+        combine_maf_ll <- NA}
 
 
-      l <- list( expected_baf = expected_baf,
-                 baf_ll = baf_ll,
+      l <- list( expected_maf = expected_maf,
+                 maf_ll = maf_ll,
                  weighted_prior = gamma*log(prior),
-                 exp_baf_ll = exp(baf_ll),
+                 exp_maf_ll = exp(maf_ll),
                  exp_prior = exp( gamma * log(prior) ),
-                 BAF_likelihood = exp( combine_baf_ll ) )
+                 MAF_likelihood = exp( combine_maf_ll ) )
 
       return(l)
     })
 
     combinations <- combinations %>%
-      tidyr::unnest_wider(col = BAF_likelihood)
+      tidyr::unnest_wider(col = MAF_likelihood)
     combinations <- combinations %>%
-      dplyr::arrange(-BAF_likelihood) %>%
-      dplyr::mutate( Segcov = C_i, BAF = B_i, mu= mu, rho = rho)
+      dplyr::arrange(-MAF_likelihood) %>%
+      dplyr::mutate( Segcov = C_i, MAF = B_i, mu= mu, rho = rho)
   }else{
     combinations <- data.frame(
       major = NA,
       minor = NA,
-      total_cn = NA,
+      CN = NA,
       ccf = NA,
       Bio_diff = NA,
       prior = NA,
-      expected_baf = NA,
-      baf_ll = NA,
+      expected_maf = NA,
+      maf_ll = NA,
       weighted_prior = NA,
-      exp_baf_ll = NA,
+      exp_maf_ll = NA,
       exp_prior = NA,
-      BAF_likelihood = NA,
+      MAF_likelihood = NA,
       Segcov = C_i,
-      BAF = B_i,
+      MAF = B_i,
       mu = mu,
       rho = rho
     )
@@ -510,11 +508,11 @@ CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, 
 
 #' Calculate Likelihood for Each \eqn{\mu} and \eqn{\rho} Combination
 #'
-#' For each segment in the data, computes the BAF likelihood across all major/minor allele combinations for given mutation multiplicity (\eqn{\mu}) and tumor purity (\eqn{\rho}).
+#' For each segment in the data, computes the MAF likelihood across all major/minor allele combinations for given mutation multiplicity (\eqn{\mu}) and tumor purity (\eqn{\rho}).
 #'
-#' @param mu Numeric. Mutation multiplicity (percent, e.g., 100 means 100\%).
+#' @param mu Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).
 #' @param rho Numeric. Tumor purity (fraction between 0 and 1).
-#' @param data Data frame or tibble. Must include columns: \code{Segcov}, \code{BAF}, \code{index}, \code{Tag}, and \code{k}.
+#' @param data Data frame or tibble. Must include columns: \code{Segcov}, \code{MAF}, \code{index}, \code{Tag}, and \code{k}.
 #' @param sigma_C Numeric. Parameter for segment likelihood (passed to \code{CalSegmentLikelihood}).
 #' @param lambda Numeric. Exponential decay parameter for the prior.
 #' @param gamma Numeric. Weight for the prior in the likelihood calculation.
@@ -524,14 +522,14 @@ CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, 
 #'
 #' @details
 #' For each segment, calls \code{\link{CalSegmentLikelihood}} and filters out combinations with \code{ccf > 1.2}.
-#' If there is only one combination and both major and minor are zero, sets \code{BAF_likelihood} to 1.
+#' If there is only one combination and both major and minor are zero, sets \code{MAF_likelihood} to 1.
 #'
 #' @importFrom dplyr filter mutate
 #' @export
 Callikelihood <- function(mu, rho, data, sigma_C, lambda, gamma, epsilon) {
-  BAF_likelihood <- lapply( 1:nrow(data), function(i) {
+  MAF_likelihood <- lapply( 1:nrow(data), function(i) {
     C_i <- data$Segcov[i]
-    B_i <- data$BAF[i]
+    B_i <- data$MAF[i]
     index_i <- data$index[i]
     Tag_i <- data$Tag[i]
     k_i <- data$k[i]
@@ -552,46 +550,48 @@ Callikelihood <- function(mu, rho, data, sigma_C, lambda, gamma, epsilon) {
 
     if( nrow(segment_likelihood) == 1 ){
       segment_likelihood <- segment_likelihood %>%
-        dplyr::mutate( BAF_likelihood = ifelse( minor == 0 & major ==0 , 1, BAF_likelihood ) )
+        dplyr::mutate( MAF_likelihood = ifelse( minor == 0 & major ==0 , 1, MAF_likelihood ) )
     }
 
     return( segment_likelihood)
   })
-  BAF_likelihood <- do.call(rbind,BAF_likelihood)
+  MAF_likelihood <- do.call(rbind,MAF_likelihood)
 
-  return(BAF_likelihood)
+  return(MAF_likelihood)
 }
 
 
 
-#' Run Likelihood Calculation Across All Purity/Mu Combinations
+#' Run Likelihood Calculation Across All Purity and Scale Factor Combinations
 #'
-#' For each combination of purity and mutation multiplicity in \code{purity_sf}, computes the segment likelihoods for all segments in \code{data}.
+#' For each combination of purity and scale factor in \code{purity_sf}, computes the segment likelihoods for all segments in \code{data} using the specified model parameters.
 #'
-#' @param purity_sf Data frame or tibble with columns \code{mu} and \code{rho} (mutation multiplicity and tumor purity combinations).
-#' @param data Data frame or tibble with segment data (see \code{\link{Callikelihood}} for required columns).
+#' @param purity_sf Data frame or tibble. Grid of purity and scale factor values to evaluate; must include columns \code{mu} and \code{rho}.
+#' @param data Data frame or tibble. Segment data (see \code{\link{Callikelihood}} for required columns).
 #' @param sigma_C Numeric. Parameter for segment likelihood (passed to \code{Callikelihood}).
-#' @param opt List of options. Must include \code{lambda}, \code{gamma}, and \code{epsilon}.
+#' @param lambda Numeric. Exponential decay parameter for the prior.
+#' @param gamma Numeric. Weight for the prior in the likelihood calculation.
+#' @param epsilon Numeric. Small value to avoid log(0) and zero parameters in beta.
 #'
-#' @return A data frame with all likelihoods for each segment and each (mu, rho) combination.
-#'
-#' @details
-#' This function iterates over all rows of \code{purity_sf}, calling \code{\link{Callikelihood}} for each combination.
+#' @return A data frame with all likelihoods for each segment and each (mu, rho) combination, with NA minor alleles removed and NA ccf values set to 1.
 #'
 #' @importFrom dplyr filter mutate
+#' @examples
+#' # RunCallikelihood(purity_sf, data, sigma_C = 0.1, lambda = 1, gamma = 1, epsilon = 0.01)
+#'
 #' @export
-RunCallikelihood <- function( purity_sf, data, sigma_C, opt){
+RunCallikelihood <- function( purity_sf, data, sigma_C, lambda, gamma, epsilon){
 
   results_ll <- lapply(1:nrow(purity_sf ), function(n) {
     mu <- purity_sf[n,"mu"]
     rho <- purity_sf[n,"rho"]
-    tmp_result <- Callikelihood(mu = mu,
+    tmp_result <- XploR::Callikelihood(mu = mu,
                                 rho = rho,
                                 data = data,
                                 sigma_C = var_sf,
-                                lambda = opt$lambda,
-                                gamma = opt$gamma,
-                                epsilon = opt$epsilon
+                                lambda = lambda,
+                                gamma = gamma,
+                                epsilon = epsilon
     )
     return(tmp_result)
   })
@@ -609,27 +609,27 @@ RunCallikelihood <- function( purity_sf, data, sigma_C, opt){
 
 #' Select the Most Likely Call per Segment
 #'
-#' For each segment, selects the allele combination (major/minor) with the highest BAF likelihood,
+#' For each segment, selects the allele combination (major/minor) with the highest MAF likelihood,
 #' with special handling for subclonal events and cases where minor allele is zero.
 #'
 #' @param results A data frame or tibble containing all possible calls for each segment, with columns including:
-#' \code{Segcov}, \code{BAF}, \code{mu}, \code{rho}, \code{index}, \code{major}, \code{minor}, \code{ccf},
-#' \code{BAF_likelihood}, \code{Bio_diff}, \code{baf_ll}, \code{cov_diff}, etc.
+#' \code{Segcov}, \code{MAF}, \code{mu}, \code{rho}, \code{index}, \code{major}, \code{minor}, \code{ccf},
+#' \code{MAF_likelihood}, \code{Bio_diff}, \code{maf_ll}, \code{cov_diff}, etc.
 #'
-#' @return A data frame or tibble with the most likely call per segment, including a \code{log_BAF_likelihood} column.
+#' @return A data frame or tibble with the most likely call per segment, including a \code{log_MAF_likelihood} column.
 #'
 #' @details
-#' - Assigns a minimum likelihood for cases where \code{BAF_likelihood} is zero.
+#' - Assigns a minimum likelihood for cases where \code{MAF_likelihood} is zero.
 #' - If possible subclonal events are present, compares top two likelihoods and may select the second as a subclonal event.
 #' - For segments where \code{minor == 0}, the call is refined using coverage difference.
 #'
-#' @importFrom dplyr filter mutate group_by group_modify arrange slice_max ungroup select rows_update slice_head between row_number
+#' @importFrom dplyr filter mutate group_by group_modify arrange slice_max ungroup select rows_update slice_head between row_number n
 #' @importFrom tidyr unnest_wider
 #' @export
 SelectCallpersegment <- function( results ){
   # Assign extremely small likelihood for likelihood 0 term
-  likelihood_min <- results %>% dplyr::filter( BAF_likelihood != 0 )
-  likelihood_min <- min(likelihood_min$BAF_likelihood, na.rm = T)
+  likelihood_min <- results %>% dplyr::filter( MAF_likelihood != 0 )
+  likelihood_min <- min(likelihood_min$MAF_likelihood, na.rm = T)
 
   results <- results %>%
     dplyr::mutate(
@@ -638,23 +638,23 @@ SelectCallpersegment <- function( results ){
   #1. choose top likelihood allele combinations for each segment
   top_likelihood_rows <- results %>%
     dplyr::filter( ccf <= 1.05) %>%
-    dplyr::group_by(Segcov, BAF, mu, rho, index) %>%
+    dplyr::group_by(Segcov, MAF, mu, rho, index) %>%
     dplyr::group_modify(~ {
       .x %>%
-        dplyr::arrange(desc(BAF_likelihood), Bio_diff ) %>%
-        dplyr::slice_max(order_by = BAF_likelihood, n = 2, with_ties = TRUE) %>%
+        dplyr::arrange(desc(MAF_likelihood), Bio_diff ) %>%
+        dplyr::slice_max(order_by = MAF_likelihood, n = 2, with_ties = TRUE) %>%
         dplyr::mutate(
-          BAF_likelihood = dplyr::case_when(
-            n() == 1 & is.na(BAF_likelihood) ~ 1,
-            is.na(BAF_likelihood) ~ likelihood_min,
-            TRUE ~ BAF_likelihood
+          MAF_likelihood = dplyr::case_when(
+            dplyr::n() == 1 & is.na(MAF_likelihood) ~ 1,
+            is.na(MAF_likelihood) ~ likelihood_min,
+            TRUE ~ MAF_likelihood
           ),
           choose_second = dplyr::if_else(
-            ## if the first call is ref, but the second call is a subclonal has ccf > 0.3 and the baf_ll of the second call
+            ## if the first call is ref, but the second call is a subclonal has ccf > 0.3 and the maf_ll of the second call
             ## is higher than the first call then choose second one,
-            ## when the first call ccf_BAF is higher than 1.3 then choose the second one, this is to avoid choos someting is really off from the BAF.
-            ( ( minor[1] == 1 & major[1] == 1 &  between(ccf[2], 0.3, 1) & baf_ll[2] >= baf_ll[1] ) ) |
-              ( ccf_BAF[1] >= 1.3) ,
+            ## when the first call ccf_MAF is higher than 1.3 then choose the second one, this is to avoid choos someting is really off from the MAF.
+            ( ( minor[1] == 1 & major[1] == 1 &  between(ccf[2], 0.3, 1) & maf_ll[2] >= maf_ll[1] ) ) |
+              ( ccf_MAF[1] >= 1.3) ,
             2, 1
           )
         ) %>%
@@ -671,11 +671,11 @@ SelectCallpersegment <- function( results ){
 
     cov_top <- results %>%
       dplyr::filter( minor == 0) %>%
-      dplyr::group_by(Segcov, BAF, mu, rho, index) %>%
+      dplyr::group_by(Segcov, MAF, mu, rho, index) %>%
       dplyr::arrange( cov_diff) %>%
       dplyr::slice_head(n = 1)
 
-    id_cols <- c("index", "Segcov", "BAF", "mu", "rho")
+    id_cols <- c("index", "Segcov", "MAF", "mu", "rho")
     top_likelihood_rows_minor0 <- top_likelihood_rows_minor0  %>%
       dplyr::rows_update(cov_top, by = id_cols, unmatched = "ignore")
 
@@ -685,7 +685,7 @@ SelectCallpersegment <- function( results ){
 
   }
   top_likelihood_rows <- top_likelihood_rows %>%
-    dplyr::mutate( log_BAF_likelihood = log(BAF_likelihood) )
+    dplyr::mutate( log_MAF_likelihood = log(MAF_likelihood) )
 
   return( top_likelihood_rows )
 
@@ -751,7 +751,7 @@ FindTier1Models<- function(values, fold) {
 #' @param tier1 Data frame or tibble. Each row is a candidate model with columns \code{mu}, \code{rho}, \code{total_log_likelihood}, and \code{segments_n}.
 #' @param df Data frame or tibble. All segment call likelihoods (see \code{\link{ExtractCall}}).
 #' @param seg Data frame or tibble. Segment information.
-#' @param opt List of options to be passed to \code{\link{RefineCalls}}.
+#' @param gender gender options to be passed to \code{\link{RefineCalls}}.
 #'
 #' @return A data frame with one row per model, including columns:
 #'   \item{mu}{Mutation multiplicity.}
@@ -766,7 +766,7 @@ FindTier1Models<- function(values, fold) {
 #'
 #' @importFrom dplyr filter mutate arrange
 #' @export
-SelectModelByDis <- function(tier1, df, seg, opt){
+SelectModelByDis <- function(tier1, df, seg, gender){
 
 
   tier1_dis <- lapply(1:nrow(tier1), function(index){
@@ -775,7 +775,7 @@ SelectModelByDis <- function(tier1, df, seg, opt){
     tmp_mu <- tmp_model$mu
     tmp_rho <- tmp_model$rho
     tmp_call <- ExtractCall(df = top_likelihood_rows, max_L_mu = tmp_mu, max_L_rho = tmp_rho, seg = seg)
-    tmp_call <- RefineCalls(df = tmp_call, max_L_mu = tmp_mu, max_L_rho = tmp_rho,opt = opt )
+    tmp_call <- RefineCalls(df = tmp_call, max_L_mu = tmp_mu, max_L_rho = tmp_rho, gender = gender )
     tmp_call <- tmp_call %>%
       dplyr::mutate(dis_integer_CN = abs(CNF_correct - CN) ) %>%
       dplyr::mutate( dis_integer_CN = ifelse(MAF_Probes <= 50, 0, dis_integer_CN ))
@@ -814,20 +814,20 @@ SelectModelByDis <- function(tier1, df, seg, opt){
 
 
 
-#' Estimate Minimum Tumor Purity from BAF Data
+#' Estimate Minimum Tumor Purity from MAF Data
 #'
-#' Estimates the minimum tumor purity based on the lowest B-allele frequency (BAF) among segments tagged as "Include".
+#' Estimates the minimum tumor purity based on the lowest MAF among segments tagged as "Include".
 #'
-#' @param df A data frame or tibble containing at least the columns \code{BAF} and \code{Tag}.
+#' @param df A data frame or tibble containing at least the columns \code{MAF} and \code{Tag}.
 #'
 #' @return Numeric. The estimated minimum tumor purity, or 0 if no suitable segments are found.
 #'
 #' @details
-#' Only rows with \code{Tag == "Include"} are considered. If the minimum BAF is less than 0.4, the minimum purity is estimated as \code{max((0.5 - min\_BAF) / 0.5 - 0.05, 0)}. Otherwise, returns 0.
+#' Only rows with \code{Tag == "Include"} are considered. If the minimum MAF is less than 0.4, the minimum purity is estimated as \code{max((0.5 - min\_MAF) / 0.5 - 0.05, 0)}. Otherwise, returns 0.
 #'
 #' @importFrom dplyr filter arrange
 #' @examples
-#' df <- data.frame(BAF = c(0.3, 0.45, 0.5), Tag = c("Include", "Exclude", "Include"))
+#' df <- data.frame(MAF = c(0.3, 0.45, 0.5), Tag = c("Include", "Exclude", "Include"))
 #' EstimateMinPurity(df)
 #'
 #' @export
@@ -835,12 +835,12 @@ EstimateMinPurity <- function( df ){
 
   df <- df %>%
     dplyr::filter( Tag == "Include" ) %>%
-    dplyr::arrange( BAF )
+    dplyr::arrange( MAF )
   if( nrow(df ) > 0 ){
 
-    min_BAF <- df[1,"BAF"] %>% as.numeric()
-    if( min_BAF < 0.4 ){
-      min_purity <- (0.5- min_BAF)/0.5
+    min_MAF <- df[1,"MAF"] %>% as.numeric()
+    if( min_MAF < 0.4 ){
+      min_purity <- (0.5- min_MAF)/0.5
       min_purity <- max(min_purity - 0.05, 0)
     }else{min_purity <- 0}
 
@@ -857,9 +857,12 @@ EstimateMinPurity <- function( df ){
 #' @param tier1 Data frame or tibble. Each row is a candidate model with columns \code{mu} and \code{rho}.
 #' @param results Data frame or tibble. The full set of segment likelihoods/results.
 #' @param top_likelihood_rows Data frame or tibble. Top likelihood calls for each segment.
-#' @param likelihood_min Numeric. The minimum likelihood value to use as a penalty.
+#' @param likelihood_min Numeric. The minimum log-likelihood value to use as a penalty.
 #' @param seg Data frame or tibble. Segment information.
-#' @param opt List of options. Must include \code{modelminAIsize} and \code{modelminprobes}.
+#' @param modelminprobes Integer. Minimum number of probes for model inclusion.
+#' @param gender Character. Sample gender ("male" or "female").
+#' @param callcov Numeric. Subclonal events calling cutoff based on coverage.
+#' @param modelminAIsize Numeric. Minimum segment size for model inclusion.
 #'
 #' @return A list of length equal to \code{nrow(tier1)}. Each element is a list with:
 #'   \item{calls}{Refined segment calls for the model.}
@@ -869,8 +872,11 @@ EstimateMinPurity <- function( df ){
 #' For each (mu, rho) combination, extracts and refines calls, computes distances to integer copy number, ploidy, and likelihoods, and summarizes the results.
 #'
 #' @importFrom dplyr filter mutate
+#' @examples
+#' # RefineTier1Models(tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes = 20, gender = "female", callcov = 0.3, modelminAIsize = 500000)
+#'
 #' @export
-RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_min, seg, opt   ){
+RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes, gender, callcov,modelminAIsize  ){
 
   tier1_refine_tmp <- lapply( 1:nrow(tier1),function(i){
     tmp_mu <- as.numeric(tier1[i,"mu"])
@@ -878,15 +884,15 @@ RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_m
 
     ## extract and refine indivisual calls
     tmp_call <- ExtractCall(df = top_likelihood_rows,max_L_mu = tmp_mu,max_L_rho = tmp_rho, seg = seg)
-    tmp_call <- RefineCalls(df = tmp_call,max_L_mu = tmp_mu, max_L_rho = tmp_rho, opt = opt)
-    tmp_call <- RefineCallsSecond(df = tmp_call,results = results,final_mu = tmp_mu, final_rho = tmp_rho, opt = opt)
+    tmp_call <- RefineCalls(df = tmp_call,max_L_mu = tmp_mu, max_L_rho = tmp_rho, gender = gender)
+    tmp_call <- RefineCallsSecond(df = tmp_call,results = results,final_mu = tmp_mu, final_rho = tmp_rho, gender = gender, callcov = callcov)
     tmp_model_call <- tmp_call %>%
       dplyr::filter( ! Chromosome %in% c("X","Y")) %>%
-      dplyr::filter( size >= opt$modelminAIsize & FILTER != "FAILED" ) %>%
+      dplyr::filter( size >= modelminAIsize & FILTER != "FAILED" ) %>%
       dplyr::filter(!(major == 0 & minor == 0)) %>%
       dplyr::mutate( dis_integer_CN = abs(CNF_correct - CN) ) %>%
-      dplyr::mutate( dis_integer_CN = ifelse(MAF_Probes <= opt$modelminprobes, 0, dis_integer_CN )) %>%
-      dplyr::mutate( log_BAF_lilelihood = log(BAF_likelihood) )
+      dplyr::mutate( dis_integer_CN = ifelse(MAF_Probes <= modelminprobes, 0, dis_integer_CN )) %>%
+      dplyr::mutate( log_MAF_lilelihood = log(MAF_likelihood) )
 
     ## ploidy
 
@@ -902,7 +908,7 @@ RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_m
     total_distance_to_integer = diploid_distance_to_integer + nondiploid_distance_to_integer
     segments_n <- nrow(tmp_model_call)
     penalty_n <- tmp_model_call %>% filter( minor == 0 & major == 0 ) %>% nrow()
-    total_likelihood <- sum(tmp_model_call$log_BAF_lilelihood,na.rm = T) + likelihood_min * penalty_n
+    total_likelihood <- sum(tmp_model_call$log_MAF_lilelihood,na.rm = T) + likelihood_min * penalty_n
     tmp_model <-   data.frame ( mu =  tmp_mu,
                                 rho = tmp_rho,
                                 total_log_likelihood = total_likelihood ,
@@ -1067,40 +1073,53 @@ ClusterModels <- function( models_dis ){
 }
 
 
-#' Select the Final Copy Number Model and Write Results
+#' Select and Refine the Final CNV Model and Segment Calls
 #'
-#' Selects the best model (mu, rho) based on total log-likelihood and distance to integer copy number, refines segment calls, and writes results to output files.
+#' Selects the best model (mu, rho) combination based on total log-likelihood and distance to integer copy number, refines segment calls, and writes results to output files.
 #'
-#' @param top_likelihood_rows Data frame or tibble. Top likelihood calls for each segment, including columns \code{mu}, \code{rho}, \code{log_BAF_likelihood}, \code{major}, \code{minor}, \code{Tag}, etc.
+#' @param results Data frame or tiblle. Likelihood results calculated by RunCallikelihood function.
+#' @param top_likelihood_rows Data frame or tibble. Top likelihood calls for each segment, including columns \code{mu}, \code{rho}, \code{log_MAF_likelihood}, \code{major}, \code{minor}, \code{Tag}, etc.
 #' @param groupinfo Data frame or tibble. Information for estimating minimum purity (see \code{\link{EstimateMinPurity}}).
-#' @param opt List of options, must include \code{modelminAIsize}, \code{minsf}, \code{out_dir}, \code{prefix}.
-#' @param model_purity Not used directly in this function but included for compatibility.
-#' @param model_source Character string describing the model source (e.g., "Coverage", "Coverage + BAF").
+#' @param seg Data frame or tibble. Segment information.
+#' @param prefix Character. Output file prefix.
+#' @param gender Character. Sample gender ("male" or "female").
+#' @param out_dir Character. Output directory for saving results.
+#' @param model_source Character. Description of model source (e.g., "Coverage", "Coverage + MAF").
+#' @param callcov Numeric. Subclonal events calling cutoff based on coverage.
+#' @param modelminAIsize Numeric. Minimum segment size for model inclusion.
+#' @param modelminprobes Integer. Minimum number of probes for model inclusion.
+#' @param minsf Numeric. Minimum scale factor will be estimated. default is 0.4. range 0~0.4.
+#'
 #'
 #' @return A list with:
 #'   \item{Final_model}{The final selected model (see \code{\link{ClusterModels}}).}
 #'   \item{models}{The full model table (before and after refinement).}
+#'   \item{refined_calls}{The final calls of tier1 models.}
 #'
 #' @details
 #' - Refines calls and models through several selection and clustering steps.
-#' - Writes the model table and final calls to output files.
+#' - Writes the model table and final calls to output files in the specified output directory.
 #'
-#' @importFrom dplyr filter group_by summarise left_join mutate arrange desc
-#' @importFrom data.table setDT
+#' @importFrom dplyr filter group_by summarise left_join mutate arrange desc n
 #' @importFrom tidyr replace_na
+#' @importFrom data.table setDT
+#' @importFrom utils write.table
+#' @examples
+#' # SelectFinalModel(top_likelihood_rows, groupinfo, prefix = "Sample1", gender = "female", out_dir = "results/",model_source = "Coverage + MAF", callcov = 0.3,modelminAIsize=5000000, modelminprobes= 20)
+#'
 #' @export
-SelectFinalModel <- function( top_likelihood_rows, groupinfo, opt, model_purity, model_source ){
+SelectFinalModel <- function( results, top_likelihood_rows, groupinfo, prefix, gender, out_dir,model_source,seg, callcov,modelminAIsize, modelminprobes,minsf ){
   # Remove all possible homozygous deletion segments
 
   min_purity <- EstimateMinPurity(groupinfo)
   tmp <- top_likelihood_rows
 
-  likelihood_min <- min(tmp[which(tmp$BAF_likelihood !=0),"log_BAF_likelihood"], na.rm = T)
-  # Penalize segments with >= opt$modelminAIsize and non failed tag but could not estimate likelihood
+  likelihood_min <- min(tmp[which(tmp$MAF_likelihood !=0),"log_MAF_likelihood"], na.rm = T)
+  # Penalize segments with >= modelminAIsize and non failed tag but could not estimate likelihood
   penalty_counts <- tmp %>%
     dplyr::filter(major == 0 & minor == 0 & Tag == "Include") %>%
     dplyr::group_by(mu, rho) %>%
-    dplyr::summarise(Likelihood_penalty_rows = n(), .groups = "drop")
+    dplyr::summarise(Likelihood_penalty_rows = dplyr::n(), .groups = "drop")
 
 
   models <- tmp %>%
@@ -1108,8 +1127,8 @@ SelectFinalModel <- function( top_likelihood_rows, groupinfo, opt, model_purity,
     dplyr::filter(Tag == "Include") %>%
     dplyr::group_by(mu, rho) %>%
     dplyr::summarise(
-      total_log_likelihood = sum(log_BAF_likelihood, na.rm = TRUE),
-      segments_n = n(),
+      total_log_likelihood = sum(log_MAF_likelihood, na.rm = TRUE),
+      segments_n = dplyr::n(),
       .groups = "drop"
     ) %>%
     dplyr::left_join(penalty_counts, by = c("mu", "rho")) %>%
@@ -1144,21 +1163,26 @@ SelectFinalModel <- function( top_likelihood_rows, groupinfo, opt, model_purity,
                                    results = results,
                                    top_likelihood_rows =  top_likelihood_rows,
                                    likelihood_min = likelihood_min,
-                                   seg = seg, opt = opt)
+                                   seg = seg,
+                                   modelminprobes = modelminprobes,
+                                   gender = gender,
+                                   callcov = callcov,
+                                   modelminAIsize = modelminAIsize
+                                   )
 
   refined_calls <- do.call(rbind, lapply(tier1_calls, function(x) x$calls))
   refined_models <- do.call(rbind, lapply(tier1_calls, function(x) x$model))
 
-  PlotModelDot( models = models , opt = opt , tier1_index = tier1_index)
+  PlotModelDot( models = models , out_dir = out_dir ,prefix = prefix, tier1_index = tier1_index)
 
   ## remove models with lowever purity determined by EstimateMinPurity function
   refined_models$Tier1 <- "Tier1_Models"
   tier1_dis_fil <- refined_models %>%
     dplyr::filter( rho >= min_purity) %>%
-    dplyr::filter( mu >= opt$minsf )
+    dplyr::filter( mu >= minsf )
 
   Final_model <- ClusterModels(models_dis = tier1_dis_fil )
-  PlotLikelihoodAndDistance(df = Final_model$models, Final_model = Final_model, opt = opt)
+
 
   ## udpate the models table
 
@@ -1166,20 +1190,24 @@ SelectFinalModel <- function( top_likelihood_rows, groupinfo, opt, model_purity,
   colnames(models) <- gsub("\\.x","_before_refine",colnames(models))
   colnames(models) <- gsub("\\.y","_after_refine",colnames(models))
   models[which(models$mu == as.numeric(Final_model$Final_mu) &
-                 models$rho == as.numeric(Final_model$Final_rho)),"Tier1"] <- "Final_model_BAF"
+                 models$rho == as.numeric(Final_model$Final_rho)),"Tier1"] <- "Final_model_MAF"
 
   setDT(refined_calls)
   Final_call <- refined_calls[mu == Final_model$Final_mu & rho == Final_model$Final_rho]
   Final_call$Model_source <- model_source
-  OutModelFile <- paste0(opt$out_dir, "/", opt$prefix, "_Models_likelihood.tsv")
+  OutModelFile <- paste0(out_dir, "/", prefix, "_Models_likelihood.tsv")
   write.table(models, OutModelFile, row.names = F,quote = F, sep = "\t" )
   outms <- paste0( "The model table is saved at: ", OutModelFile)
   print(outms)
-  OutFile_calls <- paste0(opt$out_dir, "/", opt$prefix, "_final_calls.tsv")
+  OutFile_calls <- paste0(out_dir, "/", prefix, "_final_calls.tsv")
   write.table(Final_call, OutFile_calls, row.names = F,quote = F, sep = "\t" )
   outms <- paste0( "The final call is saved at: ", OutFile_calls)
   print(outms)
-  return_models <- list( Final_model = Final_model, models = models )
+  OutFile_calls <- paste0(out_dir, "/", prefix, "_refined_tier1model_calls.tsv")
+  write.table(refined_calls, OutFile_calls, row.names = F,quote = F, sep = "\t" )
+  outms <- paste0( "The Tier1 model's call is saved at: ", OutFile_calls)
+  print(outms)
+  return_models <- list( Final_model = Final_model, models = models, refined_calls = refined_calls )
 }
 
 #' Extract Final Calls for a Given (mu, rho) Model
@@ -1207,8 +1235,8 @@ ExtractCall <- function( df, max_L_mu, max_L_rho, seg  ){
   if( "Segcov.x" %in% colnames(final_call) ){
     final_call <- final_call %>% dplyr::select(-Segcov.x)
   }
-  if( "BAF" %in% colnames(final_call) ){
-    final_call <- final_call %>% dplyr::select(-BAF)
+  if( "MAF.x" %in% colnames(final_call) ){
+    final_call <- final_call %>% dplyr::select(-MAF.x)
   }
 
   colnames(final_call) <- gsub("\\..*","",colnames(final_call))
@@ -1225,24 +1253,24 @@ ExtractCall <- function( df, max_L_mu, max_L_rho, seg  ){
 #' @param df Data frame or tibble. Segment call data, must include columns used in refinement.
 #' @param max_L_mu Numeric. The selected value of mutation multiplicity (\code{mu}).
 #' @param max_L_rho Numeric. The selected value of tumor purity (\code{rho}).
-#' @param opt List of options, must include \code{gender}.
+#' @param gender Character. Gender female or male.
 #'
 #' @return A data frame or tibble with refined segment calls, ordered by chromosome and start position.
 #'
 #' @importFrom dplyr rowwise mutate select arrange
 #' @importFrom tidyr unnest_wider
 #' @examples
-#' # RefineCalls(df, max_L_mu = 1, max_L_rho = 0.7, opt)
+#' # RefineCalls(df, max_L_mu = 1, max_L_rho = 0.7, gender = "female")
 #'
 #' @export
-RefineCalls<- function( df , max_L_mu, max_L_rho, opt ){
+RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
   ## Refine the values and calls according to the final model
   chrom_levels <- c(c(1:22,"X","Y"))
-  col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_BAF",
+  col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_baf", "expected_cov", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight", "BreakpointSource", "FILTER",
-                "baf_ll", "BAF_likelihood", "mu", "rho",  "index",
+                "maf_ll", "MAF_likelihood", "mu", "rho",  "index",
                 "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
                 "gatk_gender", "pipeline_gender"
   )
@@ -1250,11 +1278,11 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, opt ){
     dplyr::rowwise() %>%
     dplyr::mutate( Segment_Mean = CalSM( max_L_mu = max_L_mu,
                                   Segcov = Segcov,
-                                  gender = opt$gender ,
+                                  gender = gender ,
                                   Chromosome = Chromosome) ) %>%
     dplyr::mutate( Correct_purity = list(CorrectPurity(cov_segmentmean = Segment_Mean,
                                                 MAF_observe = MAF,
-                                                gender = opt$gender,
+                                                gender = gender,
                                                 purity = max_L_rho,
                                                 chromosome = Chromosome))) %>%
     tidyr::unnest_wider(col = Correct_purity) %>%
@@ -1262,11 +1290,11 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, opt ){
     dplyr::mutate(Call = CallWTModel(major = major,
                               minor = minor,
                               Chromosome = Chromosome,
-                              gender = opt$gender,
+                              gender = gender,
                               CNF_correct = CNF_correct) ) %>%
     dplyr::mutate( CN = ifelse( !(is.na(minor) | is.na(major)),
                          major + minor ,
-                         roundcn(Chrom = Chromosome, Call = Call, CNF = CNF_correct, gender = opt$gender ))) %>%
+                         RoundCN(Chrom = Chromosome, Call = Call, CNF = CNF_correct, gender = gender ))) %>%
     dplyr::select( all_of( col_name )  ) %>%
     dplyr::mutate( Chromosome = factor(Chromosome,levels = chrom_levels)) %>%
     dplyr::arrange( Chromosome, Start ) %>%
@@ -1278,32 +1306,35 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, opt ){
 
 
 
-#' Second Refinement of Segment Calls for Cov/AI Profile Mismatches
+#' Second Refinement of Segment Calls for Coverage/AI Profile Mismatches
 #'
-#' Further refines segment calls for segments where the coverage profile and allelic imbalance (AI) profile do not match,
-#' by considering alternative copy number states from the likelihood results.
+#' Further refines segment calls where the coverage profile and allelic imbalance (AI) profile do not match, by considering alternative copy number states and updating calls and expected values.
 #'
 #' @param df Data frame or tibble. Refined segment calls (see \code{\link{RefineCalls}}), must include columns as in \code{col_name}.
-#' @param results Data frame or tibble. All likelihood results for possible copy number states, must include columns \code{rho}, \code{mu}, \code{index}, \code{total_cn}, etc.
-#' @param final_mu Numeric. The selected value of mutation multiplicity (\code{mu}).
+#' @param results Data frame or tibble. All likelihood results for possible copy number states, must include columns \code{rho}, \code{mu}, \code{index}, \code{CN}, etc.
+#' @param final_mu Numeric. The selected value of scale factor (\code{mu}).
 #' @param final_rho Numeric. The selected value of tumor purity (\code{rho}).
-#' @param opt List of options, must include \code{gender} and \code{callcov}.
+#' @param gender Character. Sample gender ("male" or "female").
+#' @param callcov Numeric. Subclonal events calling cutoff based on coverage.
 #'
-#' @return A data frame or tibble with further refined segment calls, including new columns \code{ccf_COV}, \code{ccf_final}, and \code{CN_mix}.
+#' @return A data frame or tibble with further refined segment calls, including updated columns such as \code{ccf_COV}, \code{ccf_final}, and \code{CN_mix}.
 #'
-#' @importFrom dplyr filter mutate select arrange rowwise relocate
+#' @details
+#' Segments with discordant coverage and AI profiles are re-evaluated by searching for alternative copy number states in the likelihood results, and calls are updated accordingly.
+#'
+#' @importFrom dplyr filter select arrange rowwise mutate relocate
 #' @examples
-#' # RefineCallsSecond(df, results, final_mu = 1, final_rho = 0.7, opt)
+#' # RefineCallsSecond(df, results, final_mu = 1, final_rho = 0.7, gender = "female", callcov = 0.3)
 #'
 #' @export
-RefineCallsSecond <- function( df, results, final_mu, final_rho, opt ){
+RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov ){
   # refine individual call that not matching cov profile and AI profile
-  col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_BAF",
+  col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_baf", "expected_cov", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight",
                 "BreakpointSource", "FILTER",
-                "baf_ll", "BAF_likelihood", "mu", "rho",
+                "maf_ll", "MAF_likelihood", "mu", "rho",
                 "index", "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
                 "gatk_gender", "pipeline_gender"  )
   df <- df %>%
@@ -1311,7 +1342,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, opt ){
   bad <- df %>%
     dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.6 & ! is.na(MAF) ) |
               ( cov_diff >= 0.6 & ccf == 1 & ! is.na(MAF) ) |
-              ( cov_diff >= opt$callcov & CN == 2 & !is.na(MAF)))
+              ( cov_diff >= callcov & CN == 2 & !is.na(MAF)))
   if( nrow(bad) > 0 ){
     good <- df %>%
       dplyr::filter( ! index %in% bad$index)
@@ -1321,14 +1352,14 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, opt ){
       cn_expect <- setdiff( c(floor(cnf_correct), ceiling(cnf_correct)), cn_total ) %>%
         unlist() %>%
         as.numeric()
-      cn_expect <- ifelse(length(cn_expect) >1 & cnf_correct >= (1+opt$callcov) | cnf_correct <= (2-opt$callcov) , cn_expect[which(cn_expect != 2)], cn_expect )
+      cn_expect <- ifelse(length(cn_expect) >1 & cnf_correct >= (1+callcov) | cnf_correct <= (2-callcov) , cn_expect[which(cn_expect != 2)], cn_expect )
       chrom <- bad[i,"Chromosome"] %>% as.character()
       tmp_index <- as.character( bad[i,"index"] )
       tmp <- results %>%
         dplyr::filter( rho == final_rho & mu == final_mu )
       tmp$index <- as.character(tmp$index)
       tmp <- tmp %>%
-        dplyr::filter(index == tmp_index & total_cn == cn_expect)
+        dplyr::filter(index == tmp_index & CN == cn_expect)
       if(nrow(tmp)> 0 ){
         tmp <-  tmp %>%
           dplyr::mutate( Chromosome = chrom) %>%
@@ -1337,14 +1368,15 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, opt ){
           dplyr::mutate( Call = CallWTModel(major = major,
                                      minor = minor,
                                      Chromosome = Chromosome,
-                                     gender = opt$gender,
+                                     gender = gender,
                                      CNF_correct = CNF_correct) )
 
 
         if( nrow(tmp) > 0){
           col_inter <- intersect(colnames(tmp), colnames(bad))
-          bad[i,c(col_inter,"MAF","CN")] <- tmp[1,c(col_inter, "BAF","total_cn") ]
-          bad[i,"expected_cov"] <- final_mu * 100* (final_rho * tmp[1,"total_cn"] + (1 - final_rho) * 2 ) / 2
+          col_inter <- unique(c(col_inter,"MAF","CN"))
+          bad[i,col_inter] <- tmp[1,col_inter ]
+          bad[i,"expected_cov"] <- final_mu * 100* (final_rho * tmp[1,"CN"] + (1 - final_rho) * 2 ) / 2
         }
       }
 
@@ -1357,14 +1389,14 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, opt ){
     dplyr::arrange( Chromosome, Start ) %>%
     dplyr::rowwise() %>%
     dplyr::mutate( ccf = ifelse( ccf > 1, 1 , ccf)) %>%
-    dplyr::mutate( ccf_BAF = ifelse( ccf_BAF > 1, 1, ccf_BAF )) %>%
-    dplyr::mutate( CN_mix = ifelse( CN %% 2 != 0 & abs(ccf - ccf_BAF) >= 0.5 & ccf_BAF != 0  , "CN_Mix", "No")) %>%
-    dplyr::mutate( ccf_final = ifelse( minor == 0 , ccf_BAF, ccf ) )
+    dplyr::mutate( ccf_MAF = ifelse( ccf_MAF > 1, 1, ccf_MAF )) %>%
+    dplyr::mutate( CN_mix = ifelse( CN %% 2 != 0 & abs(ccf - ccf_MAF) >= 0.5 & ccf_MAF != 0  , "CN_Mix", "No")) %>%
+    dplyr::mutate( ccf_final = ifelse( minor == 0 , ccf_MAF, ccf ) )
 
   colnames(df)[7] <- "ccf_COV"
 
   df <- df %>%
-    dplyr::relocate( ccf_final, .after = "ccf_BAF"  )
+    dplyr::relocate( ccf_final, .after = "ccf_MAF"  )
   return(df)
 }
 

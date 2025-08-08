@@ -47,13 +47,11 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
 #'
 #' @param cov Coverage data frame
 #' @param seg Segmentation data frame
-#' @param gender Expected gender (character, "male" or "female")
-#' @param opt List of options, must include `gender`
-#' @return Modified segmentation seg data frame with gender columns
+#' @param gender Gender from clinical information (character, "male" or "female")
+#' @return Modified segmentation seg data frame with gender information
 #' @importFrom dplyr filter rowwise mutate
 #' @importFrom stats median
 #' @export
-
 CheckGender <- function( cov, seg, gender ){
   ## check what is the baseline cov is used in autosome and x and Y seperately.
 
@@ -76,7 +74,7 @@ CheckGender <- function( cov, seg, gender ){
   }else{gatkgender <- "female"}
 
   seg$gatk_gender <- gatkgender
-  seg$pipeline_gender <- opt$gender
+  seg$pipeline_gender <- gender
   seg$Segment_Mean_raw <- seg$Segment_Mean
 
 
@@ -84,7 +82,7 @@ CheckGender <- function( cov, seg, gender ){
 
     message("GATK gender is correct!")
   }else{
-    message("GATK gender is wrong, fixing the x chromosome from the seg file.")
+    message("GATK gender is wrong, fixing the X chromosome from the seg file.")
     seg <- seg %>%
       dplyr::rowwise() %>%
       dplyr::mutate(Segment_Mean = ifelse( gatk_gender != gender & Chromosome == "X",
@@ -106,16 +104,16 @@ CheckGender <- function( cov, seg, gender ){
 #'
 #' @param cur_row A data frame row (list or tibble row) representing the current segment. Must have \code{Segment_Mean} and \code{Call}.
 #' @param next_row A data frame row (list or tibble row) representing the next segment. Must have \code{Segment_Mean} and \code{Call}.
-#' @param opt A list of options, must include \code{mergecov} (numeric threshold for mean difference).
+#' @param mergecov Numeric threshold for segment mean difference
 #'
 #' @return Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.
 #'
 #' @export
-MergeSegCheck <- function(cur_row,next_row,opt){
+MergeSegCheck <- function(cur_row,next_row, mergecov){
   # check merge conditions
   # ai segment diff <= mergeai
 
-  if(abs( as.numeric(cur_row$Segment_Mean) - as.numeric(next_row$Segment_Mean)) <= opt$mergecov &
+  if(abs( as.numeric(cur_row$Segment_Mean) - as.numeric(next_row$Segment_Mean)) <= mergecov &
      cur_row$Call == next_row$Call ){
     re <- TRUE
   }else{ re <- FALSE}
@@ -129,7 +127,7 @@ MergeSegCheck <- function(cur_row,next_row,opt){
 #' For merged segments, the segment with the greater number of probes provides the call, segment mean, count, and baseline coverage.
 #'
 #' @param df A data frame or tibble of copy number segments, with columns such as Sample, Chromosome, Start, End, Num_Probes, Call, Segment_Mean, etc.
-#' @param opt A list of options, must include \code{mergecov} (threshold for merging).
+#' @param mergecov Numeric threshold for merging of segment mean value.
 #'
 #' @return A data frame or tibble with merged segments and updated segment information.
 #'
@@ -138,7 +136,7 @@ MergeSegCheck <- function(cur_row,next_row,opt){
 #'
 #' @importFrom dplyr arrange
 #' @export
-MergeSegRow <- function(df, opt) {
+MergeSegRow <- function(df, mergecov) {
 
   if(nrow(df) > 1 ){
     i <- 1
@@ -147,7 +145,7 @@ MergeSegRow <- function(df, opt) {
       cur_row <- df[i,]
       next_row <- df[ i+1,]
 
-      if (  MergeSegCheck(cur_row = cur_row, next_row = next_row, opt) ) {
+      if (  MergeSegCheck(cur_row = cur_row, next_row = next_row, mergecov) ) {
         new_df <- data.frame(
           Sample = cur_row$Sample,
           Chromosome = cur_row$Chromosome,

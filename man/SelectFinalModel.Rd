@@ -2,38 +2,64 @@
 % Please edit documentation in R/Modeling.R
 \name{SelectFinalModel}
 \alias{SelectFinalModel}
-\title{Select the Final Copy Number Model and Write Results}
+\title{Select and Refine the Final CNV Model and Segment Calls}
 \usage{
 SelectFinalModel(
+  results,
   top_likelihood_rows,
   groupinfo,
-  opt,
-  model_purity,
-  model_source
+  prefix,
+  gender,
+  out_dir,
+  model_source,
+  seg,
+  callcov,
+  modelminAIsize,
+  modelminprobes,
+  minsf
 )
 }
 \arguments{
-\item{top_likelihood_rows}{Data frame or tibble. Top likelihood calls for each segment, including columns \code{mu}, \code{rho}, \code{log_BAF_likelihood}, \code{major}, \code{minor}, \code{Tag}, etc.}
+\item{results}{Data frame or tiblle. Likelihood results calculated by RunCallikelihood function.}
+
+\item{top_likelihood_rows}{Data frame or tibble. Top likelihood calls for each segment, including columns \code{mu}, \code{rho}, \code{log_MAF_likelihood}, \code{major}, \code{minor}, \code{Tag}, etc.}
 
 \item{groupinfo}{Data frame or tibble. Information for estimating minimum purity (see \code{\link{EstimateMinPurity}}).}
 
-\item{opt}{List of options, must include \code{modelminAIsize}, \code{minsf}, \code{out_dir}, \code{prefix}.}
+\item{prefix}{Character. Output file prefix.}
 
-\item{model_purity}{Not used directly in this function but included for compatibility.}
+\item{gender}{Character. Sample gender ("male" or "female").}
 
-\item{model_source}{Character string describing the model source (e.g., "Coverage", "Coverage + BAF").}
+\item{out_dir}{Character. Output directory for saving results.}
+
+\item{model_source}{Character. Description of model source (e.g., "Coverage", "Coverage + MAF").}
+
+\item{seg}{Data frame or tibble. Segment information.}
+
+\item{callcov}{Numeric. Subclonal events calling cutoff based on coverage.}
+
+\item{modelminAIsize}{Numeric. Minimum segment size for model inclusion.}
+
+\item{modelminprobes}{Integer. Minimum number of probes for model inclusion.}
+
+\item{minsf}{Numeric. Minimum scale factor will be estimated. default is 0.4. range 0~0.4.}
 }
 \value{
 A list with:
 \item{Final_model}{The final selected model (see \code{\link{ClusterModels}}).}
 \item{models}{The full model table (before and after refinement).}
+\item{refined_calls}{The final calls of tier1 models.}
 }
 \description{
-Selects the best model (mu, rho) based on total log-likelihood and distance to integer copy number, refines segment calls, and writes results to output files.
+Selects the best model (mu, rho) combination based on total log-likelihood and distance to integer copy number, refines segment calls, and writes results to output files.
 }
 \details{
 \itemize{
 \item Refines calls and models through several selection and clustering steps.
-\item Writes the model table and final calls to output files.
+\item Writes the model table and final calls to output files in the specified output directory.
 }
+}
+\examples{
+# SelectFinalModel(top_likelihood_rows, groupinfo, prefix = "Sample1", gender = "female", out_dir = "results/",model_source = "Coverage + MAF", callcov = 0.3,modelminAIsize=5000000, modelminprobes= 20)
+
 }

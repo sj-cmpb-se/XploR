@@ -2,7 +2,7 @@
 % Please edit documentation in R/Annotation.R
 \name{AnnotateSegments}
 \alias{AnnotateSegments}
-\title{Annotate CNV Segments with ISCN and Gene Information}
+\title{Annotate CNV Segments with Cytoband and Gene Information}
 \usage{
 AnnotateSegments(input, out_dir, prefix, cytoband, whitelist_edge, gene)
 }
@@ -13,15 +13,35 @@ AnnotateSegments(input, out_dir, prefix, cytoband, whitelist_edge, gene)
 
 \item{prefix}{Output file prefix.}
 
-\item{cytoband}{Path to cytoband annotation file.}
+\item{cytoband}{Path to cytoband annotation file (TSV).}
 
-\item{whitelist_edge}{Path to detectable edge file for ISCN.}
+\item{whitelist_edge}{Path to detectable edge file for cytoband annotation.}
 
 \item{gene}{Path to gene annotation file.}
 }
 \value{
-Invisibly returns the annotated data frame.
+Invisibly returns the annotated data frame with cytoband and gene annotation columns.
 }
 \description{
-Annotates CNV segments with ISCN (International System for Human Cytogenomic Nomenclature) and gene overlap information.
+Annotates CNV segments with cytoband and gene overlap information.
+}
+\details{
+For each segment, the function calculates the gaps between the segment boundaries and the detectable p and q arm region start/end sites (using cytoband and whitelist edge files). For acrocentric chromosomes, only the q arm boundaries are considered. Based on the size of these gaps, the function determines the event type and returns:
+\itemize{
+\item a cytoband range (combination of start and stop cytoband),
+\item a p-arm or q-arm only event,
+\item or, if the event spans the whole chromosome, just the chromosome name (chromosome-level event).
+}
+
+Gene overlap information is also added for each segment.
+}
+\examples{
+AnnotateSegments(
+  input = "sample_CNV_final.tsv",
+  out_dir = "results/",
+  prefix = "Sample1",
+  cytoband = "data/cytoBand.txt",
+  whitelist_edge = "data/whitelist.txt",
+  gene = "data/gene_anno.txt"
+)
 }

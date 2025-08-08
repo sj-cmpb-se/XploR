@@ -2,24 +2,24 @@
 % Please edit documentation in R/Modeling.R
 \name{EstimateMinPurity}
 \alias{EstimateMinPurity}
-\title{Estimate Minimum Tumor Purity from BAF Data}
+\title{Estimate Minimum Tumor Purity from MAF Data}
 \usage{
 EstimateMinPurity(df)
 }
 \arguments{
-\item{df}{A data frame or tibble containing at least the columns \code{BAF} and \code{Tag}.}
+\item{df}{A data frame or tibble containing at least the columns \code{MAF} and \code{Tag}.}
 }
 \value{
 Numeric. The estimated minimum tumor purity, or 0 if no suitable segments are found.
 }
 \description{
-Estimates the minimum tumor purity based on the lowest B-allele frequency (BAF) among segments tagged as "Include".
+Estimates the minimum tumor purity based on the lowest MAF among segments tagged as "Include".
 }
 \details{
-Only rows with \code{Tag == "Include"} are considered. If the minimum BAF is less than 0.4, the minimum purity is estimated as \code{max((0.5 - min\_BAF) / 0.5 - 0.05, 0)}. Otherwise, returns 0.
+Only rows with \code{Tag == "Include"} are considered. If the minimum MAF is less than 0.4, the minimum purity is estimated as \code{max((0.5 - min\_MAF) / 0.5 - 0.05, 0)}. Otherwise, returns 0.
 }
 \examples{
-df <- data.frame(BAF = c(0.3, 0.45, 0.5), Tag = c("Include", "Exclude", "Include"))
+df <- data.frame(MAF = c(0.3, 0.45, 0.5), Tag = c("Include", "Exclude", "Include"))
 EstimateMinPurity(df)
 
 }

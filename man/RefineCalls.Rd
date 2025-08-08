@@ -4,7 +4,7 @@
 \alias{RefineCalls}
 \title{Refine Segment Calls According to the Final Model}
 \usage{
-RefineCalls(df, max_L_mu, max_L_rho, opt)
+RefineCalls(df, max_L_mu, max_L_rho, gender)
 }
 \arguments{
 \item{df}{Data frame or tibble. Segment call data, must include columns used in refinement.}
@@ -13,7 +13,7 @@ RefineCalls(df, max_L_mu, max_L_rho, opt)
 
 \item{max_L_rho}{Numeric. The selected value of tumor purity (\code{rho}).}
 
-\item{opt}{List of options, must include \code{gender}.}
+\item{gender}{Character. Gender female or male.}
 }
 \value{
 A data frame or tibble with refined segment calls, ordered by chromosome and start position.
@@ -22,6 +22,6 @@ A data frame or tibble with refined segment calls, ordered by chromosome and sta
 Refines values and calls for each segment based on the selected (mu, rho) model, adjusting segment mean, purity, and copy number calls.
 }
 \examples{
-# RefineCalls(df, max_L_mu = 1, max_L_rho = 0.7, opt)
+# RefineCalls(df, max_L_mu = 1, max_L_rho = 0.7, gender = "female")
 
 }

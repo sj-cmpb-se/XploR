@@ -11,27 +11,47 @@ CallwoModel(
   MAF_gmm_G,
   MAF_Probes,
   MAF_gmm_weight,
-  opt
+  callcovcutoff = 0.3,
+  callaicutoff = 0.3,
+  minsnpcallaicutoff = 10
 )
 }
 \arguments{
-\item{chromosome}{Character. Chromosome name.}
+\item{chromosome}{Character. Chromosome name (e.g., "1", "X", "Y").}
 
-\item{CNF_correct}{Numeric. Corrected CNF.}
+\item{CNF_correct}{Numeric. Corrected copy number fraction (CNF).}
 
-\item{MAF_correct}{Numeric. Corrected MAF.}
+\item{MAF_correct}{Numeric. Corrected minor allele frequency (MAF).}
 
-\item{MAF_gmm_G}{Integer. Number of GMM clusters.}
+\item{MAF_gmm_G}{Integer. Number of GMM clusters (not directly used in logic, but included for compatibility).}
 
-\item{MAF_Probes}{Integer. Number of probes used for MAF.}
+\item{MAF_Probes}{Integer. Number of probes used for MAF estimation.}
 
-\item{MAF_gmm_weight}{Numeric. GMM weight.}
+\item{MAF_gmm_weight}{Numeric. GMM weight (not directly used in logic, but included for compatibility).}
 
-\item{opt}{List. Must include \code{gender}, \code{callcovcutoff}, \code{callaicutoff}, \code{minsnpcallaicutoff}.}
+\item{callcovcutoff}{Numeric. Threshold for CNF to call gain or loss (default: 0.3).}
+
+\item{callaicutoff}{Numeric. Threshold for MAF to call gain with loss of heterozygosity (GAINLOH) (default: 0.3).}
+
+\item{minsnpcallaicutoff}{Integer. Minimum number of SNP probes to call CNLOH (default: 10).}
+
+\item{gender}{Character. Sample gender ("male" or "female").}
 }
 \value{
-Character. Copy number call: "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".
+Character. Copy number call: one of "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".
 }
 \description{
-Assign Copy Number Call Without Model
+Assigns a copy number call ("GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH") to a segment based on corrected copy number fraction (CNF), minor allele frequency (MAF), and probe characteristics, using user-defined thresholds.
+}
+\details{
+Calls are made according to CNF and MAF thresholds:
+\itemize{
+\item For sex chromosomes in males, thresholds are adjusted for haploid status.
+\item "GAINLOH" is called if CNF is high and MAF is below a dynamic cutoff.
+\item "CNLOH" is called if MAF is low and probe count meets the minimum threshold.
+}
+}
+\examples{
+CallwoModel("1", CNF_correct = 2.8, MAF_correct = 0.1, MAF_gmm_G = 2, MAF_Probes = 15, MAF_gmm_weight = 0.5, gender = "female")
+
 }

@@ -48,10 +48,16 @@
         <dd>Assign Quality Tag to a Segment Based on BAF GMM Metrics</dd>
       </dl><dl><dt>
 
+          <code><a href="AnnotateGene.html">AnnotateGene()</a></code>
+
+        </dt>
+        <dd>Annotate Segments with Overlapping Genes</dd>
+      </dl><dl><dt>
+
           <code><a href="AnnotateSegments.html">AnnotateSegments()</a></code>
 
         </dt>
-        <dd>Annotate CNV Segments with ISCN and Gene Information</dd>
+        <dd>Annotate CNV Segments with Cytoband and Gene Information</dd>
       </dl><dl><dt>
 
           <code><a href="AssignPriors.html">AssignPriors()</a></code>
@@ -147,7 +153,7 @@
           <code><a href="CorrectBAF.html">CorrectBAF()</a></code>
 
         </dt>
-        <dd>Correct BAF Values Using a Scaling Factor</dd>
+        <dd>Correct MAF Values Using a Scaling Factor</dd>
       </dl><dl><dt>
 
           <code><a href="CorrectGender.html">CorrectGender()</a></code>
@@ -168,22 +174,22 @@
         <dd>Summarise BAF QC from CNV Segment Annotation</dd>
       </dl><dl><dt>
 
-          <code><a href="EstimateBAFbyGMM.html">EstimateBAFbyGMM()</a></code>
-
-        </dt>
-        <dd>Estimate BAF Cluster Mean and Weight Using Gaussian Mixture Modeling</dd>
-      </dl><dl><dt>
-
           <code><a href="EstimateBAFshift.html">EstimateBAFshift()</a></code>
 
         </dt>
-        <dd>Estimate BAF Shift Scaling Factor</dd>
+        <dd>Estimate MAF Shift Scaling Factor</dd>
       </dl><dl><dt>
 
           <code><a href="EstimateCovSF.html">EstimateCovSF()</a></code>
 
         </dt>
         <dd>Estimate Coverage Scale Factor for a Chromosome or Region</dd>
+      </dl><dl><dt>
+
+          <code><a href="EstimateMAFbyGMM.html">EstimateMAFbyGMM()</a></code>
+
+        </dt>
+        <dd>Estimate MAF Cluster Mean and Weight Using Gaussian Mixture Modeling</dd>
       </dl><dl><dt>
 
           <code><a href="EstimateMinPurity.html">EstimateMinPurity()</a></code>
@@ -321,7 +327,7 @@
           <code><a href="SearchBreakpoint.html">SearchBreakpoint()</a></code>
 
         </dt>
-        <dd>Search for Breakpoints within a Segment Using BAF Data</dd>
+        <dd>Search for Breakpoints within a Segment Using MAF Data</dd>
       </dl><dl><dt>
 
           <code><a href="SegmentMeanToOriCov.html">SegmentMeanToOriCov()</a></code>
@@ -375,13 +381,19 @@
           <code><a href="binbaf.html">binbaf()</a></code>
 
         </dt>
-        <dd>Bin BAF Data and Estimate BAF Metrics per Bin</dd>
+        <dd>Bin MAF Data and Estimate MAF Metrics per Bin</dd>
       </dl><dl><dt>
 
           <code><a href="blacklist_table.html">blacklist_table</a></code>
 
         </dt>
         <dd>Non mapable regions of the genome</dd>
+      </dl><dl><dt>
+
+          <code><a href="calculate_gaps.html">calculate_gaps()</a></code>
+
+        </dt>
+        <dd>Calculate Gaps Between Segment and Cytoband-Defined Chromosome Landmarks</dd>
       </dl><dl><dt>
 
           <code><a href="categorize_K.html">categorize_K()</a></code>
@@ -420,10 +432,22 @@
         <dd>Detectable Edge table for cytoband annotation follows the 5MB rule.</dd>
       </dl><dl><dt>
 
+          <code><a href="findcytoband.html">findcytoband()</a></code>
+
+        </dt>
+        <dd>Find Cytoband Name for Genomic Position</dd>
+      </dl><dl><dt>
+
           <code><a href="gene_annotation.html">gene_annotation</a></code>
 
         </dt>
         <dd>RefSeq gene annotations</dd>
+      </dl><dl><dt>
+
+          <code><a href="generate_ISCN.html">generate_ISCN()</a></code>
+
+        </dt>
+        <dd>Generate Cytoband-Based Annotation String for a CNV Segment</dd>
       </dl><dl><dt>
 
           <code><a href="keep_whitelist_ai.html">keep_whitelist_ai()</a></code>

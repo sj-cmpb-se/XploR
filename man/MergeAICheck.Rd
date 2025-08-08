@@ -4,14 +4,16 @@
 \alias{MergeAICheck}
 \title{Check Whether Two AI Segments Should Be Merged}
 \usage{
-MergeAICheck(cur_row, next_row, opt)
+MergeAICheck(cur_row, next_row, mergeai, snpmin)
 }
 \arguments{
-\item{cur_row}{A data frame row (list or tibble row) representing the current segment.}
+\item{cur_row}{A data frame row (as a list or tibble row) representing the current segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).}
 
-\item{next_row}{A data frame row (list or tibble row) representing the next segment.}
+\item{next_row}{A data frame row (as a list or tibble row) representing the next segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).}
 
-\item{opt}{A list of options, must include \code{mergeai} (numeric threshold for mean difference) and \code{snpmin} (minimum SNP count).}
+\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.}
+
+\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment.}
 }
 \value{
 Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.

@@ -10,7 +10,10 @@ RefineTier1Models(
   top_likelihood_rows,
   likelihood_min,
   seg,
-  opt
+  modelminprobes,
+  gender,
+  callcov,
+  modelminAIsize
 )
 }
 \arguments{
@@ -20,11 +23,17 @@ RefineTier1Models(
 
 \item{top_likelihood_rows}{Data frame or tibble. Top likelihood calls for each segment.}
 
-\item{likelihood_min}{Numeric. The minimum likelihood value to use as a penalty.}
+\item{likelihood_min}{Numeric. The minimum log-likelihood value to use as a penalty.}
 
 \item{seg}{Data frame or tibble. Segment information.}
 
-\item{opt}{List of options. Must include \code{modelminAIsize} and \code{modelminprobes}.}
+\item{modelminprobes}{Integer. Minimum number of probes for model inclusion.}
+
+\item{gender}{Character. Sample gender ("male" or "female").}
+
+\item{callcov}{Numeric. Subclonal events calling cutoff based on coverage.}
+
+\item{modelminAIsize}{Numeric. Minimum segment size for model inclusion.}
 }
 \value{
 A list of length equal to \code{nrow(tier1)}. Each element is a list with:
@@ -36,4 +45,8 @@ For each candidate (mu, rho) model in \code{tier1}, extracts and refines segment
 }
 \details{
 For each (mu, rho) combination, extracts and refines calls, computes distances to integer copy number, ploidy, and likelihoods, and summarizes the results.
+}
+\examples{
+# RefineTier1Models(tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes = 20, gender = "female", callcov = 0.3, modelminAIsize = 500000)
+
 }

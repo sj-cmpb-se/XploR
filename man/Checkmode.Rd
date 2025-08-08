@@ -2,29 +2,39 @@
 % Please edit documentation in R/rerun.R
 \name{Checkmode}
 \alias{Checkmode}
-\title{Check and Set Mode-Specific Options}
+\title{Check and Set Mode-Specific Parameters for CNV Calling}
 \usage{
-Checkmode(opt, call)
+Checkmode(mode, purity, dicovsf, chromosome, start, end, call)
 }
 \arguments{
-\item{opt}{List of options. Must include \code{mode} (either "model" or "region"), and possibly \code{purity}, \code{dicovsf}, \code{chromosome}.}
+\item{mode}{Character. Mode of operation; either \code{"model"} or \code{"region"}.}
 
-\item{call}{Data frame or tibble. Segment call data, required if estimating coverage scale factor for region mode.}
+\item{purity}{Numeric or NULL. Tumor purity value or range (required for "model" mode if \code{dicovsf} is not provided).}
+
+\item{dicovsf}{Numeric or NULL. Size factor (diploid coverage scale factor) or range (required for "model" mode if \code{purity} is not provided).}
+
+\item{chromosome}{Character or NULL. Chromosome number for diploid region (required for "region" mode).}
+
+\item{start}{Numeric or NULL. Start coordinate of the diploid region. If not set in "region" mode, the program will use the first nucleotide of the detectable region of the chromosome.}
+
+\item{end}{Numeric or NULL. End coordinate of the diploid region. If not set in "region" mode, the program will use the last nucleotide of the detectable region of the chromosome.}
+
+\item{call}{Data frame or tibble. Segment call data, required if estimating \code{dicovsf} in "region" mode.}
 }
 \value{
-The (potentially modified) \code{opt} list.
+A named list with updated parameters: \code{mode}, \code{dicovsf}, and \code{purity}.
 }
 \description{
-Checks required options for 'model' or 'region' mode and sets defaults if needed.
+Checks and sets required parameters for "model" or "region" mode in CNV calling, ensuring user input is sufficient and filling in missing values when possible.
 }
 \details{
 \itemize{
-\item If \code{mode == "model"}: requires at least one of \code{purity} or \code{dicovsf}.
-\item If \code{mode == "region"}: requires \code{chromosome}; if \code{dicovsf} is missing, it is estimated from \code{call}.
+\item In "model" mode, at least one of \code{purity} or \code{dicovsf} must be provided.
+\item In "region" mode, \code{chromosome} must be provided; if \code{dicovsf} is missing, it is estimated using \code{EstimateCovSF()} with the specified region.
 }
 }
 \examples{
-# opt <- list(mode = "model", purity = NULL, dicovsf = NULL)
-# Checkmode(opt, call)
+Checkmode("model", purity = 0.7, dicovsf = NULL, chromosome = NULL, start = NULL, end = NULL, call = call_df)
+Checkmode("region", purity = NULL, dicovsf = NULL, chromosome = "1", start = 100000, end = 200000, call = call_df)
 
 }

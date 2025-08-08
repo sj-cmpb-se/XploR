@@ -4,12 +4,12 @@
 \alias{MergeSegRow}
 \title{Merge Adjacent Copy Number Segments Based on Similarity Criteria}
 \usage{
-MergeSegRow(df, opt)
+MergeSegRow(df, mergecov)
 }
 \arguments{
 \item{df}{A data frame or tibble of copy number segments, with columns such as Sample, Chromosome, Start, End, Num_Probes, Call, Segment_Mean, etc.}
 
-\item{opt}{A list of options, must include \code{mergecov} (threshold for merging).}
+\item{mergecov}{Numeric threshold for merging of segment mean value.}
 }
 \value{
 A data frame or tibble with merged segments and updated segment information.

@@ -4,7 +4,7 @@
 \alias{SelectModelByDis}
 \title{Select Model by Distance to Integer Copy Number}
 \usage{
-SelectModelByDis(tier1, df, seg, opt)
+SelectModelByDis(tier1, df, seg, gender)
 }
 \arguments{
 \item{tier1}{Data frame or tibble. Each row is a candidate model with columns \code{mu}, \code{rho}, \code{total_log_likelihood}, and \code{segments_n}.}
@@ -13,7 +13,7 @@ SelectModelByDis(tier1, df, seg, opt)
 
 \item{seg}{Data frame or tibble. Segment information.}
 
-\item{opt}{List of options to be passed to \code{\link{RefineCalls}}.}
+\item{gender}{gender options to be passed to \code{\link{RefineCalls}}.}
 }
 \value{
 A data frame with one row per model, including columns:

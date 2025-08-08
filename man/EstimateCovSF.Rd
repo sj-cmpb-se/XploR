@@ -4,10 +4,14 @@
 \alias{EstimateCovSF}
 \title{Estimate Coverage Scale Factor for a Chromosome or Region}
 \usage{
-EstimateCovSF(opt, seg)
+EstimateCovSF(chromosome, start, end, seg)
 }
 \arguments{
-\item{opt}{List of options. Must include \code{chromosome}; may include \code{start} and \code{end} (numeric).}
+\item{chromosome}{Character. Chromosome name (e.g., "1", "X").}
+
+\item{start}{Numeric or NULL. Start coordinate of the region. If \code{NULL}, uses the first segment start in the chromosome.}
+
+\item{end}{Numeric or NULL. End coordinate of the region. If \code{NULL}, uses the last segment end in the chromosome.}
 
 \item{seg}{Data frame or tibble. Segment data, must include columns \code{Chromosome}, \code{Start}, \code{End}, \code{Segment_Mean}, and \code{Num_Probes}.}
 }
@@ -15,17 +19,13 @@ EstimateCovSF(opt, seg)
 Numeric. The estimated coverage scale factor (covsf) for the specified region.
 }
 \description{
-Estimates the coverage scale factor (covsf) for a specified chromosome or region, based on segment mean and probe count.
+Estimates the coverage scale factor (covsf) for a specified chromosome or subregion, based on segment mean and probe count.
 }
 \details{
-\itemize{
-\item If only \code{chromosome} is defined, uses the entire chromosome.
-\item If \code{start} is defined, uses regions from \code{start} to the end (or to \code{end} if provided).
-\item If \code{end} is defined, uses regions from chromosome start to \code{end}.
-}
+The function calculates a weighted mean coverage based on the segment means and probe counts within the specified region. If \code{start} or \code{end} are not provided, the entire chromosome is used for estimation.
 }
 \examples{
-# opt <- list(chromosome = "3", start = NULL, end = NULL)
-# EstimateCovSF(opt, seg)
+# EstimateCovSF("3", start = NULL, end = NULL, seg = seg_df)
+# EstimateCovSF("7", start = 100000, end = 500000, seg = seg_df)
 
 }

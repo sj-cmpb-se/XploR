@@ -4,12 +4,12 @@
 \alias{EstimatePurityCov}
 \title{Estimate Tumor Purity from Coverage and Segmentation Data}
 \usage{
-EstimatePurityCov(seg)
+EstimatePurityCov(seg, gender)
 }
 \arguments{
 \item{seg}{A data frame or tibble of segment data, with columns: Chromosome, Segment_Mean, MAF, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, size, etc.}
 
-\item{opt}{A list of options, must include \code{gender}.}
+\item{gender}{Gender male or femal.}
 }
 \value{
 A list with elements:
@@ -20,7 +20,7 @@ A list with elements:
 \item{Model_source}{String, always "Coverage".}
 }
 \description{
-Estimates tumor purity by fitting coverage and BAF segmentation data across a range of purity values, selecting the purity that best matches integer copy number models.
+Estimates tumor purity by fitting coverage and MAF segmentation data across a range of purity values, selecting the purity that best matches integer copy number models.
 }
 \details{
 This function fits models for a sequence of purity values, applies segment correction and calling, and selects the purity with the best fit to integer copy number.

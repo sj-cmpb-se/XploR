@@ -9,9 +9,9 @@ CalSegmentLikelihood(C_i, B_i, mu, rho, sigma_C, k, lambda, gamma, epsilon)
 \arguments{
 \item{C_i}{Numeric. Integer copy number for the segment.}
 
-\item{B_i}{Numeric. Observed B-allele frequency (BAF) for the segment.}
+\item{B_i}{Numeric. Observed B-allele frequency (MAF) for the segment.}
 
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
+\item{mu}{Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 
@@ -26,30 +26,29 @@ CalSegmentLikelihood(C_i, B_i, mu, rho, sigma_C, k, lambda, gamma, epsilon)
 \item{epsilon}{Numeric. Small value to avoid log(0) and zero parameters in beta.}
 }
 \value{
-A data frame with columns:
-\describe{
-\item{major}{Major allele count}
-\item{minor}{Minor allele count}
-\item{total_cn}{Total copy number}
-\item{ccf}{Cancer cell fraction}
-\item{Bio_diff}{Biological difference}
-\item{prior}{Prior probability}
-\item{expected_baf}{Expected BAF}
-\item{baf_ll}{BAF log-likelihood}
-\item{weighted_prior}{Weighted prior}
-\item{exp_baf_ll}{Expected BAF log-likelihood}
-\item{exp_prior}{Expected prior}
-\item{BAF_likelihood}{BAF likelihood}
-\item{Segcov}{Segment coverage}
-\item{BAF}{Observed BAF}
-\item{mu}{Mutation multiplicity}
-\item{rho}{Tumor purity}
-}
+A data frame with columns: major, minor, CN, ccf, Bio_diff, prior, expected_MAF, MAF_ll, weighted_prior, exp_MAF_ll, exp_prior, MAF_likelihood, Segcov, MAF, mu, rho.
 }
 \description{
-Computes the marginal likelihood for a segment given copy number, BAF, purity, and model parameters.
-Considers all possible major/minor allele combinations for the segment, assigns priors, and computes likelihoods under a beta-binomial model.
+Computes the marginal likelihood for a segment given copy number, MAF, purity, and model parameters.
 }
 \details{
-The function explores all possible (major, minor) combinations for the given segment, assigns priors based on biological plausibility, and computes the likelihood of observing the segment's BAF under a beta-binomial model.
+The returned data frame contains the following columns:
+\itemize{
+\item major: Major allele count
+\item minor: Minor allele count
+\item CN: Total copy number
+\item ccf: Cancer cell fraction
+\item Bio_diff: Biological difference
+\item prior: Prior probability
+\item expected_MAF: Expected MAF
+\item MAF_ll: MAF log-likelihood
+\item weighted_prior: Weighted prior
+\item exp_MAF_ll: Expected MAF log-likelihood
+\item exp_prior: Expected prior
+\item MAF_likelihood: MAF likelihood
+\item Segcov: Segment coverage
+\item MAF: Observed MAF
+\item mu: Mutation multiplicity
+\item rho: Tumor purity
+}
 }
