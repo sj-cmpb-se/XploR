@@ -5,6 +5,7 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/authors.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/index.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/AddQualTag.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/AnnotateGene.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/AnnotateSegments.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/AssignPriors.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CalMedian.html</loc></url>
@@ -28,6 +29,7 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateBAFbyGMM.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateBAFshift.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateCovSF.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateMAFbyGMM.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateMinPurity.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimatePurityCov.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateSFVariance.html</loc></url>
@@ -61,13 +63,16 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/band_plottable_male.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/binbaf.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/blacklist_table.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/calculate_gaps.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/categorize_K.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/clean_homalt.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/correct_purity.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/cov_bin.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/cytoband_table.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/edge_table.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/findcytoband.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/gene_annotation.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/generate_ISCN.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/index.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/keep_whitelist_ai.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/keep_whitelist_cov.html</loc></url>

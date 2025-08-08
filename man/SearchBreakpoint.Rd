@@ -2,21 +2,27 @@
 % Please edit documentation in R/AIsegmentation.R
 \name{SearchBreakpoint}
 \alias{SearchBreakpoint}
-\title{Search for Breakpoints within a Segment Using BAF Data}
+\title{Search for Breakpoints within a Segment Using MAF Data}
 \usage{
-SearchBreakpoint(seg_row, baf, opt)
+SearchBreakpoint(seg_row, maf, mergeai, snpmin, minaisize, aibinsize)
 }
 \arguments{
 \item{seg_row}{A data frame row (list or tibble row) representing a single segment. Must have columns: Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, Segment_Mean_raw, Count, Baseline_cov, gatk_gender, pipeline_gender, size.}
 
-\item{baf}{A data frame or tibble containing BAF data. Must include columns: Chromosome, Start, End, baf.}
+\item{maf}{A data frame or tibble containing MAF data. Must include columns: Chromosome, Start, End, maf.}
 
-\item{opt}{A list of options. Must include \code{aibinsize} (bin size for AI), \code{snpmin} (minimum SNP count), and \code{minaisize} (minimum AI size).}
+\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.}
+
+\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment.}
+
+\item{minaisize}{Numeric, smallest AI segment size (default: 1000000).}
+
+\item{aibinsize}{Numeric, AI bin size (default: 500000).}
 }
 \value{
-A data frame with the refined segment(s), including updated breakpoints, BAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
+A data frame with the refined segment(s), including updated breakpoints, MAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
 }
 \description{
-Refines breakpoints within a segment using B-allele frequency (BAF) data and AI binning/merging procedures.
-If enough informative BAF sites are present, the segment may be split into finer regions based on BAF clustering and merging.
+Refines breakpoints within a segment using MAF data.
+If enough informative MAF sites are present, the segment may be split into finer regions based on MAF clustering and merging.
 }

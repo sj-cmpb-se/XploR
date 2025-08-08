@@ -4,14 +4,14 @@
 \alias{SummarizeMapQC}
 \title{Summarise QC Tables for a Sample}
 \usage{
-SummarizeMapQC(input_dir, prefix, output_dir)
+SummarizeMapQC(input_dir, prefix, out_dir)
 }
 \arguments{
 \item{input_dir}{Path to the directory containing the QC files.}
 
 \item{prefix}{Sample ID and file prefix.}
 
-\item{output_dir}{Output directory.}
+\item{out_dir}{Output directory.}
 }
 \value{
 Invisibly returns the QC summary data frame.

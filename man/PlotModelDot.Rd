@@ -4,22 +4,24 @@
 \alias{PlotModelDot}
 \title{Plot Model Total Log-Likelihoods as a Dot Plot}
 \usage{
-PlotModelDot(models, opt, tier1_index)
+PlotModelDot(models, prefix, out_dir, tier1_index)
 }
 \arguments{
 \item{models}{Data frame or tibble. Must include a \code{total_log_likelihood} column.}
 
-\item{opt}{List of options. Must include \code{out_dir} and \code{prefix}.}
+\item{prefix}{Character. Output file prefix.}
+
+\item{out_dir}{Character. Output directory for saving the plot.}
 
 \item{tier1_index}{Integer. The index (rank) of the tier 1 model to highlight.}
 }
 \value{
-Invisibly returns the ggplot object (or \code{FALSE} if plotting failed).
+Invisibly returns the ggplot object (or \code{FALSE} if plotting failed). The plot is saved as a PNG file in the output directory.
 }
 \description{
-Plots the total log-likelihood of each model as a dot plot and marks the tier 1 index as a vertical line.
+Plots the total log-likelihood of each model as a dot plot, with the tier 1 index highlighted as a vertical dashed line.
 }
 \examples{
-# PlotModelDot(models, opt, tier1_index = 10)
+# PlotModelDot(models, prefix = "Sample1", out_dir = "results/", tier1_index = 10)
 
 }

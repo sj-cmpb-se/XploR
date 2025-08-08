@@ -4,16 +4,20 @@
 \alias{CallMerge}
 \title{Merge Segments or AI Rows by Chromosome}
 \usage{
-CallMerge(data, AIorSeg, opt, tmp_baf)
+CallMerge(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov)
 }
 \arguments{
 \item{data}{A data frame or tibble containing segment or AI information. Must include a \code{Chromosome} column.}
 
 \item{AIorSeg}{Character string, either \code{"AI"} to merge AI rows or \code{"Seg"} to merge segments.}
 
-\item{opt}{A list of options to be passed to the merge functions.}
+\item{tmp_maf}{A data frame for use with \code{MergeAIRow}. Not used if \code{AIorSeg == "Seg"}.}
 
-\item{tmp_baf}{A data frame for use with \code{MergeAIRow}. Not used if \code{AIorSeg == "Seg"}.}
+\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment.}
+
+\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.}
+
+\item{merge_cov}{Numeric. Threshold for the difference in segment mean (gmm_mean) between adjacent segments to allow merging.}
 }
 \value{
 A data frame or tibble with merged segments or AI rows for each chromosome.

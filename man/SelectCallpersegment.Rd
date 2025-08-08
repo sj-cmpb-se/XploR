@@ -8,19 +8,19 @@ SelectCallpersegment(results)
 }
 \arguments{
 \item{results}{A data frame or tibble containing all possible calls for each segment, with columns including:
-\code{Segcov}, \code{BAF}, \code{mu}, \code{rho}, \code{index}, \code{major}, \code{minor}, \code{ccf},
-\code{BAF_likelihood}, \code{Bio_diff}, \code{baf_ll}, \code{cov_diff}, etc.}
+\code{Segcov}, \code{MAF}, \code{mu}, \code{rho}, \code{index}, \code{major}, \code{minor}, \code{ccf},
+\code{MAF_likelihood}, \code{Bio_diff}, \code{maf_ll}, \code{cov_diff}, etc.}
 }
 \value{
-A data frame or tibble with the most likely call per segment, including a \code{log_BAF_likelihood} column.
+A data frame or tibble with the most likely call per segment, including a \code{log_MAF_likelihood} column.
 }
 \description{
-For each segment, selects the allele combination (major/minor) with the highest BAF likelihood,
+For each segment, selects the allele combination (major/minor) with the highest MAF likelihood,
 with special handling for subclonal events and cases where minor allele is zero.
 }
 \details{
 \itemize{
-\item Assigns a minimum likelihood for cases where \code{BAF_likelihood} is zero.
+\item Assigns a minimum likelihood for cases where \code{MAF_likelihood} is zero.
 \item If possible subclonal events are present, compares top two likelihoods and may select the second as a subclonal event.
 \item For segments where \code{minor == 0}, the call is refined using coverage difference.
 }

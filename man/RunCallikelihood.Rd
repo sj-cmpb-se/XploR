@@ -2,25 +2,30 @@
 % Please edit documentation in R/Modeling.R
 \name{RunCallikelihood}
 \alias{RunCallikelihood}
-\title{Run Likelihood Calculation Across All Purity/Mu Combinations}
+\title{Run Likelihood Calculation Across All Purity and Scale Factor Combinations}
 \usage{
-RunCallikelihood(purity_sf, data, sigma_C, opt)
+RunCallikelihood(purity_sf, data, sigma_C, lambda, gamma, epsilon)
 }
 \arguments{
-\item{purity_sf}{Data frame or tibble with columns \code{mu} and \code{rho} (mutation multiplicity and tumor purity combinations).}
+\item{purity_sf}{Data frame or tibble. Grid of purity and scale factor values to evaluate; must include columns \code{mu} and \code{rho}.}
 
-\item{data}{Data frame or tibble with segment data (see \code{\link{Callikelihood}} for required columns).}
+\item{data}{Data frame or tibble. Segment data (see \code{\link{Callikelihood}} for required columns).}
 
 \item{sigma_C}{Numeric. Parameter for segment likelihood (passed to \code{Callikelihood}).}
 
-\item{opt}{List of options. Must include \code{lambda}, \code{gamma}, and \code{epsilon}.}
+\item{lambda}{Numeric. Exponential decay parameter for the prior.}
+
+\item{gamma}{Numeric. Weight for the prior in the likelihood calculation.}
+
+\item{epsilon}{Numeric. Small value to avoid log(0) and zero parameters in beta.}
 }
 \value{
-A data frame with all likelihoods for each segment and each (mu, rho) combination.
+A data frame with all likelihoods for each segment and each (mu, rho) combination, with NA minor alleles removed and NA ccf values set to 1.
 }
 \description{
-For each combination of purity and mutation multiplicity in \code{purity_sf}, computes the segment likelihoods for all segments in \code{data}.
+For each combination of purity and scale factor in \code{purity_sf}, computes the segment likelihoods for all segments in \code{data} using the specified model parameters.
 }
-\details{
-This function iterates over all rows of \code{purity_sf}, calling \code{\link{Callikelihood}} for each combination.
+\examples{
+# RunCallikelihood(purity_sf, data, sigma_C = 0.1, lambda = 1, gamma = 1, epsilon = 0.01)
+
 }

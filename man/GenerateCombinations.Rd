@@ -4,16 +4,16 @@
 \alias{GenerateCombinations}
 \title{Generate All Major/Minor Allele Combinations for a Given Total Copy Number}
 \usage{
-GenerateCombinations(total_cn)
+GenerateCombinations(CN)
 }
 \arguments{
-\item{total_cn}{Integer. The total copy number.}
+\item{CN}{Integer. The total copy number.}
 }
 \value{
 A data frame with columns:
 \item{major}{Major allele copy number.}
 \item{minor}{Minor allele copy number.}
-\item{total_cn}{Sum of major and minor (equals input \code{total_cn}).}
+\item{CN}{Sum of major and minor (equals input \code{CN}).}
 }
 \description{
 Generates all valid combinations of major and minor allele copy numbers that sum to the specified total copy number, with the constraint that major >= minor.

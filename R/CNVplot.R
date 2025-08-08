@@ -40,11 +40,11 @@ CorrectGender <- function(cov, seg){
 
 
 
-#' Correct Copy Ratio and Calculate CNF for Purity and Scale Factor
+#' Calculate CNF based on purity and diploid coverage size factor
 #'
 #' Adjusts the log2 copy ratio and computes the copy number fraction (CNF) for each region, given sample purity and scale factor.
 #'
-#' @param cov Data frame or tibble. Coverage data, must include columns \code{CONTIG} and \code{LOG2_COPY_RATIO}.
+#' @param cr Data frame or tibble. Coverage data, must include columns \code{CONTIG} and \code{LOG2_COPY_RATIO}.
 #' @param gender Character. Sample gender ("male" or "female").
 #' @param purity Numeric. Tumor purity (fraction between 0 and 1).
 #' @param sf Numeric. Scale factor for diploid coverage.
@@ -53,17 +53,17 @@ CorrectGender <- function(cov, seg){
 #'
 #' @details
 #' - Adjusts the log2 copy ratio using the scale factor.
-#' - Calculates CNF differently for sex chromosomes in males.
+#' - Calculates CNF based on purity and scale factor.
 #'
 #' @importFrom dplyr rowwise mutate
 #' @examples
-#' # correct_purity(cov, gender = "female", purity = 0.7, sf = 1)
+#' # CRCorrectPurity(cr, gender = "female", purity = 0.7, sf = 1)
 #'
 #' @export
-correct_purity <- function(cov, gender, purity, sf ){
+CRCorrectPurity <- function(cr, gender, purity, sf ){
 
   # Calculate the CNF according to purity and cr from denoised file.
-  cov <- cov %>%
+  cr <- cr %>%
     dplyr::rowwise() %>%
     dplyr::mutate( Segcov = SegmentMeanToOriCov( SM = LOG2_COPY_RATIO, gender = gender, chromosome = CONTIG, diploid_cov = 100 )) %>% ## change to segcov
     dplyr::mutate( LOG2_COPY_RATIO = CalSM( max_L_mu = sf,
@@ -73,7 +73,7 @@ correct_purity <- function(cov, gender, purity, sf ){
     dplyr::mutate( CNF = ifelse( gender == "male" && CONTIG %in% c("X","Y") ,
                           (2 ^LOG2_COPY_RATIO - (1 - purity) ) / purity,
                           (2 * 2^LOG2_COPY_RATIO - 2 * (1 - purity)) / purity ) ) # correct the purity
-  return(cov)
+  return(cr)
 }
 
 
@@ -94,10 +94,10 @@ correct_purity <- function(cov, gender, purity, sf ){
 #' @importFrom tidyr unnest
 #' @importFrom purrr map2
 #' @examples
-#' # cov_bin(cov, cov_binsize = 10000)
+#' # CovBin(cov, cov_binsize = 10000)
 #'
 #' @export
-cov_bin <- function(cov,cov_binsize){
+CovBin <- function(cov,cov_binsize){
   # from cov file generate bin file with window 300bp
   # smooth the bin file to cov_binsize window.
   cov_bin_chr <- split(cov, f = "CONTIG")
@@ -141,16 +141,16 @@ cov_bin <- function(cov,cov_binsize){
 #' @importFrom dplyr mutate select
 #' @examples
 #' # ai_list <- list(chr1 = data.frame(af = runif(10), contig = "1", start = 1:10, stop = 11:20, allele1Count = 1:10, allele2Count = 11:20))
-#' # round_ai(ai_list)
+#' # RoundAI(ai_list)
 #'
 #' @export
-round_ai <- function(ai){
+RoundAI <- function(ai){
   ## round the baf value into 20bin.
   round_chr_ai <- lapply(ai,function(chr_ai){
 
     chr_ai <- chr_ai %>%
       dplyr::mutate( norm_af = round(af*20)/20) %>%
-      dplyr::select( contig, start, stop,  allele1Count, allele2Count, norm_af )
+      dplyr::select( CONTIG, POSITION, REF_COUNT, ALT_COUNT, norm_af )
     return(chr_ai)
   })
 
@@ -160,92 +160,25 @@ round_ai <- function(ai){
 
 }
 
-#' Read and Process DRAGEN Whitelist Regions
-#'
-#' Reads a DRAGEN whitelist file and returns detected regions as GRanges-like segments for copy number analysis.
-#'
-#' @param whitelist_file Path to the whitelist file (CSV, no header).
-#' @param gender Character. Sample gender ("male" or "female").
-#'
-#' @return A data frame with columns: \code{seqnames}, \code{start}, \code{end}, \code{width}, \code{strand}.
-#'
-#' @details
-#' - For "male", expects chromosome Y to be present; for "female", expects chromosome Y to be absent.
-#' - Splits regions by cytoband, detects gaps, and outputs non-gap regions.
-#'
-#' @importFrom dplyr filter mutate lead
-#' @importFrom GenomicRanges GRanges makeGRangesFromDataFrame setdiff
-#' @importFrom IRanges IRanges
-#' @importFrom utils read.csv
-#' @importFrom stringr str_split
-#' @examples
-#' # read_whitelist("whitelist.csv", gender = "male")
-#'
-#' @export
-read_whitelist <- function(whitelist_file,gender ){
-  ## Read detected regions( mapability > 0 ) from DRAGEN team, the "male" file has extra chromosomes
-  df <- utils::read.csv(whitelist_file,header = F)
-  df$chrom <- gsub("p.*|q.*","",df$V1)
-  df <- df %>%
-    dplyr::filter(chrom %in% c(1:22,"X","Y"))
-
-  if("Y" %in% df$chrom & gender == 'female'){
-    stop("Chromosome Y is present in the female whitelist, please double check...")
-  } else if( ! "Y" %in% unique(df$chrom) & gender == "male"){
-    stop("Chromosome Y is not detected in the male whitelist, please double check ......")
-  }
-
-  df <- split(df,f = df$V1)
-  df <- lapply(df, function(x){
-    x <- unlist(x) %>% as.character()
-    cyto_info <- x[1]
-    chrom <- x[3]
-    cyto_loc <- strsplit(as.character(x[2]),split = ",",fixed = T) %>% unlist() %>% as.numeric()
-    start <- min(cyto_loc)
-    end <- max(cyto_loc)
-    gap_region <- data.frame(
-      chrom = rep(chrom, length(cyto_loc)),
-      pos = cyto_loc) %>%
-      dplyr::mutate( next_pos = lead(cyto_loc),
-              gap = next_pos - 300 - cyto_loc) %>%
-      dplyr::filter(gap > 100)
-    if(nrow(gap_region) >0){
-      cytoband_range <- GenomicRanges::GRanges(seqnames = chrom,
-                                ranges = IRanges( start = start, end = end ) )
-      gap_range <- GenomicRanges::makeGRangesFromDataFrame(
-        gap_region,
-        seqnames.field = "chrom",
-        start.field = "pos",
-        end.field = "next_pos",
-        keep.extra.columns = TRUE )
-
-      whitelist_range <- GenomicRanges::setdiff(cytoband_range, gap_range )
-      whitelist_seg <- data.frame(whitelist_range) }else{
-        whitelist_seg <- data.frame( seqnames = chrom, start = start, end = end, width = end - start + 1, strand = "*")
-      }
-
-    return(whitelist_seg)
-  })
-  df <- do.call(rbind,df)
-  return(df)
-}
 
 #' Keep Only Coverage Bins in Whitelisted Regions
 #'
 #' Filters smoothed coverage bins to include only those overlapping whitelisted regions.
 #'
 #' @param smooth_cov Data frame or tibble. Smoothed coverage data, must include columns \code{CONTIG}, \code{bin_start}, and \code{bin_end}.
-#' @param whitelist Data frame or tibble. Whitelist regions, must include columns \code{seqnames}, \code{start}, and \code{end}.
+#' @param whitelist Data frame or tibble. Whitelist regions, must include columns \code{chrom}, \code{start}, and \code{end}.
+#' @param gender Character. femle or male.
 #'
 #' @return A data frame of smoothed coverage bins that overlap whitelisted regions.
 #'
 #' @importFrom GenomicRanges makeGRangesFromDataFrame
 #' @importFrom IRanges subsetByOverlaps
 #' @examples
-#' # keep_whitelist_cov(smooth_cov, whitelist)
+#' # KeepWhitelistCov(smooth_cov, whitelist)
 #'
 #' @export
-keep_whitelist_cov <- function(smooth_cov, whitelist){
+KeepWhitelistCov <- function(smooth_cov, whitelist, gender){
+
   # keep bins in whitelist only
   smooth_cov_range <- GenomicRanges::makeGRangesFromDataFrame(
     smooth_cov,
@@ -256,14 +189,14 @@ keep_whitelist_cov <- function(smooth_cov, whitelist){
 
   whitelist_range <- GenomicRanges::makeGRangesFromDataFrame(
     whitelist,
-    seqnames.field = "seqnames",
+    seqnames.field = "chrom",
     start.field = "start",
     end.field = "end",
     keep.extra.columns = FALSE
 
   )
 
-  subsetted_smooth_cov_range <- as.data.frame(GenomicRanges::subsetByOverlaps(smooth_cov_range, whitelist_range))
+  subsetted_smooth_cov_range <- as.data.frame(subsetByOverlaps(smooth_cov_range, whitelist_range))
 
 
   return(subsetted_smooth_cov_range)
@@ -281,10 +214,10 @@ keep_whitelist_cov <- function(smooth_cov, whitelist){
 #' @importFrom GenomicRanges makeGRangesFromDataFrame
 #' @importFrom IRanges subsetByOverlaps
 #' @examples
-#' # keep_whitelist_ai(rounded_ai, whitelist)
+#' # KeepWhitelistAI(rounded_ai, whitelist)
 #'
 #' @export
-keep_whitelist_ai <- function(rounded_ai, whitelist){
+KeepWhitelistAI <- function(rounded_ai, whitelist){
   # keep bins in whitelist only
   rounded_ai_range <- GenomicRanges::makeGRangesFromDataFrame(
     rounded_ai,
@@ -321,11 +254,12 @@ keep_whitelist_ai <- function(rounded_ai, whitelist){
 #'
 #' @importFrom dplyr filter select
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
+#' @importFrom S4Vectors subjectHits queryHits
 #' @examples
-#' # clean_homalt(rounded_ai, call_seg)
+#' # CleanHomalt(rounded_ai, call_seg)
 #'
 #' @export
-clean_homalt <- function(rounded_ai, call_seg){
+CleanHomalt <- function(rounded_ai, call_seg){
   # Clean homozygous AI bins
   call_seg <- call_seg %>% dplyr::filter(MAF > 0.7 | MAF < 0.3)
   if( nrow(call_seg) > 0 ){
@@ -340,20 +274,20 @@ clean_homalt <- function(rounded_ai, call_seg){
 
     ai_range <- GenomicRanges::makeGRangesFromDataFrame(
       rounded_ai,
-      seqnames.field = "contig",
-      start.field = "start",
-      end.field = "stop",
+      seqnames.field = "CONTIG",
+      start.field = "POSITION",
+      end.field = "POSITION",
       keep.extra.columns = TRUE
 
     )
 
     overlaps <- GenomicRanges::findOverlaps(ai_range, loh_range)
-    overlapping_loh <- loh_range[subjectHits(overlaps)]
+    overlapping_loh <- loh_range[S4Vectors::subjectHits(overlaps)]
     overlapping_loh_df <- as.data.frame(overlapping_loh)
-    rounded_ai[queryHits(overlaps),c( "matched_seqnames", "matched_start", "matched_end" )] <-  overlapping_loh_df[,c(1:3)]
+    rounded_ai[S4Vectors::queryHits(overlaps),c( "matched_seqnames", "matched_start", "matched_end" )] <-  overlapping_loh_df[,c(1:3)]
     final_ai <- rounded_ai %>%
       #filter( (allele1Count > 1 & allele2Count > 1 ) | seqnames %in% c("X","Y") ) %>%
-      filter( ( ! ( is.na(matched_seqnames) & ( allele1Count < 2 | allele2Count < 2  ) ) ) ) %>%
+      filter( ( ! ( is.na(matched_seqnames) & ( REF_COUNT < 2 | ALT_COUNT < 2  ) ) ) ) %>%
       select( -matched_seqnames, -matched_start, -matched_end )
   }else{ final_ai <- rounded_ai
   }
@@ -363,32 +297,32 @@ clean_homalt <- function(rounded_ai, call_seg){
 }
 
 
-#' Smooth AI Bin Values by Downsampling to Mode Proportions
+#' Smooth AI Bin Values by Downsampling
 #'
-#' If the length of the input vector is greater than 30, returns a vector of up to 30 values sampled according to the observed frequency of each unique value (mode smoothing). Otherwise, returns the vector unchanged.
+#' If the length of the input vector is greater than 30, returns a vector of up to 30 values sampled according to the observed frequency of each unique value. Otherwise, returns the vector unchanged.
 #'
-#' @param x Numeric or character vector. Typically a vector of rounded AI (e.g., BAF) values.
+#' @param baf Numeric or character vector. Typically a vector of rounded AI (e.g., BAF) values.
 #'
 #' @return A numeric vector, either unchanged (if length <= 30) or of length <= 30, with values sampled according to observed frequencies.
 #'
 #' @examples
 #' set.seed(1)
 #' x <- sample(c(0.1, 0.2, 0.3, 0.4), 100, replace = TRUE)
-#' ai_bin_smooth(x)
+#' AIbinSmooth(baf = x)
 #'
 #' @export
-ai_bin_smooth <- function(x) {
+AIbinSmooth <- function(baf) {
   # Return a vector of same frequency if the length is higher than 30
-  counts <- data.frame(table(x))
+  counts <- data.frame(table(baf))
   mode_value <- counts[order(counts$Freq,decreasing = T),]
   colnames(mode_value) <- c("value","Freq" )
-  total_dots <- length(x)
+  total_dots <- length(baf)
   mode_value$prop <- mode_value$Freq/total_dots
   if( total_dots > 30 ){
 
     re <- rep(mode_value$value,round(mode_value$prop * 30))
 
-  }else{re <- x }
+  }else{re <- baf }
 
   re <- as.numeric(as.character(re))
   return(re)
@@ -413,20 +347,20 @@ ai_bin_smooth <- function(x) {
 #' @importFrom dplyr mutate group_by summarize ungroup select
 #' @importFrom tidyr unnest
 #' @examples
-#' # smooth_ai(df, ai_binsize = 10000, gender = "female")
+#' # SmoothAI(df, ai_binsize = 10000, gender = "female")
 #'
 #' @export
-smooth_ai <- function(df, ai_binsize , gender){
+SmoothAI <- function(df, ai_binsize , gender){
   # Smooth AI bins by ai_binsize, for each bin keep 30 datapoints.
   ai_bin_chr <- split(df, f = df$seqnames)
   ai_bin_chr <- Filter(function(x) nrow(x) > 0, ai_bin_chr )
   sep_bin <- lapply(ai_bin_chr, function(chr_ai){
 
     chr_ai_smoothed <- chr_ai %>%
-      dplyr::mutate(bin_norm_id = ceiling(start/ai_binsize)*ai_binsize ) %>%
+      dplyr::mutate(bin_norm_id = ceiling(POSITION/ai_binsize)*ai_binsize ) %>%
       dplyr::group_by( seqnames , bin_norm_id ) %>%
-      dplyr::summarize(smoothed_ai = list( ai_bin_smooth( norm_af ) ))   %>%
-      dplyr::unnest( smoothed_ai ) %>%
+      dplyr::summarize(smoothed_ai = list( AIbinSmooth( norm_af ) ))   %>%
+      tidyr::unnest( smoothed_ai ) %>%
       dplyr::mutate( bin_start = bin_norm_id - ai_binsize) %>%
       dplyr::select( seqnames, bin_start, bin_norm_id, everything() ) %>%
       dplyr::ungroup()
@@ -454,16 +388,16 @@ smooth_ai <- function(df, ai_binsize , gender){
 #'
 #' @return A \code{grob} object (from \code{gridExtra::grid.arrange}) representing the combined plot.
 #'
-#' @importFrom ggplot2 ggplot aes geom_hline geom_segment geom_point scale_fill_manual scale_color_manual facet_grid theme_minimal scale_y_continuous labs theme element_blank element_text element_line margin
+#' @importFrom ggplot2 ggplot aes geom_hline geom_segment geom_point scale_fill_manual scale_color_manual facet_grid theme_minimal scale_y_continuous labs theme element_blank element_text element_line margin vars
 #' @importFrom dplyr mutate filter select
 #' @importFrom scales label_number
 #' @importFrom gridExtra grid.arrange
 #' @examples
-#' # plot_cov(df_cov, df_ai, call_seg, whitelist, gender = "female", prefix = "Sample1", purity = 0.7)
+#' # PlotCov(df_cov, df_ai, call_seg, whitelist, gender = "female", prefix = "Sample1", purity = 0.7)
 #'
 #' @export
-plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity ){
-
+PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity ){
+  colnames(whitelist)[1] <- "seqnames"
   ## Color code
   if(gender == "male"){
     color <- c("darkblue","darkgreen","darkred","darkorchid4","darkgoldenrod" )
@@ -483,6 +417,7 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
   y_lim <- call_seg %>%
     dplyr::mutate(size = loc.end - loc.start) %>%
     dplyr::filter(size > 10000000)
+
   if(nrow(y_lim) > 10 ){
     y_lim <- max(y_lim$CN) + 2
     y_lim <- ifelse(y_lim >= 16 , 16, y_lim)
@@ -491,7 +426,7 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
     if(nrow(y_lim) > 10){
       y_lim <- max(y_lim$CN) + 2
       y_lim <- ifelse(y_lim >= 16 , 16, y_lim)
-    }else{ y_lim <- call_seg %>% dplyr::mutates( size = loc.end - loc.start) %>% dplyr::filter( size > 500000)
+    }else{ y_lim <- call_seg %>% dplyr::mutate( size = loc.end - loc.start) %>% dplyr::filter( size > 500000)
     y_lim <- median(y_lim$CN) + 4
     y_lim <- ifelse( y_lim > 16, 16, y_lim) }
   }
@@ -511,17 +446,19 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
   }
 
   df_cov <- df_cov %>% dplyr::mutate(smoothed_bin_cnf = ifelse( smoothed_bin_cnf >= y_lim, y_lim, smoothed_bin_cnf ))
+
+
   p <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = 2,color="black",linewidth=1) +
     ggplot2::geom_hline(yintercept = line_pos,color="grey",linewidth=0.5,linetype = "dashed") +
-    ggplot2::geom_segment(data = whitelist,aes(x = start, xend = end,y = y_lim,yend = y_lim,color = seqnames), linewidth = 1) +
+    ggplot2::geom_segment(data = whitelist, ggplot2::aes(x = start-100000, xend = end+100000,y = y_lim,yend = y_lim,color = seqnames ), linewidth = 2) +
     ggplot2::geom_segment(data = df_cov,
                  ggplot2::aes(x = start, xend = end, y = smoothed_bin_cnf - 0.1, yend = smoothed_bin_cnf + 0.1, color = seqnames),
                  alpha = 0.2, linewidth = 1 ) +
     ggplot2::scale_fill_manual(values = color) +
     ggplot2::scale_color_manual(values = color) +
     ggplot2::geom_segment( data = call_seg, ggplot2::aes(x = loc.start, xend = loc.end,y = CN, yend = CN),color="cyan3",linewidth = 1 ) +
-    ggplot2::facet_grid(cols = ggplot2::vars(seqnames), scales = "free_x", space = "free_x") +
+    ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x") +
     ggplot2::theme_minimal() +
     ggplot2::scale_y_continuous(limits = c(0, y_lim), breaks = seq(0,y_lim), labels = label_number(accuracy = 0.01) )  +
     ggplot2::labs( title = prefix, y = "Copy Number") +
@@ -549,16 +486,16 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
     ggplot2::geom_hline(yintercept = 0.5,color="black",linewidth=0.7) +
     ggplot2::geom_hline(yintercept = c(0,1),color="grey",linewidth=0.5,linetype="dashed") +
     ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
-                                 xend = bin_start,
+                                 xend = bin_end,
                                  y= smoothed_ai - 0.05,
                                  yend = smoothed_ai + 0.05 ,
                                  color = seqnames ),alpha = 0.2,linewidth = 1) +
     ggplot2::scale_color_manual(values = color) +
     ggplot2::geom_segment(data = call_seg,
-                 aes(x = loc.start, xend = loc.end, y= MAF, yend = MAF),
+                 ggplot2::aes(x = loc.start, xend = loc.end, y= MAF, yend = MAF),
                  linewidth = 1,color="cyan3") +
     ggplot2::geom_segment( data = call_seg,
-                  aes(x = loc.start, xend = loc.end, y = 1-MAF, yend = 1-MAF),
+                  ggplot2::aes(x = loc.start, xend = loc.end, y = 1-MAF, yend = 1-MAF),
                   linewidth = 1, color = "cyan3") +
     ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x")+
     ggplot2::scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25)) +
@@ -578,19 +515,19 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
           plot.margin =  q_margin
     )
   call_seg <- call_seg %>%
-    ggplot2::mutate( ccf_final = ifelse(is.na(ccf_final),1,ccf_final))
+    dplyr::mutate( ccf_final = ifelse(is.na(ccf_final),1,ccf_final))
   clonality <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = c(0,1),color="black",linewidth=0.5, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0.8,color="grey40",linewidth=0.5, linetype = "dashed") +
     ggplot2::geom_segment(data = call_seg ,
-                 aes(x = loc.start, xend = loc.end,y = ccf_final,yend = ccf_final,color = "grey40"),
+                 ggplot2::aes(x = loc.start, xend = loc.end,y = ccf_final,yend = ccf_final,color = "grey40"),
                  linewidth = 2) +
     ggplot2::geom_segment(data = whitelist,
-                 aes(x= start, xend = end, y = 0,yend = 0, color = seqnames),
+                 ggplot2::aes(x= start - 100000, xend = end + 100000, y = 0,yend = 0, color = seqnames, fill = seqnames),
                  linewidth = 2) +
     ggplot2::scale_fill_manual(values = color) +
     ggplot2::scale_color_manual(values = color) +
-    ggplot2::facet_grid(cols = ggplot2::vars(seqnames), scales = "free_x", space = "free_x") +
+    ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x") +
     ggplot2::theme_minimal() +
     ggplot2::scale_y_continuous(limits = c(0, 1), breaks = seq(0,1), labels = label_number(accuracy = 0.01) )  +
     ggplot2::labs( title = prefix, y = "Clonality") +
@@ -613,7 +550,7 @@ plot_cov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purit
     ggplot2::geom_segment(data = call_seg, ggplot2::aes(x = loc.start, xend = loc.end, y= 0.1, yend = 0.1, color = FILTER ), linewidth = 4) +
     ggplot2::scale_color_manual(values = c("PASS" = "grey15", "FAILED" = "grey" , "REVIEW" = "grey35")) +
     ggplot2::scale_y_continuous(limits = c(0, 1), breaks = c(0,1), labels = c("QC","") )+
-    ggplot2::facet_grid(cols = ggplot2::vars(seqnames), scales = "free_x", space = "free_x")+
+    ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x")+
     ggplot2::theme_minimal() +
     ggplot2::labs( y = "" ) +
     ggplot2::theme(legend.position = "none",

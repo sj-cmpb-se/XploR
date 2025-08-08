@@ -2,22 +2,30 @@
 % Please edit documentation in R/AIsegmentation.R
 \name{AddQualTag}
 \alias{AddQualTag}
-\title{Assign Quality Tag to a Segment Based on BAF GMM Metrics}
+\title{Assign Quality Tag to a Segment Based on maf GMM Metrics}
 \usage{
-AddQualTag(MAF_gmm_weight, MAF_Probes, MAF_gmm_G)
+AddQualTag(MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin)
 }
 \arguments{
-\item{MAF_gmm_weight}{Numeric. The mixture weight of the most prominent BAF GMM cluster.}
+\item{MAF_gmm_weight}{Numeric. The mixture weight of the most prominent maf GMM cluster.}
 
-\item{MAF_Probes}{Integer. The number of nonzero BAF probes in the segment.}
+\item{MAF_Probes}{Integer. The number of nonzero maf probes in the segment.}
 
-\item{MAF_gmm_G}{Integer. Number of BAF GMM clusters.}
+\item{MAF_gmm_G}{Integer. Number of maf GMM clusters.}
 
-\item{snpmin}{Integer. The minimum SNP count (should be passed from \code{opt$snpmin}).}
+\item{snpmin}{Integer. The minimum nonzero SNP count.}
 }
 \value{
 Character. "PASS" if the segment passes quality checks, "FAILED" otherwise.
 }
 \description{
-Assigns a quality tag ("PASS" or "FAILED") to a segment based on the BAF GMM weight, probe count, and number of clusters.
+Assigns a quality tag ("PASS" or "FAILED") to a segment based on the maf GMM weight and probe count thresholds.
+}
+\details{
+A segment is marked as "PASS" if the maf GMM weight is at least 0.35 and the probe count is at least twice the minimum SNP count (\code{snpmin}). Otherwise, it is marked as "FAILED".
+}
+\examples{
+AddQualTag(MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
+AddQualTag(MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
+
 }

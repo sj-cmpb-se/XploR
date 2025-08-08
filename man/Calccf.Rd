@@ -4,12 +4,12 @@
 \alias{Calccf}
 \title{Calculate Cancer Cell Fraction (CCF)}
 \usage{
-Calccf(total_cn, mu, rho, C_i)
+Calccf(CN, mu, rho, C_i)
 }
 \arguments{
-\item{total_cn}{Numeric. The total copy number in the segment.}
+\item{CN}{Numeric. The total copy number in the segment.}
 
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
+\item{mu}{Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 
@@ -19,14 +19,15 @@ Calccf(total_cn, mu, rho, C_i)
 Numeric. The estimated cancer cell fraction (CCF), with Inf and -Inf values capped at 1 and 0.01, respectively.
 }
 \description{
-Computes the cancer cell fraction (CCF) based on total copy number, mutation multiplicity, tumor purity, and integer copy number.
+Computes the cancer cell fraction (CCF) based on total copy number,
+mutation multiplicity, tumor purity, and integer copy number.
 }
 \details{
 The formula is: \cr
-\code{ccf = ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2)) / (rho * (total_cn - 2))} \cr
+\code{ccf = ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2)) / (rho * (CN - 2))} \cr
 If CCF is \code{-Inf}, returns 0.01; if \code{Inf}, returns 1; otherwise returns the computed value.
 }
 \examples{
-Calccf(total_cn = 4, mu = 100, rho = 0.6, C_i = 2)
+Calccf(CN = 4, mu = 100, rho = 0.6, C_i = 2)
 
 }

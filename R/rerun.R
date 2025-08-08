@@ -1,74 +1,88 @@
-#' Check and Set Mode-Specific Options
+#' Check and Set Mode-Specific Parameters for CNV Calling
 #'
-#' Checks required options for 'model' or 'region' mode and sets defaults if needed.
+#' Checks and sets required parameters for "model" or "region" mode in CNV calling, ensuring user input is sufficient and filling in missing values when possible.
 #'
-#' @param opt List of options. Must include \code{mode} (either "model" or "region"), and possibly \code{purity}, \code{dicovsf}, \code{chromosome}.
-#' @param call Data frame or tibble. Segment call data, required if estimating coverage scale factor for region mode.
+#' @param mode Character. Mode of operation; either \code{"model"} or \code{"region"}.
+#' @param purity Numeric or NULL. Tumor purity value or range (required for "model" mode if \code{dicovsf} is not provided).
+#' @param dicovsf Numeric or NULL. Size factor (diploid coverage scale factor) or range (required for "model" mode if \code{purity} is not provided).
+#' @param chromosome Character or NULL. Chromosome number for diploid region (required for "region" mode).
+#' @param start Numeric or NULL. Start coordinate of the diploid region. If not set in "region" mode, the program will use the first nucleotide of the detectable region of the chromosome.
+#' @param end Numeric or NULL. End coordinate of the diploid region. If not set in "region" mode, the program will use the last nucleotide of the detectable region of the chromosome.
+#' @param call Data frame or tibble. Segment call data, required if estimating \code{dicovsf} in "region" mode.
 #'
-#' @return The (potentially modified) \code{opt} list.
+#' @return A named list with updated parameters: \code{mode}, \code{dicovsf}, and \code{purity}.
 #'
 #' @details
-#' - If \code{mode == "model"}: requires at least one of \code{purity} or \code{dicovsf}.
-#' - If \code{mode == "region"}: requires \code{chromosome}; if \code{dicovsf} is missing, it is estimated from \code{call}.
+#' \itemize{
+#'   \item In "model" mode, at least one of \code{purity} or \code{dicovsf} must be provided.
+#'   \item In "region" mode, \code{chromosome} must be provided; if \code{dicovsf} is missing, it is estimated using \code{EstimateCovSF()} with the specified region.
+#' }
 #'
-#' @importFrom rlang is_null
 #' @examples
-#' # opt <- list(mode = "model", purity = NULL, dicovsf = NULL)
-#' # Checkmode(opt, call)
+#' Checkmode("model", purity = 0.7, dicovsf = NULL, chromosome = NULL, start = NULL, end = NULL, call = call_df)
+#' Checkmode("region", purity = NULL, dicovsf = NULL, chromosome = "1", start = 100000, end = 200000, call = call_df)
 #'
 #' @export
 
-Checkmode <- function(opt, call ){
+Checkmode <- function(mode, purity, dicovsf, chromosome, start, end, call ){
 
-  if(opt$mode == "model"){
+  if( mode == "model"){
 
-    if( is.null( opt$purity) && is.null( opt$dicovsf )  ){
+    if( is.null( purity ) && is.null( dicovsf )  ){
 
       stop("Error: Under 'model' mode, please provide at least one of 'purity' or 'dicovsf'.")
     }
-  }else if( opt$mode == "region"){
+  }else if( mode == "region"){
 
-    if( is.null( opt$chromosome ) ){
+    if( is.null( chromosome ) ){
       stop("Error: Under 'region' mode, please provide at least chromosome without 'chr'.")
     }else{
-      if( is.null(opt$dicovsf) ){
-        opt$dicovsf <- EstimateCovSF( seg = call , opt = opt )
+      if( is.null( dicovsf) ){
+        dicovsf <- EstimateCovSF( seg = call , chromosome = chromosome, start = start, end = end )
       }
     }
 
   }
-  return(opt)
+  updated_parameters <- list(
+    mode = mode,
+    dicovsf = dicovsf,
+    purity = purity
+  )
+  return( updated_parameters )
 }
 
 
 #' Estimate Coverage Scale Factor for a Chromosome or Region
 #'
-#' Estimates the coverage scale factor (covsf) for a specified chromosome or region, based on segment mean and probe count.
+#' Estimates the coverage scale factor (covsf) for a specified chromosome or subregion, based on segment mean and probe count.
 #'
-#' @param opt List of options. Must include \code{chromosome}; may include \code{start} and \code{end} (numeric).
+#' @param chromosome Character. Chromosome name (e.g., "1", "X").
+#' @param start Numeric or NULL. Start coordinate of the region. If \code{NULL}, uses the first segment start in the chromosome.
+#' @param end Numeric or NULL. End coordinate of the region. If \code{NULL}, uses the last segment end in the chromosome.
 #' @param seg Data frame or tibble. Segment data, must include columns \code{Chromosome}, \code{Start}, \code{End}, \code{Segment_Mean}, and \code{Num_Probes}.
 #'
 #' @return Numeric. The estimated coverage scale factor (covsf) for the specified region.
 #'
 #' @details
-#' - If only \code{chromosome} is defined, uses the entire chromosome.
-#' - If \code{start} is defined, uses regions from \code{start} to the end (or to \code{end} if provided).
-#' - If \code{end} is defined, uses regions from chromosome start to \code{end}.
+#' The function calculates a weighted mean coverage based on the segment means and probe counts within the specified region. If \code{start} or \code{end} are not provided, the entire chromosome is used for estimation.
 #'
 #' @importFrom dplyr filter mutate
 #' @examples
-#' # opt <- list(chromosome = "3", start = NULL, end = NULL)
-#' # EstimateCovSF(opt, seg)
+#' # EstimateCovSF("3", start = NULL, end = NULL, seg = seg_df)
+#' # EstimateCovSF("7", start = 100000, end = 500000, seg = seg_df)
 #'
 #' @export
-EstimateCovSF <- function( opt, seg ){
+
+EstimateCovSF <- function( chromosome, start, end, seg ){
 
   diploid_cov <- 100
-  tmp <- seg %>% dplyr::filter( Chromosome == opt$chromosome )
-  if( is.null(opt$start)){
-    start <- min(tmp$Start) }else{start <- as.numeric(opt$start)}
-  if( is.null(opt$end)){
-    end <- min(tmp$End)  }else{ end <- as.numeric(opt$end) }
+  tmp <- seg %>% dplyr::filter( Chromosome == chromosome )
+  if( is.null(start)){
+    print("Start point is not defined in region mode; using the minimum detectable boundary of the chromosome as the end position.")
+    start <- min(tmp$Start) }else{start <- as.numeric(start)}
+  if( is.null(end)){
+    print("End point is not defined in region mode; using the maximum detectable boundary of the chromosome as the end position.")
+    end <- min(tmp$End)  }else{ end <- as.numeric(end) }
 
   covsf_tmp <- tmp %>% dplyr::mutate( select_start_index = ifelse( Start>= start, 1, 0),
                                select_end_index = ifelse( End <= end , 1, 0 )) %>%
@@ -80,54 +94,57 @@ EstimateCovSF <- function( opt, seg ){
   return(dicovsf)
 }
 
-#' Parse Purity and Scale Factor Parameters for Model Selection
+#' Parse and Select Purity and Scale Factor Parameters from Model Grid
 #'
-#' Parses user-specified purity and scale factor (dicovsf) options, selects matching models, and returns the best match.
+#' Selects the best-matching purity and scale factor (dicovsf) from a grid of models, based on user input (value or range), and returns the optimal combination for downstream analysis.
 #'
-#' @param opt List of options. May include \code{purity} (numeric or range as "min:max") and \code{dicovsf} (numeric or range as "min:max").
-#' @param models Data frame or tibble. Must include columns \code{rho}, \code{mu}, \code{total_distance_to_integer}, and \code{total_log_likelihood}.
+#' @param purity Numeric, character, or NULL. Desired purity value, or a range in the format \code{"min:max"} (e.g., \code{"0.5:0.7"}). If \code{NULL}, all available purity values in \code{models} are considered.
+#' @param dicovsf Numeric, character, or NULL. Desired scale factor (mu), or a range in the format \code{"min:max"} (e.g., \code{"0.9:1.1"}). If \code{NULL}, all available scale factor values in \code{models} are considered.
+#' @param models Data frame or tibble. Model grid with columns \code{rho} (purity), \code{mu} (scale factor), \code{total_distance_to_integer}, and \code{total_log_likelihood} generated by initial run.
 #'
-#' @return A list with:
+#' @return A named list with elements:
 #'   \item{final_purity}{Selected purity value.}
 #'   \item{final_sf}{Selected scale factor (mu) value.}
 #'
 #' @details
-#' - If \code{opt$purity} or \code{opt$dicovsf} are ranges (e.g., "0.6:0.8"), selects all models in the range.
-#' - Otherwise, selects the model(s) closest to the specified value.
-#' - Returns the model with minimal distance to integer and maximal likelihood.
+#' - If a range is provided for \code{purity} or \code{dicovsf}, all models within that range are considered.
+#' - If a single value is provided, the closest available value in \code{models} is selected.
+#' - The model with the lowest \code{total_distance_to_integer} and highest \code{total_log_likelihood} is chosen.
 #'
-#' @importFrom dplyr mutate arrange filter
-#' @importFrom stringr str_split
 #' @examples
-#' # opt <- list(purity = "0.6:0.8", dicovsf = NULL)
-#' # ParseParm(opt, models)
+#' # ParseParm(purity = "0.5:0.7", dicovsf = NULL, models = models_df)
+#' # ParseParm(purity = 0.6, dicovsf = 1.1, models = models_df)
 #'
 #' @export
-ParseParm <- function( opt, models ){
+ParseParm <- function( purity, dicovsf, models ){
 
-  if( !is.null(opt$purity )){
-    if( grepl(":", opt$purity ) ){
-      range <- strsplit(x = opt$purity, split = ":") %>% unlist() %>% as.numeric()
+  if( !is.null( purity )){
+    if( grepl(":", purity ) ){
+      range <- strsplit(x = purity, split = ":") %>% unlist() %>% as.numeric()
       purity <- models[which(models$rho >= range[1] & models$rho <= range[2]),"rho"]
     }else{
-      purity <- models %>% mutate( diff = abs( opt$purity - rho ) ) %>%
+      purity <- models %>% mutate( diff = abs( purity - rho ) ) %>%
         dplyr::arrange(diff)
       purity <- purity[1,"rho"]
     } }else{ purity <- unique(models$rho) }
 
-  if( !is.null(opt$dicovsf)){
-    if( grepl(":", opt$dicovsf ) ){
-      range <- strsplit(x = opt$dicovsf, split = ":") %>% unlist() %>% as.numeric()
+  if( !is.null(dicovsf)){
+    if( grepl(":", dicovsf ) ){
+      range <- strsplit(x = dicovsf, split = ":") %>% unlist() %>% as.numeric()
       dicovsf <- models[which(models$mu >= range[1] & models$mu <= range[2]),"mu"]
     }else{
-      dicovsf <- models %>% dplyr::mutate( diff = abs( opt$dicovsf - mu ) ) %>% dplyr::arrange(diff)
+      dicovsf <- models %>% dplyr::mutate( diff = abs( dicovsf - mu ) ) %>% dplyr::arrange(diff)
       dicovsf <- dicovsf[1,"mu"]
     }
   }else{ dicovsf <- unique(models$mu)}
   final_model <- models %>%
-    filter( mu >= min(dicovsf) & mu <= max(dicovsf)) %>%
-    filter( rho >= min(purity) & rho <= max(purity) ) %>%
-    arrange( total_distance_to_integer, -total_log_likelihood   )
+    dplyr::filter( mu >= min(dicovsf) & mu <= max(dicovsf)) %>%
+    dplyr::filter( rho >= min(purity) & rho <= max(purity) ) %>%
+    dplyr::arrange( total_likelihood_cluster,
+                    diploid_distance_cluster ,
+                    nondiploid_distance_cluster,
+                    abs( ploidy - 2),
+                    desc(total_log_likelihood_after_refine), desc( rho ) )
   if( nrow(final_model) > 0 ){
     final_model <- list( final_purity = final_model$rho[1],
                          final_sf = final_model$mu[1])

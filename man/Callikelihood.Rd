@@ -7,11 +7,11 @@
 Callikelihood(mu, rho, data, sigma_C, lambda, gamma, epsilon)
 }
 \arguments{
-\item{mu}{Numeric. Mutation multiplicity (percent, e.g., 100 means 100\\%).}
+\item{mu}{Numeric. Diploid coverage scale factor (e.g. A value of 1 indicates that the segment mean from GATK does not require adjustment. Additionally, the pseudo-diploid coverage is set to 100.).}
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 
-\item{data}{Data frame or tibble. Must include columns: \code{Segcov}, \code{BAF}, \code{index}, \code{Tag}, and \code{k}.}
+\item{data}{Data frame or tibble. Must include columns: \code{Segcov}, \code{MAF}, \code{index}, \code{Tag}, and \code{k}.}
 
 \item{sigma_C}{Numeric. Parameter for segment likelihood (passed to \code{CalSegmentLikelihood}).}
 
@@ -25,9 +25,9 @@ Callikelihood(mu, rho, data, sigma_C, lambda, gamma, epsilon)
 A data frame with the segment likelihoods and all columns from \code{\link{CalSegmentLikelihood}}, plus \code{index} and \code{Tag}.
 }
 \description{
-For each segment in the data, computes the BAF likelihood across all major/minor allele combinations for given mutation multiplicity (\eqn{\mu}) and tumor purity (\eqn{\rho}).
+For each segment in the data, computes the MAF likelihood across all major/minor allele combinations for given mutation multiplicity (\eqn{\mu}) and tumor purity (\eqn{\rho}).
 }
 \details{
 For each segment, calls \code{\link{CalSegmentLikelihood}} and filters out combinations with \code{ccf > 1.2}.
-If there is only one combination and both major and minor are zero, sets \code{BAF_likelihood} to 1.
+If there is only one combination and both major and minor are zero, sets \code{MAF_likelihood} to 1.
 }

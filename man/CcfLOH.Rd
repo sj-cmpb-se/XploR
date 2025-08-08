@@ -4,7 +4,7 @@
 \alias{CcfLOH}
 \title{Calculate Cancer Cell Fraction (CCF) from Allelic Imbalance (LOH)}
 \usage{
-CcfLOH(minor, major, rho, BAF)
+CcfLOH(minor, major, rho, MAF)
 }
 \arguments{
 \item{minor}{Numeric. Minor allele copy number.}
@@ -13,21 +13,21 @@ CcfLOH(minor, major, rho, BAF)
 
 \item{rho}{Numeric. Tumor purity (fraction between 0 and 1).}
 
-\item{BAF}{Numeric. Observed B-allele frequency.}
+\item{MAF}{Numeric. Observed B-allele frequency.}
 }
 \value{
 Numeric. The estimated cancer cell fraction (CCF), with \code{Inf} replaced by 1, \code{-Inf} and \code{NA} replaced by 0.
 }
 \description{
-Estimates the cancer cell fraction (CCF) based on minor and major allele copy numbers, tumor purity, and observed B-allele frequency (BAF).
+Estimates the cancer cell fraction (CCF) based on minor and major allele copy numbers, tumor purity, and observed minor-allele frequency (MAF).
 }
 \details{
-The expected BAF is calculated as \code{BAF_ex = minor / (minor + major)}.
+The expected MAF is calculated as \code{MAF_ex = minor / (minor + major)}.
 The formula for CCF is: \cr
-\code{ccf = (BAF - 0.5) / ((BAF_ex - 0.5) * rho)} \cr
+\code{ccf = (MAF - 0.5) / ((MAF_ex - 0.5) * rho)} \cr
 If CCF is \code{Inf}, returns 1; if \code{-Inf} or \code{NA}, returns 0.
 }
 \examples{
-CcfLOH(minor = 1, major = 2, rho = 0.7, BAF = 0.6)
+CcfLOH(minor = 1, major = 2, rho = 0.7, MAF = 0.6)
 
 }

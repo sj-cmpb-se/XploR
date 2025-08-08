@@ -4,12 +4,14 @@
 \alias{PlotModel}
 \title{Plot Model Total Log-Likelihoods as a Heatmap}
 \usage{
-PlotModel(data, opt, max_L_mu, max_L_rho)
+PlotModel(data, prefix, out_dir, max_L_mu, max_L_rho)
 }
 \arguments{
 \item{data}{Data frame or tibble. Must include columns \code{rho}, \code{mu}, and \code{total_log_likelihood_before_refine}.}
 
-\item{opt}{List of options. Must include \code{out_dir} and \code{prefix}.}
+\item{prefix}{Character. Output file prefix.}
+
+\item{out_dir}{Character. Output directory for saving the plot.}
 
 \item{max_L_mu}{Numeric. The selected value of mutation multiplicity (\code{mu}) to highlight.}
 

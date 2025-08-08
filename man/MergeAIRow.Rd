@@ -4,23 +4,25 @@
 \alias{MergeAIRow}
 \title{Merge Adjacent AI Segments Based on Similarity Criteria}
 \usage{
-MergeAIRow(df, opt, tmp_baf)
+MergeAIRow(df, mergeai, snpmin, tmp_maf)
 }
 \arguments{
-\item{df}{A data frame or tibble of AI segments, with columns such as Chromosome, bin, Start, End, nonzero_count, each_baf, etc.}
+\item{df}{A data frame or tibble of AI segments, with columns such as Chromosome, bin, Start, End, snp_count, each_maf, etc.}
 
-\item{opt}{A list of options, must include \code{mergeai} (threshold for merging) and \code{snpmin} (minimum SNP count).}
+\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.}
 
-\item{tmp_baf}{A data frame or tibble containing BAF values and genomic coordinates (must include Chromosome, Start, End, baf).}
+\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment.}
+
+\item{tmp_maf}{A data frame or tibble containing maf values and genomic coordinates (must include Chromosome, Start, End, maf).}
 }
 \value{
-A data frame or tibble with merged AI segments, updated BAF estimates, and segment information.
+A data frame or tibble with merged AI segments, updated maf estimates, and segment information.
 }
 \description{
 Iteratively merges adjacent rows in a data frame of AI segments if they meet criteria defined by \code{MergeAICheck}.
-For merged segments, BAF values are re-estimated and segment information is updated.
+For merged segments, MAF values are re-estimated and segment information is updated.
 }
 \details{
 This function uses \code{\link{MergeAICheck}} to determine if two adjacent segments should be merged.
-For merged segments, BAF values are re-estimated using \code{\link{EstimateBAFbyGMM}}.
+For merged segments, maf values are re-estimated using \code{\link{EstimateMAFbyGMM}}.
 }

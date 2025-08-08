@@ -11,12 +11,10 @@ CheckGender(cov, seg, gender)
 
 \item{seg}{Segmentation data frame}
 
-\item{gender}{Expected gender (character, "male" or "female")}
-
-\item{opt}{List of options, must include \code{gender}}
+\item{gender}{Gender from clinical information (character, "male" or "female")}
 }
 \value{
-Modified segmentation seg data frame with gender columns
+Modified segmentation seg data frame with gender information
 }
 \description{
 Check and Adjust Gender in GATK Segmentation Data

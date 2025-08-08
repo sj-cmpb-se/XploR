@@ -2,31 +2,30 @@
 % Please edit documentation in R/Modeling.R
 \name{ModelSource}
 \alias{ModelSource}
-\title{Determine Model Source Based on BAF and Coverage Information}
+\title{Determine Model Source Based on MAF and Coverage Information}
 \usage{
-ModelSource(seg_df, opt)
+ModelSource(seg_df, modelminprobes)
 }
 \arguments{
 \item{seg_df}{A data frame or tibble containing segment information, including columns: \code{size}, \code{FILTER}, \code{MAF_Probes}, \code{MAF}, and \code{Segment_Mean}.}
 
-\item{opt}{A list of options, must include \code{modelminprobes} (minimum number of probes for model decision).}
+\item{modelminprobes}{Numeric. minimum number of probes for a segment to include for model decision}
 }
 \value{
-Character. One of "Coverage", "Diploid", or "Coverage + BAF".
+Character. One of "Coverage", "Diploid", or "Coverage + MAF".
 }
 \description{
-Determines whether the model source for a segment should be "Coverage", "Diploid", or "Coverage + BAF", based on BAF and segment mean values.
+Determines whether the model source for a segment should be "Coverage", "Diploid", or "Coverage + MAF", based on MAF and segment mean values.
 }
 \details{
 \itemize{
-\item If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
-\item If all segments with sufficient probes have minimum BAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
-\item Otherwise, returns "Coverage + BAF".
+\item If all segments with sufficient probes have minimum MAF > 0.4 and the maximum absolute segment mean is >= 0.2, returns "Coverage".
+\item If all segments with sufficient probes have minimum MAF > 0.4 and the maximum absolute segment mean is < 0.2, returns "Diploid".
+\item Otherwise, returns "Coverage + MAF".
 }
 }
 \examples{
 # seg_df must have columns: size, FILTER, MAF_Probes, MAF, Segment_Mean
-# opt <- list(modelminprobes = 7)
-# ModelSource(seg_df, opt)
+# ModelSource(seg_df, modelminprobes)
 
 }

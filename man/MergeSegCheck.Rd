@@ -4,14 +4,14 @@
 \alias{MergeSegCheck}
 \title{Check Whether Two Segments Should Be Merged (Copy Number)}
 \usage{
-MergeSegCheck(cur_row, next_row, opt)
+MergeSegCheck(cur_row, next_row, mergecov)
 }
 \arguments{
 \item{cur_row}{A data frame row (list or tibble row) representing the current segment. Must have \code{Segment_Mean} and \code{Call}.}
 
 \item{next_row}{A data frame row (list or tibble row) representing the next segment. Must have \code{Segment_Mean} and \code{Call}.}
 
-\item{opt}{A list of options, must include \code{mergecov} (numeric threshold for mean difference).}
+\item{mergecov}{Numeric threshold for segment mean difference}
 }
 \value{
 Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.
