@@ -6,7 +6,7 @@
 #' @param out_dir Output directory.
 #' @param prefix Output file prefix.
 #' @param gender Sample gender ("male" or "female").
-#' @param lambda, gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff ratio Numeric parameters for the workflow (see script RunCallikelihood for details).
+#' @param lambda, gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).
 #' @return Invisibly returns the output file paths.
 #' @importFrom data.table fread
 #' @importFrom dplyr filter mutate arrange rowwise ungroup select group_by summarise desc left_join
