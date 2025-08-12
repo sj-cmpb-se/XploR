@@ -11,6 +11,20 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 
 ---
 
+## Contents
+
+- [Features](#Features)
+- [Installation](#Installation)
+- [Quick Test Run](#Test-run)
+- [Manual Workflow Example](#manual-workflow-example)
+- [Preparing Input and Reference Files](#preparing-input-and-reference-files)
+- [Example: Full Workflow](#example-full-workflow)
+- [Algorithm Details](#algorithm-details)
+- [Function Parameters](#function-parameters)
+- [Getting Help](#getting-help)
+
+---
+
 ## Features
 
 - Exome-wide copy number segmentation and allelic imbalance detection
@@ -18,9 +32,6 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 - BAF and coverage smoothing, binning, and quality control
 - ISCN and gene annotation of CNV segments
 - Interactive and publication-ready visualization
-- Batch and command-line workflows for high-throughput analysis
-
----
 
 
 ## Installation
@@ -32,44 +43,343 @@ install.packages("devtools")
 devtools::install_github("sj-cmpb-se/XploR")
 ```
 
-## Example
+## Test run
 
-This is a basic example to run the program:
+All files needed for a test run in placed at inst/extdata folder. RunExamplePipeline() will use the files in inst/exdata for a test run.
 
-```{r example, eval=FALSE}
+```{r testrun, eval= FALSE}
 library(XploR)
-
-#Example: Run main CNV workflow (see vignette for details)
-result <- runAIsegmentation(
- seg = "sample.seg", 
-  cov = "sample.counts",
-  ai = "sample.tumor.baf.bedgraph.gz",
-  gender = "female",
-  out_dir = "results/",
-  prefix = "Sample1"
-)
-
-#Annotate segments with ISCN and gene information
-AnnotateSegments(
-  input = "results/Sample1_GATK_DRAGEN_merge.tsv",
-  out_dir = "results/",
-  prefix = "Sample1",
-  cytoband = "data/cytoBand.txt",
-  whitelist_edge = "data/whitelist.txt",
-  gene = "data/gene_anno.txt"
-)
-
-# Plot results
-plot_cnv_profile(
-  seg = "results/Sample1_CNV_annotation.tsv",
-  coverage = "sample.denoisedCR.tsv",
-  ballele = "sample.tumor.ballele.counts.gz",
-  whitelist = "data/whitelist.txt",
-  gender = "female",
-  out_dir = "results/",
-  prefix = "Sample1"
-)
+RunExamplePipeline( out_dir = "/path_to_output_dir" )
 ```
 
+
+### Running this function is same with running the steps separately like:
+  
+1. Run segmentation based on Allelic imbalance information. 
+
+```{r, eval = FALSE}
+tryCatch({
+  RunAIsegmentation(
+    seg = seg,
+    cov = cov,
+    ai = ai,
+    gender = gender,
+    out_dir = out_dir,
+    prefix = prefix,
+    aibinsize = 500000,
+    mergeai = 0.15,
+    mergecov = 0.2,
+    minaisize = 1000000,
+    snpmin = 7,
+    minsnpcallaicutoff = 10,
+    mergecovminsize = 500000,
+    aitype = "dragen"
+  )
+}
+, error = function(e) {
+  message("ERROR during segmentation: ", conditionMessage(e))
+  quit(save = "no", status = 1, runLast = FALSE) 
+})
+```
+
+### Parameters for `RunAIsegmentation`
+
+| Parameter           | Type      | Description                                                      | Example Value   |
+|---------------------|-----------|------------------------------------------------------------------|-----------------|
+| `seg`               | character | Path to the segment file from GATK tumor only CNV run.           | `"sample.seg"`  |
+| `cov`               | character | Path to the coverage file from GATK tumor only CNV run.          | `"sample.counts"`|
+| `ai`                | character | Path to the allelic count file from DRAGEN/GATK or other sources.| `"sample.baf"`  |
+| `gender`            | character | Sample gender (`"male"` or `"female"`)                           | `"female"`      |
+| `out_dir`           | character | Output directory                                                 | `"results/"`    |
+| `prefix`            | character | Prefix for output files                                          | `"Sample1"`     |
+| `aibinsize`         | numeric   | Bin size for allelic imbalance, default is 500,000.              | `500000`        |
+| `mergeai`           | numeric   | AI segment merge threshold, default is 0.15.                     | `0.15`          |
+| `mergecov`          | numeric   | Coverage segment merge threshold, default is 0.2.                | `0.2`           |
+| `minaisize`         | numeric   | Minimum reportable AI segment size, default is 1,000,000.        | `1000000`       |
+| `snpmin`            | integer   | Minimum SNPs per AI segment, default is 7 for WES.               | `7`             |
+| `minsnpcallaicutoff`| integer   | Minimum SNPs to call AI segment, default is 10 for WES.          | `10`            |
+| `mergecovminsize`   | numeric   | Minimum coverage segment size after merging, default is 500,000.  | `500000`        |
+| `aitype`            | character | Type of AI input (`"dragen"`, `"gatk"`, or `"other"`)            | `"dragen"`      |
+
+2. Run model likelihood calculation and selection.
+```{r, eval = FALSE}
+tryCatch({
+  RunModelLikelihood(
+    seg = paste0(out_dir,"/",prefix,"_GATK_AI_segment.tsv"),
+    out_dir = out_dir,
+    prefix = prefix,
+    gender = gender,
+    lambda = 1,
+    gamma = 1,
+    epsilon = 0.01,
+    modelminprobes = 20,
+    modelminAIsize = 5000000,
+    minsf = 0.4,
+    callcov = 0.3,
+    thread = 6)
+
+}, error = function(e) {
+  message("ERROR during likelihood calculation: ", conditionMessage(e))
+  quit(save = "no", status = 1, runLast = FALSE) 
+})
+```
+
+### Parameters for `RunModelLikelihood`
+
+| Parameter             | Type      | Description                                                                                  | Example Value                        |
+|-----------------------|-----------|----------------------------------------------------------------------------------------------|--------------------------------------|
+| `seg`                 | character | Path to the combined segment file (e.g., output from segmentation step above                 | `"results/Sample1_GATK_AI_segment.tsv"` |
+| `out_dir`             | character | Output directory for results                                                                 | `"results/"`                         |
+| `prefix`              | character | Prefix for output files                                                                      | `"Sample1"`                          |
+| `gender`              | character | Sample gender (`"male"` or `"female"`)                                                       | `"female"`                           |
+| `lambda`              | numeric   | Exponential decay parameter for the likelihood model                                         | `1`                                  |
+| `gamma`               | numeric   | Weight for the prior in the likelihood calculation                                           | `1`                                  |
+| `epsilon`             | numeric   | Small value to avoid log(0) and zero parameters in beta distribution                         | `0.01`                               |
+| `modelminprobes`      | integer   | Minimum number of probes/SNPs per segment to include in modeling                             | `20`                                 |
+| `modelminAIsize`      | numeric   | Minimum segment size (bp) to include in modeling                                             | `5000000`                            |
+| `minsf`               | numeric   | Minimum scale factor to consider in model selection                                          | `0.4`                                |
+| `callcov`             | numeric   | Subclonal events calling cutoff based on total copy number                                   | `0.3`                                |
+| `thread`              | integer   | Number of CPU threads to use for parallel processing                                         | `6`                                  |
+| `callcovcutoff`       | numeric   | (Optional) Threshold for calling without modeling.                                           | `0.3`                                |
+| `callaicutoff`        | numeric   | (Optional) Threshold for calling without modeling.                                           | `0.3`                                |
+| `minsnpcallaicutoff`  | integer   | (Optional) Minimum SNPs to call AI segment                                                   | `10`                                 |
+
+**Notes:**  
+- Parameters marked as (Optional) can be omitted and have defaults.
+- For a full description of all arguments and advanced options, see the function reference or `?RunModelLikelihood` in R.
+
+
+3. Run annotation segments.
+```{r, eval = FALSE}
+tryCatch({
+  AnnotateSegments(
+    input = paste0(out_dir,"/",prefix,"_final_calls.tsv"),
+    out_dir = out_dir,
+    prefix = prefix,
+    cytoband = cytoband,
+    whitelist_edge = whitelist_edge,
+    gene = gene)
+}, error = function(e) {
+  message("ERROR during segment annotation: ", conditionMessage(e))
+  quit(save = "no", status = 1, runLast = FALSE) 
+})
+```
+
+### Parameters for `AnnotateSegments`
+
+| Parameter        | Type      | Description                                                                                 | Example Value                      |
+|------------------|-----------|---------------------------------------------------------------------------------------------|------------------------------------|
+| `input`          | character | Path to XploR CNV calling output.                                                           | `"results/Sample1_final_calls.tsv"`|
+| `out_dir`        | character | Output directory for results                                                                | `"results/"`                       |
+| `prefix`         | character | Prefix for output files                                                                     | `"Sample1"`                        |
+| `cytoband`       | character | Path to cytoband annotation file (TSV). See [Prepare input](#prepare-input) for detail.     | `"data/cytoBand.txt"`              |
+| `whitelist_edge` | character | Path to detectable edge for each chromosomes.See [Prepare input](#prepare-input) for detail.| `"data/whitelist.txt"`             |
+| `gene`           | character | Path to gene annotation file. See [Prepare input](#prepare-input) for detail.               | `"data/gene_anno.txt"`             |
+
+4. Generating CNV plot
+```{r, eval = FALSE}
+tryCatch({
+  RunPlotCNV(
+    seg = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
+    cr =cr,
+    ballele = ai,
+    ai_binsize = 100000,
+    cov_binsize = 100000,
+    whitelist = whitelist_bed,
+    gender = gender,
+    out_dir = out_dir,
+    prefix = prefix,
+    aitype = "dragen"
+  )
+  }, error = function(e) {
+    message("ERROR during generate CNV plot: ", conditionMessage(e))
+    quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
+})
+
+```
+### Parameters for `RunPlotCNV`
+
+| Parameter      | Type      | Description                                                                                            | Example Value                          |
+|----------------|-----------|--------------------------------------------------------------------------------------------------------|----------------------------------------|
+| `seg`          | character | Path to final annotated call file.                                                                     | `"results/Sample1_CNV_annotation.tsv"` |
+| `cr`           | character | Path to the GATK denoised copy ratio file with extension `.denoisedCR.tsv`                             | `"data/sample.denoisedCR.tsv"`         |
+| `ballele`      | character | Path to the B-allele file (from DRAGEN, GATK, or other source). See `aitype` for required columns.     | `"data/sample.tumor.baf.gz"`           |
+| `ai_binsize`   | numeric   | Bin size for AI plot (default: 100,000)                                                                | `100000`                               |
+| `cov_binsize`  | numeric   | Bin size for coverage plot (default: 100,000)                                                          | `100000`                               |
+| `whitelist`    | character | Path to whitelist file for regions to include                                                          | `"data/whitelist.txt"`                 |
+| `gender`       | character | Sample gender (`"male"` or `"female"`)                                                                 | `"female"`                             |
+| `out_dir`      | character | Output directory for plot                                                                              | `"results/"`                           |
+| `prefix`       | character | Sample ID or output prefix                                                                             | `"Sample1"`                            |
+| `aitype`       | character | Type of allelic imbalance data: `"gatk"`, `"dragen"`, or `"other"`.                                    | `"dragen"`                             |
+
+5. Generating AI segment quality file. 
+```{r, eval = FALSE}
+tryCatch({
+  BafQC(
+    annofile = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
+    out_dir = out_dir,
+    prefix = prefix)
+},error = function(e) {
+  message("ERROR during generate quality control table: ", conditionMessage(e))
+  quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
+})
+
+
+```
+### Parameters for `BafQC`
+
+| Parameter   | Type      | Description                                                      | Example Value                        |
+|-------------|-----------|------------------------------------------------------------------|--------------------------------------|
+| `annofile`  | character | Path to the CNV annotation file (e.g., *_CNV_annotation.tsv)     | `"results/Sample1_CNV_annotation.tsv"` |
+| `out_dir`   | character | Output directory for the QC summary file                         | `"results/"`                         |
+| `prefix`    | character | Prefix for the QC output file                                    | `"Sample1"`                          |
+
+
+## Prepare input files
+
+1. Run GATK in tumor-only mode by default parameters. Below is a summary of the GATK tumor-only mode command used in our pipeline. Please see the [GATK website](https://gatk.broadinstitute.org/) for details. Files will be used in XploR is sample.counts, sample.called.seg, sample.allelic_counts and sample.denoisedCR.tsv. 
+2. The allelic count file also could generate by other software like DRAGEN or samtools. 
+
+### Supporting allelic count file format
+| aitype parameter value   | software              | minimum columns                                                        | File extention                       |
+|--------------------------|-----------------------|------------------------------------------------------------------------|--------------------------------------|
+| `dragen`                 | Illumina DRAGEN       | contig, start, refAllele, allele2, allele1Count,allele2Count           | `"sample..tumor.ballele.counts.gz"`  |
+| `gatk`                   | GATK                  | CONTIG, POSITION, ALT_COUNT, REF_COUNT, REF_NUCLEOTIDE, ALT_NUCLEOTIDE | `"sample.allelic_counts"`            |
+| `other`                  | Other (e.g. samtools) | CONTIG, POSITION, ALT_COUNT, REF_COUNT, REF_NUCLEOTIDE, ALT_NUCLEOTIDE |  `""`                                |
+
+## Prepare reference files
+1. Panel of Normals (PON):
+A Panel of Normals is required and should be generated using GATK. For detailed instructions, see the [GATK website](https://gatk.broadinstitute.org/). Note: Male and female PON files need to be generated separately.
+
+2. Gene annotation:
+Gene annotation can be obtained from various sources (e.g., Ensembl, UCSC, Gencode, RefSeq). An example file is included with the package:
+```{r, eval = FALSE}
+gene <- system.file("extdata", "RefSeqCurated.genePred.gene_region.txt", package = "XploR")
+head(read.table(gene, header = TRUE, sep = "\t"))
+```
+
+3. Cytoband annotation:
+Cytoband annotation files are typically downloaded from UCSC. An example file is included:
+```{r,eval = FALSE}
+cytoband <- system.file("extdata", "hg19_cytoBand.dat", package = "XploR")
+head(read.table(cytoband, header = TRUE, sep = "\t"))
+```
+
+4. Whitelist, Blacklist, and Detectable Boundary Files:
+These files are generated based on the GATK Panel of Normals. See the function documentation in R: `?PonProcess` or `help("PonProcess", package = "XploR")`. Example usage:
+```{r, eval = FALSE}
+PonProcess(pon_file = pon_hdh5_file,
+           blacklist_bed = output_blacklist_bed,
+           whitelist_bed = output_whitelist_bed,
+           cytoband = cytoband,
+           detectable_edge = output_detectable_edge,
+           gender = gender
+          )
+```
+
+## Altorithm
+
+### AI Segmentation Workflow
+For each GATK segment, the workflow refines breakpoints using BAF/MAF data by dividing the segment into bins of user-defined size (aibinsize). Within each bin, Gaussian mixture modeling (GMM) is applied to identify clusters in the MAF distribution. Adjacent bins are merged if their MAF means are within a specified threshold (mergeai) or if quality criteria are not met, and segments with insufficient SNPs or small size are filtered out. Each resulting segment is then assigned a quality tag ("PASS" or "FAILED") based on the GMM weight and SNP count.
+
+### Purity and diploid coverage scale factor estimation
+#### Prior assignment based on parsimony principle
+Priors are assigned to each potential copy number combination based on the **principle of parsimony**, which favors simpler (biologically less complex) allele configurations. The biological difficulty level reflects the number of steps required to reach a given allele combination from the baseline diploid state (1,1), where each step represents either a gain or loss of one allele.
+
+- **Baseline State:** The diploid state (1,1) is assigned a difficulty level of 1.
+- **Single-Step Changes:** Combinations reachable from (1,1) in one step (single gain or loss) are assigned a difficulty level of 2.
+- **Two-Step Changes:** Combinations requiring two steps (e.g., loss then gain, or two sequential gains) receive a difficulty level of 3.
+- **Three-, Four-, Five-Step Changes:** Difficulty levels increase with the number of steps, up to 6 for the most complex.
+- **Special Considerations:**
+    - **Whole Chromosome Duplication:** Combinations like (2,2) are assigned higher difficulty due to their rarity.
+    - **Sequential Gains:** Combinations with sequential gains of the same chromosome (e.g., (3,1)) are considered less difficult than those involving loss followed by gain (e.g., (2,0)).
+The prior for each allele combination is calculated using an exponential decay function controlled by a decay rate parameter λ.
+prior = exp(-λ × Bio_diff)
+where **Bio_diff** is the assigned biological difficulty score for the copy number configuration.
+
+#### Tumor Copy Number Estimation
+
+For each genomic segment, the model computes a range of possible tumor-specific copy numbers (`CN_tumor`) that could result from observed data under different cancer cell fractions (ccf):
+
+- **Tumor Copy Number Formula:**
+
+$$
+CN_{tumor} = \frac{C_i \times 2 / (\mu \times 100) - (1 - \rho) \times 2 - \rho \times (1 - ccf) \times 2}{\rho \times ccf}
+$$
+
+where:
+
+ - $C_i$: Observed segment copy number
+ - $\mu$: Diploid coverage scale factor
+ - $\rho$: Tumor purity
+ - $ccf$: Cancer cell fraction
+
+ - **Combination Generation:**  
+  For each potential tumor CN, all feasible major and minor allele combinations are generated and filtered based on biological plausibility.
+
+ - **CCF Value Calculation:**  
+  For non-diploid segments, CCF is calculated; for diploid segments, it is set as NA.
+
+#### Likelihood Calculation
+
+ - **BAF Likelihood:**  
+  For each combination, the B allele frequency likelihood is computed using the beta distribution, parameterized by $\alpha$ and $\beta$, derived from the expected BAF:
+
+$$
+\mathrm{Beta}(\alpha, \beta)
+$$
+
+where:
+
+ - $\alpha = K \times \mathrm{BAF} + \epsilon$
+ - $\beta = K \times (1 - \mathrm{BAF}) + \epsilon$
+ - $K$: Scaling factor controlling distribution precision
+ - $\epsilon$: Small positive value for numerical stability
+
+- **Posterior Likelihood:**  
+The posterior likelihood for each combination incorporates both the BAF likelihood and the prior, weighted by a factor $\gamma$:
+
+$$
+\text{Posterior Likelihood} = \text{BAF Likelihood} \times (\text{Prior})^\gamma
+$$
+
+where:
+
+- $\text{BAF Likelihood}$: Likelihood of the observed B-allele frequency under the current model  
+- $\text{Prior}$: Prior probability assigned to the allele combination based on biological plausibility  
+- $\gamma$: Weighting factor controlling the influence of the prior in the posterior calculation  
+
+
+#### Purity and Diploid Coverage Scale Factor Estimation
+
+A grid of candidate tumor purity (\(\rho\)) and diploid coverage scale factor (\(\mu\)) values is generated. For each (\(\mu\), \(\rho\)) pair, the model calculates the total log-likelihood across all segments, considering only biologically feasible configurations and ccf values. The best-fitting model is selected based on the highest total log-likelihood and the smallest distance between segment copy numbers and integer values, in accordance with the parsimony principle.
+
+
+#### Assigning Calls for Each Segment
+
+The `SelectCallpersegment()` function refines and selects the most likely allele combinations for each genomic segment, handling both clonal and subclonal events, and incorporates coverage differences and prior knowledge.
+
+- **Initialization and Preprocessing:**
+    - Replace any zero BAF likelihoods with a minimum likelihood value to ensure all terms contribute meaningfully.
+    - Compute expected coverage for each model and the difference (`cov_diff`) from observed coverage.
+
+- **Selection of Top Likelihood Models:**
+    - For each segment, identify the top two models with the highest BAF likelihoods.
+    - If a subclonal event is likely (e.g., the second-ranked model has ccf > 0.3 and comparable likelihood), select it as a subclonal event.
+    - If both major and minor copy numbers are equal, selection is based on `cov_diff`.
+
+- **Handling Models with `minor = 0`:**
+    - For segments with `minor = 0`, where BAF likelihood is unreliable, select the model with the smallest `cov_diff`.
+    - Ensure consistency in selection for both `minor = 0` and `minor ≠ 0` cases.
+
+- **Post-Processing:**
+    - Calculate and store the log-transformed likelihood value (`log_BAF_likelihood`) for each selected model.
+
+
+## Model selection and rerun 
+
+## Output
+
+## Full function and parameter list
 
 
