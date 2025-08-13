@@ -13,15 +13,15 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 
 ## Contents
 
-- [Features](#Features)
-- [Installation](#Installation)
-- [Quick Test Run](#Test-run)
-- [Manual Workflow Example](#manual-workflow-example)
-- [Preparing Input and Reference Files](#preparing-input-and-reference-files)
-- [Example: Full Workflow](#example-full-workflow)
-- [Algorithm Details](#algorithm-details)
-- [Function Parameters](#function-parameters)
-- [Getting Help](#getting-help)
+- [Features](#features)
+- [Installation](#installation)
+- [Test Run](#test-run)
+- [Prepare input files](#prepare-input-files)
+- [Prepare reference files](#Prepare-reference-files)
+- [Algorithm](#algorithm)
+- [Output](#output)
+- [Model selection and rerun](#model-selection-and-rerun)
+- [Full function and parameter list](#full-function-and-parameter-list)
 
 ---
 
@@ -43,7 +43,7 @@ install.packages("devtools")
 devtools::install_github("sj-cmpb-se/XploR")
 ```
 
-## Test run
+## Quick Test run
 
 All files needed for a test run in placed at inst/extdata folder. RunExamplePipeline() will use the files in inst/exdata for a test run.
 
@@ -248,6 +248,7 @@ tryCatch({
 | `other`                  | Other (e.g. samtools) | CONTIG, POSITION, ALT_COUNT, REF_COUNT, REF_NUCLEOTIDE, ALT_NUCLEOTIDE |  `""`                                |
 
 ## Prepare reference files
+
 1. Panel of Normals (PON):
 A Panel of Normals is required and should be generated using GATK. For detailed instructions, see the [GATK website](https://gatk.broadinstitute.org/). Note: Male and female PON files need to be generated separately.
 
@@ -376,10 +377,202 @@ The `SelectCallpersegment()` function refines and selects the most likely allele
     - Calculate and store the log-transformed likelihood value (`log_BAF_likelihood`) for each selected model.
 
 
+## Output
+#### Segmentation output
+sample_GATK_AI_segment.tsv ( Generared by `?RunAIsegmentation` function)
+
+| Column            | Type      | Description                                                                                             | Example_value      |
+|-------------------|-----------|---------------------------------------------------------------------------------------------------------|--------------------|
+| Sample            | character | Sample identifier                                                                                       | `Sample1`          |
+| Chromosome        | character | Chromosome name                                                                                         | `1`                |
+| Start             | integer   | Start position (base pair)                                                                              | `123456`           |
+| End               | integer   | End position (base pair)                                                                                | `234567`           |
+| Num_Probes        | integer   | Number of probes/SNPs in the segment                                                                    | `25`               |
+| Segment_Mean      | numeric   | Segment mean (log2 ratio) from CNV analysis                                                             | `0.42`             |
+| gatk_SM_raw       | numeric   | Raw segment mean from GATK                                                                              | `0.38`             |
+| gatk_count        | integer   | Number of counts in GATK segment                                                                        | `30`               |
+| gatk_baselinecov  | numeric   | The GATK baseline is an intermediate value calculated using gatk_SM_raw and gatk_count.                 | `100.5`            |
+| gatk_gender       | character | Gender as reported by GATK                                                                              | `female`           |
+| pipeline_gender   | character | Gender as used in pipeline                                                                              | `female`           |
+| MAF               | numeric   | Minor allele frequency for the segment                                                                  | `0.21`             |
+| MAF_Probes        | integer   | Number of probes used to calculate MAF                                                                  | `18`               |
+| MAF_gmm_G         | integer   | Number of GMM clusters in MAF distribution                                                              | `2`                |
+| MAF_gmm_weight    | numeric   | Mixture weight of the main GMM cluster                                                                  | `0.85`             |
+| size              | integer   | Segment size in base pairs                                                                              | `111111`           |
+| BreakpointSource  | character | Source of breakpoint (`GATK` or `Postprocess`)                                                          | `GATK`             |
+| FILTER            | character | Quality tag for the segment (`PASS` or `FAILED`)                                                        | `PASS`             |
+
+
+#### Raw likelihood results under each configuration
+sample_likelihood_raw.tsv (Generated by `?RunModelLikelihood()` function)
+
+| Column           | Type      | Description                                                                                                     | Example_value |
+|------------------|-----------|-----------------------------------------------------------------------------------------------------------------|---------------|
+| major            | integer   | Major allele copy number                                                                                        | `2`           |
+| minor            | integer   | Minor allele copy number                                                                                        | `1`           |
+| CN               | integer   | Total copy number (major + minor)                                                                               | `3`           |
+| ccf              | numeric   | Cancer cell fraction                                                                                            | `0.85`        |
+| Bio_diff         | integer   | Biological difficulty score for the allele combination                                                          | `3`           |
+| prior            | numeric   | Prior probability for the allele combination                                                                    | `0.12`        |
+| expected_maf     | numeric   | Expected minor allele frequency for this configuration                                                          | `0.21`        |
+| maf_ll           | numeric   | Log-likelihood for the observed MAF under this configuration                                                    | `-0.56`       |
+| weighted_prior   | numeric   | Weighted log-prior (prior × gamma)                                                                              | `-2.13`       |
+| exp_maf_ll       | numeric   | Exponentiated MAF log-likelihood                                                                                | `0.57`        |
+| exp_prior        | numeric   | Exponentiated weighted prior                                                                                    | `0.11`        |
+| MAF_likelihood   | numeric   | Posterior likelihood for this configuration                                                                     | `0.065`       |
+| Segcov           | numeric   | Pseudo Segment coverage                                                                                         | `280`         |
+| MAF              | numeric   | Observed minor allele frequency                                                                                 | `0.19`        |
+| mu               | numeric   | Diploid coverage scale factor                                                                                   | `1.0`         |
+| rho              | numeric   | Tumor purity (fraction between 0 and 1)                                                                         | `0.7`         |
+| index            | character | Segment index or identifier                                                                                     | `"12"`        |
+| Tag              | character | Segment inclusion/exclusion tag for summarizing total likelihood for a model (e.g., `"Include"`, `"Exclude"`)   | `"Include"`   |
+| ccf_MAF          | numeric   | Cancer cell fraction estimated from MAF and allele configuration only                                           | `0.81`        |
+
+
+#### Allelic combiantion ressult with maximum likelihood under each configuration
+sample_top_likelihood_calls.tsv ( Generated by `?SelectCallpersegment()` function )
+The format is simillar with `sample_likelihood_raw.tsv`, with best allelic combiantion is selected for each segment under each diploid coverage scale factor and tumor purity configuration.
+
+#### Likelihood for each combination of diploid coverage scale factor and tumor purity 
+sample_Models_likelihood.tsv ( Generated by `?SelectFinalModel()` function )
+
+| Column                          | Type      | Description                                                                                 | Example_value   |
+|----------------------------------|-----------|---------------------------------------------------------------------------------------------|-----------------|
+| mu                               | numeric   | Diploid coverage scale factor (model parameter)                                             | `1.0`           |
+| rho                              | numeric   | Tumor purity (model parameter, fraction between 0 and 1)                                    | `0.7`           |
+| total_log_likelihood_before_refine | numeric | Total log-likelihood for the model before refinement                                        | `-1234.5`       |
+| segments_n                       | integer   | Number of segments included in the model                                                    | `27`            |
+| Likelihood_penalty_rows          | integer   | Number of segments penalized due to failed likelihood calculation                           | `2`             |
+| total_log_likelihood_after_refine  | numeric | Total log-likelihood for the model after refinement                                         | `-1220.2`       |
+| diploid_n                        | integer   | Number of diploid segments in the model                                                     | `15`            |
+| diploid_distance_to_integer      | numeric   | Mean distance to integer copy number for diploid segments                                   | `0.04`          |
+| nondiploid_n                     | integer   | Number of non-diploid segments in the model                                                 | `12`            |
+| nondiploid_distance_to_integer   | numeric   | Mean distance to integer copy number for non-diploid segments                               | `0.11`          |
+| total_distance_to_integer        | numeric   | Sum of diploid and non-diploid mean distances to integer copy number                        | `0.15`          |
+| ploidy                           | numeric   | Mean copy number (ploidy) across all segments                                               | `2.4`           |
+| Tier1                            | character | Model tier label (e.g., `"Tier1_Models"`, `"Final_model_MAF"`)                              | `"Tier1_Models"`|
+| total_likelihood_cluster         | integer   | Rank based on total likelihood ( lower is better )                                          | `1`             |
+| diploid_distance_cluster         | integer   | Rank based on diploid distance to integer copy number ( lower is better )                   | `1`             |
+| nondiploid_distance_cluster      | integer   | Rank based on non-diploid distance to integer copy number (lower is better)                 | `1`             |
+| total_likelihood_cluster_mean    | numeric   | Mean total log-likelihood for the level                                                     | `-1200.0`       |
+| diploid_distance_cluster_mean    | numeric   | Mean diploid distance to integer for the level                                              | `0.03`          |
+| nondiploid_distance_cluster_mean | numeric   | Mean non-diploid distance to integer for the level                                          | `0.10`          |
+
+
+#### Final output of CNV calling
+sample_final_calls.tsv (Generated by `?RunModelLikelihood()` function)
+
+| Column            | Type      | Description                                                        | Example_value          |
+|-------------------|-----------|--------------------------------------------------------------------|------------------------|
+| Chromosome        | character | Chromosome name                                                    | `1`                    |
+| Start             | integer   | Start position (base pair)                                         | `3301463`              |
+| End               | integer   | End position (base pair)                                           | `247784114`            |
+| size              | integer   | Segment size (bp)                                                  | `244367069`            |
+| Num_Probes        | integer   | Number of probes from GATK segment file                            | `222`.                 |
+| Call              | character | Copy number call (e.g., `REF`, `GAIN`, `LOSS`,`GAINLOH`,`CNLOH`)   | `REF`                  |
+| ccf_COV           | numeric   | Cancer cell fraction estimated from coverage                       | `1`                    |
+| ccf_MAF           | numeric   | Cancer cell fraction estimated from MAF                            | `0`                    |
+| ccf_final         | numeric   | Final cancer cell fraction after refinement                        | `1`                    |
+| Segment_Mean      | numeric   | Final Segment mean (log2 ratio)                                    | `0.057631093`          |
+| CNF_correct       | numeric   | Purity corrected copy number estimate from coverage                | `2.086898584`          |
+| major             | integer   | Major allele copy number                                           | `1`                    |
+| minor             | integer   | Minor allele copy number                                           | `1`                    |
+| CN                | integer   | Total copy number (major + minor)                                  | `2`                    |
+| MAF               | numeric   | Observed minor allele frequency                                    | `0.5`                  |
+| MAF_correct       | numeric   | Purity corrected minor allele frequency                            | `0.5`                  |
+| expected_maf      | numeric   | Expected minor allele frequency for this configuration             | `0.5`                  |
+| expected_cov      | numeric   | Expected pseudo coverage for this segment                                 | `90`                   |
+| MAF_Probes        | integer   | Number of probes used for MAF calculation                          | `1110`                 |
+| MAF_gmm_G         | integer   | Number of GMM clusters in MAF distribution                         | `5`                    |
+| MAF_gmm_weight    | numeric   | Mixture weight of the main GMM cluster                             | `0.667871528`          |
+| BreakpointSource  | character | Source of breakpoint (`GATK` or `Postprocess`)                     | `GATK`                 |
+| FILTER            | character | Quality tag for the segment (`PASS` or `FAILED`)                   | `PASS`                 |
+| maf_ll            | numeric   | Log-likelihood for the observed MAF                                | `2.625299941`          |
+| MAF_likelihood    | numeric   | Posterior likelihood for this configuration                        | `8.891628731`          |
+| mu                | numeric   | Diploid coverage scale factor                                      | `0.9`                  |
+| rho               | numeric   | Tumor purity (fraction between 0 and 1)                            | `0.938`                |
+| index             | character | Segment index or identifier                                        | `1`                    |
+| gatk_SM_raw       | numeric   | Raw segment mean from GATK                                         | `-0.094372`            |
+| gatk_count        | integer   | Number of counts in GATK segment                                   | `361`                  |
+| gatk_baselinecov  | numeric   | The GATK baseline is an intermediate value calculated using gatk_SM_raw and gatk_count.   | `385.4038109`          |
+| gatk_gender       | character | Gender as reported by GATK                                         | `female`               |
+| pipeline_gender   | character | Gender as used in pipeline                                         | `female`               |
+| CN_mix            | character | Indicator for copy number mixture (`No` or `CN_Mix`)               | `No`                   |
+| Model_source      | character | Source of model selection (`Coverage`, `Coverage + MAF`, `Diploid` )    | `Coverage + MAF`       |
+
+#### Model selection plots
+
+**Likelihood dot plot:**
+![Likelihood dot plot](example_female_CNV_likelihood_dot_plot.png)
+The plot displays the likelihood ranking for all combinations of diploid coverage scale factor and tumor purity. The vertical dashed line indicates the likelihood cutoff used to define Tier 1 models. 
+
+
+**Model plot:**
+![Model plot](example_female_CNV_Modelplot.png)
+The model plot displays the likelihood values of different models, which are calculated based on potential combinations of diploid coverage scale factor and tumor purity. In the plot, red indicates higher likelihood, while blue signifies lower likelihood. The light blue dot indicates the final model selected by XploR. 
+
+**Tier1 Models Overall:**
+![Tier1 Models](example_Tier1_models_2.png)
+This plot shows copy number calls for each combination of diploid coverage scale factor and tumor purity. Red indicates gain, blue indicates loss, and white indicates no change. Each configuration is labeled on the y-axis. By evaluating coverage and allelic imbalance patterns in this overview, you can identify the reasonable range of diploid coverage scale factors and tumor purity values. This helps guide reruns with optimized parameter ranges if needed.
+
+**Tier1 Models Zoom in:**
+![Tier1 Models zoom in](example_Tier1_models.png)
+A zoomed-in view that makes the y-axis configurations more visible for detailed inspection.
+
+#### QC Summary Table 
+sample_PASS_STAT_chr.txt ( Generated by `?BafQC()` function )
+
+| Column                | Type      | Description                                                        | Example_value |
+|-----------------------|-----------|--------------------------------------------------------------------|--------------|
+| chrom                 | character | Chromosome name (e.g., `1`, `2`, ..., `X`, `Y`)                    | `1`          |
+| FILTER                | character | Segment filter status                                              | `PASS`       |
+| Total_segment_count   | integer   | Total number of segments on the chromosome                          | `25`         |
+| PASS_Seg_Count        | integer   | Number of segments with `PASS` filter status                        | `20`         |
+| PASS_Seg_Percent      | numeric   | Percentage of segments with `PASS` status (0–1)                     | `0.80`       |
+| Total_segment_size    | integer   | Total size (bp) of all segments on the chromosome                   | `249250621`  |
+| PASS_Seg_Size         | integer   | Total size (bp) of `PASS` segments on the chromosome                | `199400497`  |
+| PASS_Seg_Size_Percent | numeric   | Percentage of total segment size that is `PASS` (0–1)               | `0.80`       |
+
+#### Annotation file 
+sample_CNV_annotation.tsv ( Generated by `?AnnotateSegments()` function, only unique columns are listed ).
+
+ISCN calculation rules:
+1.	All segments will be reported with start and end cytoband in ISCN format. however certain considerations are made for the position of the centromere: 
+a. In metacentric chromosomes, if a segment crosses the centromere and the gaps between the segment and the telomere on both sides are less than 5MB, only the chromosome number will be reported. 
+b. In metacentric chromosomes, if a segment does not cross the centromere, and the gaps between the segment and the centromere and the telomere are both less than 5MB, the chromosome number followed by 'p' or 'q' will be reported. 
+c. In acrocentric chromosomes, if the segment fulfills rule 'b' above, only the chromosome number will be reported.
+
+| Column            | Type      | Description                                                                    | Example_value      |
+|-------------------|-----------|--------------------------------------------------------------------------------|--------------------|
+| p_chromStart      | integer   | Detectable start position of p arm                                             | `10`               |
+| p_chromEnd        | integer   | Detectable end position of p arm                                               | `121535434`        |
+| p_first_name      | character | Detectable name of first cytoband in p arm                                     | `p36.33`           |
+| p_last_name       | character | Detectable name of last cytoband in p arm                                      | `p11.2`            |
+| q_chromStart      | integer   | Detectable Start position of q arm                                             | `121535435`        |
+| q_chromEnd        | integer   | Detectable end position of q arm                                               | `247784114`        |
+| q_first_name      | character | Detectable name of first cytoband in q arm                                     | `q11.1`            |
+| q_last_name       | character | Detectable name of last cytoband in q arm                                      | `qter`             |
+| p_gap_to_tel      | integer   | Gap from segment start to p arm telomere                                       | `0`                |
+| p_gap_to_cen      | integer   | Gap from segment end to p arm centromere                                       | `10000`            |
+| q_gap_to_tel      | integer   | Gap from segment end to q arm telomere                                         | `0`                |
+| q_gap_to_cen      | integer   | Gap from segment start to q arm centromere                                     | `10000`            |
+| ISCN              | character | ISCN-style cytogenetic annotation                                              | `1p36.33-p11.2`    |
+| Gene              | character | Overlapping gene(s) in the segment                                             | `TP53`             |
+| Gene_count        | integer   | Number of overlapping genes                                                    | `1`                |
+
+
+#### CNV plot
+sample_CNV_plot.png ( Generated by `?RunPlotCNV()` function).
+![CNV plot:](example_female_CNV_plot.png)
+The CNV Plot shows a genome-wide summary of the copy number (top track), B-allele frequency (BAF, second track) data, tumor fraction( ccf, third tract ) and quality of segment ( bottom track). The Copy Number (CN), on the Y-axis, is a linear count of the number of copies of each chromosome in the tumor cells, taking tumor purity and tumor fraction into account. Each chromosome is plotted as a set of dots that collectively show the estimated sequence coverage for the chromosome, and as a narrow turquoise line that shows the final CN call for the chromosome. 
+The BAF plot shows the variant allele fraction of SNPs across the genome with the same coloration used in the Copy Number plot. When the copy number of a chromosome changes, the BAF plot for an affected chromosome splits due to imbalance in chromosome counts. The variance of B-allele frequencies is quite high so the splitting of the BAF may be difficult to discern. To assist with interpreting the BAF plot, a turquoise line is drawn at the median level to show the imbalance.
+
+
+
 ## Model selection and rerun 
 
-## Output
-
 ## Full function and parameter list
+For a complete list of all functions and their parameters, please visit the [XploR function reference](https://sj-cmpb-se.github.io/XploR/reference/index.html).
 
+Each function page includes detailed parameter descriptions, usage examples, and links to related documentation.
 

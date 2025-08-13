@@ -22,7 +22,7 @@ RunPlotCNV(
 
 \item{cr}{Path to the GATK denoised CR file with extension denoisedCR.tsv.}
 
-\item{ballele}{Path to the DRAGEN B-allele file. Or other souce B-allele file with column chrom ref alt baf}
+\item{ballele}{Path to the DRAGEN B-allele file. Or other source B-allele file with column chrom ref alt baf}
 
 \item{ai_binsize}{Numeric. Bin size for AI plot (default 100000).}
 
