@@ -42,10 +42,16 @@
 
       <dl><dt>
 
+          <code><a href="AIbinSmooth.html">AIbinSmooth()</a></code>
+
+        </dt>
+        <dd>Smooth AI Bin Values by Downsampling</dd>
+      </dl><dl><dt>
+
           <code><a href="AddQualTag.html">AddQualTag()</a></code>
 
         </dt>
-        <dd>Assign Quality Tag to a Segment Based on BAF GMM Metrics</dd>
+        <dd>Assign Quality Tag to a Segment Based on maf GMM Metrics</dd>
       </dl><dl><dt>
 
           <code><a href="AnnotateGene.html">AnnotateGene()</a></code>
@@ -64,6 +70,24 @@
 
         </dt>
         <dd>Assign Priors to Major/Minor Allele Combinations Based on Biological Difficulty</dd>
+      </dl><dl><dt>
+
+          <code><a href="BafQC.html">BafQC()</a></code>
+
+        </dt>
+        <dd>Summarise BAF QC from CNV Segment Annotation</dd>
+      </dl><dl><dt>
+
+          <code><a href="BinMaf.html">BinMaf()</a></code>
+
+        </dt>
+        <dd>Bin MAF Data and Estimate MAF Metrics per Bin</dd>
+      </dl><dl><dt>
+
+          <code><a href="CRCorrectPurity.html">CRCorrectPurity()</a></code>
+
+        </dt>
+        <dd>Calculate CNF based on purity and diploid coverage size factor</dd>
       </dl><dl><dt>
 
           <code><a href="CalMedian.html">CalMedian()</a></code>
@@ -96,6 +120,12 @@
         <dd>Calculate Cancer Cell Fraction (CCF)</dd>
       </dl><dl><dt>
 
+          <code><a href="CalculateGaps.html">CalculateGaps()</a></code>
+
+        </dt>
+        <dd>Calculate Gaps Between Segment and Cytoband-Defined Chromosome Landmarks</dd>
+      </dl><dl><dt>
+
           <code><a href="CallMerge.html">CallMerge()</a></code>
 
         </dt>
@@ -120,6 +150,12 @@
         <dd>Assign Copy Number Call Without Model</dd>
       </dl><dl><dt>
 
+          <code><a href="CategorizeK.html">CategorizeK()</a></code>
+
+        </dt>
+        <dd>Categorize Beta Distribution K Values</dd>
+      </dl><dl><dt>
+
           <code><a href="CcfLOH.html">CcfLOH()</a></code>
 
         </dt>
@@ -135,7 +171,13 @@
           <code><a href="Checkmode.html">Checkmode()</a></code>
 
         </dt>
-        <dd>Check and Set Mode-Specific Options</dd>
+        <dd>Check and Set Mode-Specific Parameters for CNV Calling</dd>
+      </dl><dl><dt>
+
+          <code><a href="CleanHomalt.html">CleanHomalt()</a></code>
+
+        </dt>
+        <dd>Clean Homozygous AI Bins Based on LOH Segments</dd>
       </dl><dl><dt>
 
           <code><a href="ClusterAdjacent.html">ClusterAdjacent()</a></code>
@@ -150,16 +192,16 @@
         <dd>Cluster and Select the Best Models Based on Likelihood and Copy Number Distance</dd>
       </dl><dl><dt>
 
-          <code><a href="CorrectBAF.html">CorrectBAF()</a></code>
-
-        </dt>
-        <dd>Correct MAF Values Using a Scaling Factor</dd>
-      </dl><dl><dt>
-
           <code><a href="CorrectGender.html">CorrectGender()</a></code>
 
         </dt>
         <dd>Correct Copy Ratio File if GATK and Pipeline Gender Disagree</dd>
+      </dl><dl><dt>
+
+          <code><a href="CorrectMAF.html">CorrectMAF()</a></code>
+
+        </dt>
+        <dd>Correct MAF Values Using a Scaling Factor</dd>
       </dl><dl><dt>
 
           <code><a href="CorrectPurity.html">CorrectPurity()</a></code>
@@ -168,16 +210,10 @@
         <dd>Correct CNF and MAF According to Purity</dd>
       </dl><dl><dt>
 
-          <code><a href="CoverageQC.html">CoverageQC()</a></code>
+          <code><a href="CovBin.html">CovBin()</a></code>
 
         </dt>
-        <dd>Summarise BAF QC from CNV Segment Annotation</dd>
-      </dl><dl><dt>
-
-          <code><a href="EstimateBAFshift.html">EstimateBAFshift()</a></code>
-
-        </dt>
-        <dd>Estimate MAF Shift Scaling Factor</dd>
+        <dd>Bin and Smooth Copy Number Data from Coverage File</dd>
       </dl><dl><dt>
 
           <code><a href="EstimateCovSF.html">EstimateCovSF()</a></code>
@@ -192,10 +228,16 @@
         <dd>Estimate MAF Cluster Mean and Weight Using Gaussian Mixture Modeling</dd>
       </dl><dl><dt>
 
+          <code><a href="EstimateMAFshift.html">EstimateMAFshift()</a></code>
+
+        </dt>
+        <dd>Estimate MAF Shift Scaling Factor</dd>
+      </dl><dl><dt>
+
           <code><a href="EstimateMinPurity.html">EstimateMinPurity()</a></code>
 
         </dt>
-        <dd>Estimate Minimum Tumor Purity from BAF Data</dd>
+        <dd>Estimate Minimum Tumor Purity from MAF Data</dd>
       </dl><dl><dt>
 
           <code><a href="EstimatePurityCov.html">EstimatePurityCov()</a></code>
@@ -204,7 +246,7 @@
         <dd>Estimate Tumor Purity from Coverage and Segmentation Data</dd>
       </dl><dl><dt>
 
-          <code><a href="EstimateSFVariance.html">EstimateSFVariance()</a></code>
+          <code><a href="EstimateVariance.html">EstimateVariance()</a></code>
 
         </dt>
         <dd>Estimate Standard Deviation of a Numeric Vector</dd>
@@ -214,6 +256,12 @@
 
         </dt>
         <dd>Extract Final Calls for a Given (mu, rho) Model</dd>
+      </dl><dl><dt>
+
+          <code><a href="FindCytoband.html">FindCytoband()</a></code>
+
+        </dt>
+        <dd>Find Cytoband Name for Genomic Position</dd>
       </dl><dl><dt>
 
           <code><a href="FindTier1Models.html">FindTier1Models()</a></code>
@@ -234,10 +282,28 @@
         <dd>Generate All Major/Minor Allele Combinations for a Given Total Copy Number</dd>
       </dl><dl><dt>
 
+          <code><a href="GenerateISCN.html">GenerateISCN()</a></code>
+
+        </dt>
+        <dd>Generate Cytoband-Based Annotation String for a CNV Segment</dd>
+      </dl><dl><dt>
+
           <code><a href="Groupvalues.html">Groupvalues()</a></code>
 
         </dt>
         <dd>Group Values by Change Points in the Mean</dd>
+      </dl><dl><dt>
+
+          <code><a href="KeepWhitelistAI.html">KeepWhitelistAI()</a></code>
+
+        </dt>
+        <dd>Keep Only AI Bins in Whitelisted Regions</dd>
+      </dl><dl><dt>
+
+          <code><a href="KeepWhitelistCov.html">KeepWhitelistCov()</a></code>
+
+        </dt>
+        <dd>Keep Only Coverage Bins in Whitelisted Regions</dd>
       </dl><dl><dt>
 
           <code><a href="MergeAICheck.html">MergeAICheck()</a></code>
@@ -267,25 +333,25 @@
           <code><a href="ModelSource.html">ModelSource()</a></code>
 
         </dt>
-        <dd>Determine Model Source Based on BAF and Coverage Information</dd>
+        <dd>Determine Model Source Based on MAF and Coverage Information</dd>
       </dl><dl><dt>
 
           <code><a href="ParseParm.html">ParseParm()</a></code>
 
         </dt>
-        <dd>Parse Purity and Scale Factor Parameters for Model Selection</dd>
+        <dd>Parse and Select Purity and Scale Factor Parameters from Model Grid</dd>
+      </dl><dl><dt>
+
+          <code><a href="PlotCov.html">PlotCov()</a></code>
+
+        </dt>
+        <dd>Multi-panel Plot of Copy Number, BAF, Clonality, and Quality Across Chromosomes</dd>
       </dl><dl><dt>
 
           <code><a href="PlotCovDisCN.html">PlotCovDisCN()</a></code>
 
         </dt>
         <dd>Plot Coverage Distance to Integer Copy Number vs. Purity</dd>
-      </dl><dl><dt>
-
-          <code><a href="PlotLikelihoodAndDistance.html">PlotLikelihoodAndDistance()</a></code>
-
-        </dt>
-        <dd>Plot Model Likelihood and Distance Clusters as an Interactive Heatmap</dd>
       </dl><dl><dt>
 
           <code><a href="PlotModel.html">PlotModel()</a></code>
@@ -300,6 +366,24 @@
         <dd>Plot Model Total Log-Likelihoods as a Dot Plot</dd>
       </dl><dl><dt>
 
+          <code><a href="PlotModelcluster.html">PlotModelcluster()</a></code>
+
+        </dt>
+        <dd>Plot all CNV calls under each Tier1 models</dd>
+      </dl><dl><dt>
+
+          <code><a href="PonProcess.html">PonProcess()</a></code>
+
+        </dt>
+        <dd>Generate Whitelist, Blacklist, and Cytoband-Detectable Edge Files from GATK PoN HDF5</dd>
+      </dl><dl><dt>
+
+          <code><a href="ReadAI.html">ReadAI()</a></code>
+
+        </dt>
+        <dd>Read and Standardize Allelic Imbalance Data</dd>
+      </dl><dl><dt>
+
           <code><a href="RefineCalls.html">RefineCalls()</a></code>
 
         </dt>
@@ -309,7 +393,7 @@
           <code><a href="RefineCallsSecond.html">RefineCallsSecond()</a></code>
 
         </dt>
-        <dd>Second Refinement of Segment Calls for Cov/AI Profile Mismatches</dd>
+        <dd>Second Refinement of Segment Calls for Coverage/AI Profile Mismatches</dd>
       </dl><dl><dt>
 
           <code><a href="RefineTier1Models.html">RefineTier1Models()</a></code>
@@ -318,10 +402,52 @@
         <dd>Refine Tier 1 Models and Their Segment Calls</dd>
       </dl><dl><dt>
 
+          <code><a href="RerunCNV.html">RerunCNV()</a></code>
+
+        </dt>
+        <dd>Rerun CNV Calling with User-Defined Purity and Size Factor or Diploid Region</dd>
+      </dl><dl><dt>
+
+          <code><a href="RoundAI.html">RoundAI()</a></code>
+
+        </dt>
+        <dd>Round BAF Values into 20 Bins</dd>
+      </dl><dl><dt>
+
+          <code><a href="RoundCN.html">RoundCN()</a></code>
+
+        </dt>
+        <dd>Round Copy Number to Integer Based on Call and Gender</dd>
+      </dl><dl><dt>
+
+          <code><a href="RunAIsegmentation.html">RunAIsegmentation()</a></code>
+
+        </dt>
+        <dd>Run AI Segmentation Workflow</dd>
+      </dl><dl><dt>
+
           <code><a href="RunCallikelihood.html">RunCallikelihood()</a></code>
 
         </dt>
-        <dd>Run Likelihood Calculation Across All Purity/Mu Combinations</dd>
+        <dd>Run Likelihood Calculation Across All Purity and Scale Factor Combinations</dd>
+      </dl><dl><dt>
+
+          <code><a href="RunExamplePipeline.html">RunExamplePipeline()</a></code>
+
+        </dt>
+        <dd>Run XploR Example Pipeline</dd>
+      </dl><dl><dt>
+
+          <code><a href="RunModelLikelihood.html">RunModelLikelihood()</a></code>
+
+        </dt>
+        <dd>Run Model Likelihood and Copy Number Calling Workflow</dd>
+      </dl><dl><dt>
+
+          <code><a href="RunPlotCNV.html">RunPlotCNV()</a></code>
+
+        </dt>
+        <dd>Plot CNV Profile (Copy Number, BAF, Clonality, Quality)</dd>
       </dl><dl><dt>
 
           <code><a href="SearchBreakpoint.html">SearchBreakpoint()</a></code>
@@ -345,7 +471,7 @@
           <code><a href="SelectFinalModel.html">SelectFinalModel()</a></code>
 
         </dt>
-        <dd>Select the Final Copy Number Model and Write Results</dd>
+        <dd>Select and Refine the Final CNV Model and Segment Calls</dd>
       </dl><dl><dt>
 
           <code><a href="SelectModelByDis.html">SelectModelByDis()</a></code>
@@ -354,166 +480,16 @@
         <dd>Select Model by Distance to Integer Copy Number</dd>
       </dl><dl><dt>
 
-          <code><a href="SummarizeMapQC.html">SummarizeMapQC()</a></code>
-
-        </dt>
-        <dd>Summarise QC Tables for a Sample</dd>
-      </dl><dl><dt>
-
-          <code><a href="ai_bin_smooth.html">ai_bin_smooth()</a></code>
-
-        </dt>
-        <dd>Smooth AI Bin Values by Downsampling to Mode Proportions</dd>
-      </dl><dl><dt>
-
-          <code><a href="band_plottable_female.html">band_plottable_female</a></code>
-
-        </dt>
-        <dd>Non blacklist region for each cytobands binned by 300nt for female.</dd>
-      </dl><dl><dt>
-
-          <code><a href="band_plottable_male.html">band_plottable_male</a></code>
-
-        </dt>
-        <dd>Non blacklist region for each cytobands binned by 300nt for male.</dd>
-      </dl><dl><dt>
-
-          <code><a href="binbaf.html">binbaf()</a></code>
-
-        </dt>
-        <dd>Bin MAF Data and Estimate MAF Metrics per Bin</dd>
-      </dl><dl><dt>
-
-          <code><a href="blacklist_table.html">blacklist_table</a></code>
-
-        </dt>
-        <dd>Non mapable regions of the genome</dd>
-      </dl><dl><dt>
-
-          <code><a href="calculate_gaps.html">calculate_gaps()</a></code>
-
-        </dt>
-        <dd>Calculate Gaps Between Segment and Cytoband-Defined Chromosome Landmarks</dd>
-      </dl><dl><dt>
-
-          <code><a href="categorize_K.html">categorize_K()</a></code>
-
-        </dt>
-        <dd>Categorize Beta Distribution K Values</dd>
-      </dl><dl><dt>
-
-          <code><a href="clean_homalt.html">clean_homalt()</a></code>
-
-        </dt>
-        <dd>Clean Homozygous AI Bins Based on LOH Segments</dd>
-      </dl><dl><dt>
-
-          <code><a href="correct_purity.html">correct_purity()</a></code>
-
-        </dt>
-        <dd>Correct Copy Ratio and Calculate CNF for Purity and Scale Factor</dd>
-      </dl><dl><dt>
-
-          <code><a href="cov_bin.html">cov_bin()</a></code>
-
-        </dt>
-        <dd>Bin and Smooth Copy Number Data from Coverage File</dd>
-      </dl><dl><dt>
-
-          <code><a href="cytoband_table.html">cytoband_table</a></code>
-
-        </dt>
-        <dd>Cytoband reference table</dd>
-      </dl><dl><dt>
-
-          <code><a href="edge_table.html">edge_table</a></code>
-
-        </dt>
-        <dd>Detectable Edge table for cytoband annotation follows the 5MB rule.</dd>
-      </dl><dl><dt>
-
-          <code><a href="findcytoband.html">findcytoband()</a></code>
-
-        </dt>
-        <dd>Find Cytoband Name for Genomic Position</dd>
-      </dl><dl><dt>
-
-          <code><a href="gene_annotation.html">gene_annotation</a></code>
-
-        </dt>
-        <dd>RefSeq gene annotations</dd>
-      </dl><dl><dt>
-
-          <code><a href="generate_ISCN.html">generate_ISCN()</a></code>
-
-        </dt>
-        <dd>Generate Cytoband-Based Annotation String for a CNV Segment</dd>
-      </dl><dl><dt>
-
-          <code><a href="keep_whitelist_ai.html">keep_whitelist_ai()</a></code>
-
-        </dt>
-        <dd>Keep Only AI Bins in Whitelisted Regions</dd>
-      </dl><dl><dt>
-
-          <code><a href="keep_whitelist_cov.html">keep_whitelist_cov()</a></code>
-
-        </dt>
-        <dd>Keep Only Coverage Bins in Whitelisted Regions</dd>
-      </dl><dl><dt>
-
-          <code><a href="plot_cov.html">plot_cov()</a></code>
-
-        </dt>
-        <dd>Multi-panel Plot of Copy Number, BAF, Clonality, and Quality Across Chromosomes</dd>
-      </dl><dl><dt>
-
-          <code><a href="read_whitelist.html">read_whitelist()</a></code>
-
-        </dt>
-        <dd>Read and Process DRAGEN Whitelist Regions</dd>
-      </dl><dl><dt>
-
-          <code><a href="rerunCalling.html">rerunCalling()</a></code>
-
-        </dt>
-        <dd>Rerun CNV Calling with User-Defined Purity and Size Factor</dd>
-      </dl><dl><dt>
-
-          <code><a href="round_ai.html">round_ai()</a></code>
-
-        </dt>
-        <dd>Round BAF Values into 20 Bins</dd>
-      </dl><dl><dt>
-
-          <code><a href="roundcn.html">roundcn()</a></code>
-
-        </dt>
-        <dd>Round Copy Number to Integer Based on Call and Gender</dd>
-      </dl><dl><dt>
-
-          <code><a href="runAIsegmentation.html">runAIsegmentation()</a></code>
-
-        </dt>
-        <dd>Run AI Segmentation Workflow</dd>
-      </dl><dl><dt>
-
-          <code><a href="runModelLikelihood.html">runModelLikelihood()</a></code>
-
-        </dt>
-        <dd>Run Model Likelihood and Copy Number Calling Workflow</dd>
-      </dl><dl><dt>
-
-          <code><a href="runPlotCNV.html">runPlotCNV()</a></code>
-
-        </dt>
-        <dd>Plot CNV Profile (Copy Number, BAF, Clonality, Quality)</dd>
-      </dl><dl><dt>
-
-          <code><a href="smooth_ai.html">smooth_ai()</a></code>
+          <code><a href="SmoothAI.html">SmoothAI()</a></code>
 
         </dt>
         <dd>Smooth AI Bins by Window Size and Downsampling</dd>
+      </dl><dl><dt>
+
+          <code><a href="SummarizeMapQC.html">SummarizeMapQC()</a></code>
+
+        </dt>
+        <dd>Summarize QC Metrics for a Sample from a DRAGEN run.</dd>
       </dl></div>
   </main></div>
 

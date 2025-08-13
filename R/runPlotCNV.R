@@ -93,7 +93,7 @@ RunPlotCNV <- function(
     purity = purity
   )
 
-  outFile <- paste0(prefix, "_CNV_DRAGEN_plot.png")
+  outFile <- paste0(prefix, "_CNV_plot.png")
   ggplot2::ggsave(
     filename = outFile,
     plot = final_plot,

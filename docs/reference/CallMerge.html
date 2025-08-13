@@ -37,7 +37,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">CallMerge</span><span class="op">(</span><span class="va">data</span>, <span class="va">AIorSeg</span>, <span class="va">tmp_baf</span>, <span class="va">snpmin</span>, <span class="va">mergeai</span>, <span class="va">mergecov</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">CallMerge</span><span class="op">(</span><span class="va">data</span>, <span class="va">AIorSeg</span>, <span class="va">tmp_maf</span>, <span class="va">snpmin</span>, <span class="va">mergeai</span>, <span class="va">mergecov</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -52,7 +52,7 @@
 <dd><p>Character string, either <code>"AI"</code> to merge AI rows or <code>"Seg"</code> to merge segments.</p></dd>
 
 
-<dt id="arg-tmp-baf">tmp_baf<a class="anchor" aria-label="anchor" href="#arg-tmp-baf"></a></dt>
+<dt id="arg-tmp-maf">tmp_maf<a class="anchor" aria-label="anchor" href="#arg-tmp-maf"></a></dt>
 <dd><p>A data frame for use with <code>MergeAIRow</code>. Not used if <code>AIorSeg == "Seg"</code>.</p></dd>
 
 
@@ -62,6 +62,10 @@
 
 <dt id="arg-mergeai">mergeai<a class="anchor" aria-label="anchor" href="#arg-mergeai"></a></dt>
 <dd><p>Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.</p></dd>
+
+
+<dt id="arg-merge-cov">merge_cov<a class="anchor" aria-label="anchor" href="#arg-merge-cov"></a></dt>
+<dd><p>Numeric. Threshold for the difference in segment mean (gmm_mean) between adjacent segments to allow merging.</p></dd>
 
 </dl></div>
     <div class="section level2">
