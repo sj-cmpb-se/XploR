@@ -53,8 +53,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><p align="center">
 <img src="reference/figures/logo.png" alt="XploR logo" height="150"></p>
-<p><strong>XploR</strong> is an R package for robust, large-scale copy number and allelic imbalance analysis from whole exome sequencing (WES) data.<br>
-It provides tools for segmentation, purity/ploidy estimation, allelic imbalance analysis, ISCN annotation, interactive plotting, and more.</p>
+<p><strong>XploR</strong> is an R package designed for robust, allelic imbalance and large-scale copy number analysis from whole exome sequencing (WES) data in clinical genomics. It features advanced noise reduction using a panel of normal samples for both coverage and allelic counts, comprehensive smoothing and segmentation algorithms, and accurate purity and ploidy estimation. XploR supports flexible rerun options based on chromosome region, tumor purity, or diploid coverage, and includes integrated ISCN annotation and visualization. These capabilities make XploR a powerful solution for clinical and research applications in genomic copy number analysis.</p>
 <hr>
 <div class="section level2">
 <h2 id="contents">Contents<a class="anchor" aria-label="anchor" href="#contents"></a>
@@ -76,11 +75,12 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
 <ul>
+<li>BAF and coverage denoise, smoothing, binning, and quality control</li>
 <li>Exome-wide copy number segmentation and allelic imbalance detection</li>
 <li>Purity and ploidy estimation with model selection</li>
-<li>BAF and coverage smoothing, binning, and quality control</li>
+<li>Rerun based on chromosome region, purity or diploid coverage</li>
 <li>ISCN and gene annotation of CNV segments</li>
-<li>Interactive and publication-ready visualization</li>
+<li>Visualization</li>
 </ul>
 </div>
 <div class="section level2">
@@ -94,50 +94,37 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <div class="section level2">
 <h2 id="quick-test-run">Quick Test run<a class="anchor" aria-label="anchor" href="#quick-test-run"></a>
 </h2>
-<p>All files needed for a test run in placed at inst/extdata folder. RunExamplePipeline() will use the files in inst/exdata for a test run.</p>
+<p>All files needed for a test run in placed at inst/extdata folder. RunExamplePipeline() will use the files in inst/exdata for a test run. Panel of normal generation is not included in the test run. Details for build a panel of normals please refer to <a href="#prepare-reference-files">Prepare reference files</a></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sj-cmpb-se.github.io/XploR/">XploR</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/RunExamplePipeline.html">RunExamplePipeline</a></span><span class="op">(</span> out_dir <span class="op">=</span> <span class="st">"/path_to_output_dir"</span> <span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="running-this-function-is-same-with-running-the-steps-separately-like">Running this function is same with running the steps separately like:<a class="anchor" aria-label="anchor" href="#running-this-function-is-same-with-running-the-steps-separately-like"></a>
 </h3>
-<ol style="list-style-type: decimal">
-<li>Run segmentation based on Allelic imbalance information.</li>
-</ol>
+<div class="section level4">
+<h4 id="id_1-run-segmentation-based-on-allelic-imbalance-information-the-example-used-cbs-segmentation-method">1. Run segmentation based on Allelic imbalance information. The example used “cbs” segmentation method.<a class="anchor" aria-label="anchor" href="#id_1-run-segmentation-based-on-allelic-imbalance-information-the-example-used-cbs-segmentation-method"></a>
+</h4>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="reference/RunAIsegmentation.html">RunAIsegmentation</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/RunAIsegmentation.html">RunAIsegmentation</a></span><span class="op">(</span></span>
 <span>    seg <span class="op">=</span> <span class="va">seg</span>,</span>
 <span>    cov <span class="op">=</span> <span class="va">cov</span>,</span>
 <span>    ai <span class="op">=</span> <span class="va">ai</span>,</span>
 <span>    gender <span class="op">=</span> <span class="va">gender</span>,</span>
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
 <span>    prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
-<span>    aibinsize <span class="op">=</span> <span class="fl">500000</span>,</span>
-<span>    mergeai <span class="op">=</span> <span class="fl">0.15</span>,</span>
-<span>    mergecov <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>    minaisize <span class="op">=</span> <span class="fl">1000000</span>,</span>
-<span>    snpmin <span class="op">=</span> <span class="fl">7</span>,</span>
-<span>    minsnpcallaicutoff <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>    mergecovminsize <span class="op">=</span> <span class="fl">500000</span>,</span>
+<span>    ai_pon <span class="op">=</span> <span class="va">ai_pon</span>,</span>
 <span>    aitype <span class="op">=</span> <span class="st">"dragen"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"ERROR during segmentation: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">quit</a></span><span class="op">(</span>save <span class="op">=</span> <span class="st">"no"</span>, status <span class="op">=</span> <span class="fl">1</span>, runLast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> </span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="parameters-for-runaisegmentation">Parameters for <code>RunAIsegmentation</code>
+<span>  <span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-runaisegmentation">Parameters for <code>RunAIsegmentation</code>
 <a class="anchor" aria-label="anchor" href="#parameters-for-runaisegmentation"></a>
-</h3>
+</h5>
 <table class="table">
 <colgroup>
-<col width="18%">
-<col width="9%">
-<col width="56%">
-<col width="15%">
+<col width="14%">
+<col width="7%">
+<col width="65%">
+<col width="12%">
 </colgroup>
 <thead><tr class="header">
 <th>Parameter</th>
@@ -149,117 +136,146 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <tr class="odd">
 <td><code>seg</code></td>
 <td>character</td>
-<td>Path to the segment file from GATK tumor only CNV run.</td>
+<td>Path to the GATK segment file.</td>
 <td><code>"sample.seg"</code></td>
 </tr>
 <tr class="even">
 <td><code>cov</code></td>
 <td>character</td>
-<td>Path to the coverage file from GATK tumor only CNV run.</td>
+<td>Path to the GATK denoised coverage count file.</td>
 <td><code>"sample.counts"</code></td>
 </tr>
 <tr class="odd">
 <td><code>ai</code></td>
 <td>character</td>
-<td>Path to the allelic count file from DRAGEN/GATK or other sources.</td>
+<td>Path to the BAF file or allelic count file.</td>
 <td><code>"sample.baf"</code></td>
 </tr>
 <tr class="even">
+<td><code>ai_pon</code></td>
+<td>character</td>
+<td>Path to PON Rdata. AI panel of normals generated by <code>PONAIprocess</code>.</td>
+<td><code>"PON_AI.Rdata"</code></td>
+</tr>
+<tr class="odd">
 <td><code>gender</code></td>
 <td>character</td>
-<td>Sample gender (<code>"male"</code> or <code>"female"</code>)</td>
+<td>Sample gender (<code>"female"</code> or <code>"male"</code>), passed to <code><a href="reference/ReadAI.html">ReadAI()</a></code>.</td>
 <td><code>"female"</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>out_dir</code></td>
 <td>character</td>
-<td>Output directory</td>
+<td>Output directory path.</td>
 <td><code>"results/"</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>prefix</code></td>
 <td>character</td>
-<td>Prefix for output files</td>
+<td>Output file prefix.</td>
 <td><code>"Sample1"</code></td>
-</tr>
-<tr class="odd">
-<td><code>aibinsize</code></td>
-<td>numeric</td>
-<td>Bin size for allelic imbalance, default is 500,000.</td>
-<td><code>500000</code></td>
 </tr>
 <tr class="even">
 <td><code>mergeai</code></td>
 <td>numeric</td>
-<td>AI segment merge threshold, default is 0.15.</td>
+<td>MAF difference threshold for merging segments under “merge” segmentation mode (default: 0.15).</td>
 <td><code>0.15</code></td>
 </tr>
 <tr class="odd">
 <td><code>mergecov</code></td>
 <td>numeric</td>
-<td>Coverage segment merge threshold, default is 0.2.</td>
+<td>CNV difference threshold for merging segments (default: 0.2).</td>
 <td><code>0.2</code></td>
 </tr>
 <tr class="even">
-<td><code>minaisize</code></td>
+<td><code>snpmin</code></td>
 <td>numeric</td>
-<td>Minimum reportable AI segment size, default is 1,000,000.</td>
+<td>Minimum SNPs for MAF segmentation under “merge” segmentation mode (default: 7).</td>
+<td><code>7</code></td>
+</tr>
+<tr class="odd">
+<td><code>minsnpcov</code></td>
+<td>numeric</td>
+<td>Minimum coverage of SNPs to be included (default: 20).</td>
+<td><code>20</code></td>
+</tr>
+<tr class="even">
+<td><code>maxgap</code></td>
+<td>numeric</td>
+<td>Maximum gap size inside a bin; if exceeded, start a new bin (default: 1,000,000).</td>
 <td><code>1000000</code></td>
 </tr>
 <tr class="odd">
-<td><code>snpmin</code></td>
+<td><code>snpnum</code></td>
 <td>integer</td>
-<td>Minimum SNPs per AI segment, default is 7 for WES.</td>
-<td><code>7</code></td>
+<td>SNP number in each bin (default: 30).</td>
+<td><code>30</code></td>
+</tr>
+<tr class="even">
+<td><code>maxbinsize</code></td>
+<td>numeric</td>
+<td>Maximum bin size (default: 2,000,000).</td>
+<td><code>2000000</code></td>
+</tr>
+<tr class="odd">
+<td><code>minbinsize</code></td>
+<td>numeric</td>
+<td>Minimum bin size (default: 500,000).</td>
+<td><code>500000</code></td>
 </tr>
 <tr class="even">
 <td><code>minsnpcallaicutoff</code></td>
-<td>integer</td>
-<td>Minimum SNPs to call AI segment, default is 10 for WES.</td>
+<td>numeric</td>
+<td>Minimum SNPs for reliable CNLOH/GAINLOH (default: 10).</td>
 <td><code>10</code></td>
 </tr>
 <tr class="odd">
 <td><code>mergecovminsize</code></td>
 <td>numeric</td>
-<td>Minimum coverage segment size after merging, default is 500,000.</td>
+<td>Minimum size for GATK segment merge (default: 500,000).</td>
 <td><code>500000</code></td>
+</tr>
+<tr class="even">
+<td><code>segmethod</code></td>
+<td>character</td>
+<td>Segmentation method: <code>"merge"</code> for stepwise merging, <code>"cbs"</code> for CBS segmentation.</td>
+<td><code>"cbs"</code></td>
+</tr>
+<tr class="odd">
+<td><code>cbssmooth</code></td>
+<td>character</td>
+<td>If using CBS, <code>"yes"</code> to apply smoothing before segmentation, <code>"no"</code> to skip smoothing.</td>
+<td><code>"yes"</code></td>
 </tr>
 <tr class="even">
 <td><code>aitype</code></td>
 <td>character</td>
-<td>Type of AI input (<code>"dragen"</code>, <code>"gatk"</code>, or <code>"other"</code>)</td>
+<td>Type of allelic imbalance data: <code>"gatk"</code>, <code>"other"</code>, or <code>"dragen"</code> (see below for requirements).</td>
 <td><code>"dragen"</code></td>
 </tr>
 </tbody>
 </table>
-<ol start="2" style="list-style-type: decimal">
-<li>Run model likelihood calculation and selection.</li>
-</ol>
+<p><strong>Note on <code>aitype</code> column requirements:</strong> - If <code>"gatk"</code> or <code>"other"</code>: input must include columns <code>CONTIG</code>, <code>POSITION</code>, <code>ALT_COUNT</code>, <code>REF_COUNT</code>, <code>REF_NUCLEOTIDE</code>, and <code>ALT_NUCLEOTIDE</code>. - If <code>"dragen"</code>: input must include columns <code>contig</code>, <code>start</code>, <code>stop</code>, <code>refAllele</code>, <code>allele1</code>, <code>allele2</code>, <code>allele1Count</code>, <code>allele2Count</code>, <code>allele1AF</code>, and <code>allele2AF</code>.</p>
+</div>
+</div>
+<div class="section level4">
+<h4 id="id_2-run-model-likelihood-calculation-and-selection">2. Run model likelihood calculation and selection.<a class="anchor" aria-label="anchor" href="#id_2-run-model-likelihood-calculation-and-selection"></a>
+</h4>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="reference/RunModelLikelihood.html">RunModelLikelihood</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/RunModelLikelihood.html">RunModelLikelihood</a></span><span class="op">(</span></span>
 <span>    seg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">out_dir</span>,<span class="st">"/"</span>,<span class="va">prefix</span>,<span class="st">"_GATK_AI_segment.tsv"</span><span class="op">)</span>,</span>
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
 <span>    prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
 <span>    gender <span class="op">=</span> <span class="va">gender</span>,</span>
-<span>    lambda <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>    gamma <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>    epsilon <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    modelminprobes <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>    modelminAIsize <span class="op">=</span> <span class="fl">5000000</span>,</span>
 <span>    minsf <span class="op">=</span> <span class="fl">0.4</span>,</span>
 <span>    callcov <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>    thread <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
-<span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"ERROR during likelihood calculation: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">quit</a></span><span class="op">(</span>save <span class="op">=</span> <span class="st">"no"</span>, status <span class="op">=</span> <span class="fl">1</span>, runLast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> </span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="parameters-for-runmodellikelihood">Parameters for <code>RunModelLikelihood</code>
+<span>    thread <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-runmodellikelihood">Parameters for <code>RunModelLikelihood</code>
 <a class="anchor" aria-label="anchor" href="#parameters-for-runmodellikelihood"></a>
-</h3>
+</h5>
 <table class="table">
 <colgroup>
 <col width="14%">
@@ -299,66 +315,48 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <td><code>"female"</code></td>
 </tr>
 <tr class="odd">
-<td><code>lambda</code></td>
-<td>numeric</td>
-<td>Exponential decay parameter for the likelihood model</td>
-<td><code>1</code></td>
-</tr>
-<tr class="even">
-<td><code>gamma</code></td>
-<td>numeric</td>
-<td>Weight for the prior in the likelihood calculation</td>
-<td><code>1</code></td>
-</tr>
-<tr class="odd">
-<td><code>epsilon</code></td>
-<td>numeric</td>
-<td>Small value to avoid log(0) and zero parameters in beta distribution</td>
-<td><code>0.01</code></td>
-</tr>
-<tr class="even">
 <td><code>modelminprobes</code></td>
 <td>integer</td>
 <td>Minimum number of probes/SNPs per segment to include in modeling</td>
 <td><code>20</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>modelminAIsize</code></td>
 <td>numeric</td>
 <td>Minimum segment size (bp) to include in modeling</td>
 <td><code>5000000</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>minsf</code></td>
 <td>numeric</td>
 <td>Minimum scale factor to consider in model selection</td>
 <td><code>0.4</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>callcov</code></td>
 <td>numeric</td>
 <td>Subclonal events calling cutoff based on total copy number</td>
 <td><code>0.3</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>thread</code></td>
 <td>integer</td>
 <td>Number of CPU threads to use for parallel processing</td>
 <td><code>6</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>callcovcutoff</code></td>
 <td>numeric</td>
 <td>(Optional) Threshold for calling without modeling.</td>
 <td><code>0.3</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>callaicutoff</code></td>
 <td>numeric</td>
 <td>(Optional) Threshold for calling without modeling.</td>
 <td><code>0.3</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>minsnpcallaicutoff</code></td>
 <td>integer</td>
 <td>(Optional) Minimum SNPs to call AI segment</td>
@@ -368,27 +366,23 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 </table>
 <p><strong>Notes:</strong><br>
 - Parameters marked as (Optional) can be omitted and have defaults. - For a full description of all arguments and advanced options, see the function reference or <code><a href="reference/RunModelLikelihood.html">?RunModelLikelihood</a></code> in R.</p>
-<ol start="3" style="list-style-type: decimal">
-<li>Run annotation segments.</li>
-</ol>
+</div>
+</div>
+<div class="section level4">
+<h4 id="id_3-run-annotation-segments">3. Run annotation segments.<a class="anchor" aria-label="anchor" href="#id_3-run-annotation-segments"></a>
+</h4>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="reference/AnnotateSegments.html">AnnotateSegments</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/AnnotateSegments.html">AnnotateSegments</a></span><span class="op">(</span></span>
 <span>    input <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">out_dir</span>,<span class="st">"/"</span>,<span class="va">prefix</span>,<span class="st">"_final_calls.tsv"</span><span class="op">)</span>,</span>
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
 <span>    prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
 <span>    cytoband <span class="op">=</span> <span class="va">cytoband</span>,</span>
 <span>    whitelist_edge <span class="op">=</span> <span class="va">whitelist_edge</span>,</span>
-<span>    gene <span class="op">=</span> <span class="va">gene</span><span class="op">)</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"ERROR during segment annotation: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">quit</a></span><span class="op">(</span>save <span class="op">=</span> <span class="st">"no"</span>, status <span class="op">=</span> <span class="fl">1</span>, runLast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> </span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="parameters-for-annotatesegments">Parameters for <code>AnnotateSegments</code>
+<span>    gene <span class="op">=</span> <span class="va">gene</span><span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-annotatesegments">Parameters for <code>AnnotateSegments</code>
 <a class="anchor" aria-label="anchor" href="#parameters-for-annotatesegments"></a>
-</h3>
+</h5>
 <table class="table">
 <colgroup>
 <col width="11%">
@@ -441,12 +435,13 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 </tr>
 </tbody>
 </table>
-<ol start="4" style="list-style-type: decimal">
-<li>Generating CNV plot</li>
-</ol>
+</div>
+</div>
+<div class="section level4">
+<h4 id="id_4-generating-cnv-plot">4. Generating CNV plot<a class="anchor" aria-label="anchor" href="#id_4-generating-cnv-plot"></a>
+</h4>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="reference/RunPlotCNV.html">RunPlotCNV</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/RunPlotCNV.html">RunPlotCNV</a></span><span class="op">(</span></span>
 <span>    seg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">out_dir</span>,<span class="st">"/"</span>,<span class="va">prefix</span>,<span class="st">"_CNV_annotation.tsv"</span><span class="op">)</span>,</span>
 <span>    cr <span class="op">=</span><span class="va">cr</span>,</span>
 <span>    ballele <span class="op">=</span> <span class="va">ai</span>,</span>
@@ -457,16 +452,11 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
 <span>    prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
 <span>    aitype <span class="op">=</span> <span class="st">"dragen"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"ERROR during generate CNV plot: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">quit</a></span><span class="op">(</span>save <span class="op">=</span> <span class="st">"no"</span>, status <span class="op">=</span> <span class="fl">1</span>, runLast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># Exits the workflow with error status</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="parameters-for-runplotcnv">Parameters for <code>RunPlotCNV</code>
+<span>  <span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-runplotcnv">Parameters for <code>RunPlotCNV</code>
 <a class="anchor" aria-label="anchor" href="#parameters-for-runplotcnv"></a>
-</h3>
+</h5>
 <table class="table">
 <colgroup>
 <col width="9%">
@@ -544,24 +534,20 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 </tr>
 </tbody>
 </table>
-<ol start="5" style="list-style-type: decimal">
-<li>Generating AI segment quality file.</li>
-</ol>
+</div>
+</div>
+<div class="section level4">
+<h4 id="id_5-generating-ai-segment-quality-file">5. Generating AI segment quality file.<a class="anchor" aria-label="anchor" href="#id_5-generating-ai-segment-quality-file"></a>
+</h4>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="reference/BafQC.html">BafQC</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/BafQC.html">BafQC</a></span><span class="op">(</span></span>
 <span>    annofile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">out_dir</span>,<span class="st">"/"</span>,<span class="va">prefix</span>,<span class="st">"_CNV_annotation.tsv"</span><span class="op">)</span>,</span>
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
-<span>    prefix <span class="op">=</span> <span class="va">prefix</span><span class="op">)</span></span>
-<span><span class="op">}</span>,error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"ERROR during generate quality control table: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">quit</a></span><span class="op">(</span>save <span class="op">=</span> <span class="st">"no"</span>, status <span class="op">=</span> <span class="fl">1</span>, runLast <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># Exits the workflow with error status</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="parameters-for-bafqc">Parameters for <code>BafQC</code>
+<span>    prefix <span class="op">=</span> <span class="va">prefix</span><span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-bafqc">Parameters for <code>BafQC</code>
 <a class="anchor" aria-label="anchor" href="#parameters-for-bafqc"></a>
-</h3>
+</h5>
 <table class="table">
 <colgroup>
 <col width="9%">
@@ -598,6 +584,8 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 </table>
 </div>
 </div>
+</div>
+</div>
 <div class="section level2">
 <h2 id="prepare-input-files">Prepare input files<a class="anchor" aria-label="anchor" href="#prepare-input-files"></a>
 </h2>
@@ -605,9 +593,9 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 <li>Run GATK in tumor-only mode by default parameters. Below is a summary of the GATK tumor-only mode command used in our pipeline. Please see the <a href="https://gatk.broadinstitute.org/" class="external-link">GATK website</a> for details. Files will be used in XploR is sample.counts, sample.called.seg, sample.allelic_counts and sample.denoisedCR.tsv.</li>
 <li>The allelic count file also could generate by other software like DRAGEN or samtools.</li>
 </ol>
-<div class="section level3">
-<h3 id="supporting-allelic-count-file-format">Supporting allelic count file format<a class="anchor" aria-label="anchor" href="#supporting-allelic-count-file-format"></a>
-</h3>
+<div class="section level5">
+<h5 id="supporting-allelic-count-file-format">Supporting allelic count file format<a class="anchor" aria-label="anchor" href="#supporting-allelic-count-file-format"></a>
+</h5>
 <table class="table">
 <colgroup>
 <col width="15%">
@@ -645,44 +633,261 @@ It provides tools for segmentation, purity/ploidy estimation, allelic imbalance 
 </div>
 </div>
 <div class="section level2">
-<h2 id="prepare-reference-files">Prepare reference files<a class="anchor" aria-label="anchor" href="#prepare-reference-files"></a>
+<h2 id="prepare-reference-files">Prepare Reference Files<a class="anchor" aria-label="anchor" href="#prepare-reference-files"></a>
 </h2>
-<ol style="list-style-type: decimal">
-<li><p>Panel of Normals (PON): A Panel of Normals is required and should be generated using GATK. For detailed instructions, see the <a href="https://gatk.broadinstitute.org/" class="external-link">GATK website</a>. Note: Male and female PON files need to be generated separately.</p></li>
-<li><p>Gene annotation: Gene annotation can be obtained from various sources (e.g., Ensembl, UCSC, Gencode, RefSeq). An example file is included with the package:</p></li>
-</ol>
+<div class="section level3">
+<h3 id="panel-of-normal-reference">Panel of normal reference<a class="anchor" aria-label="anchor" href="#panel-of-normal-reference"></a>
+</h3>
+<p>A Panel of Normals (PON) is required and should be generated using GATK, DRAGEN, or any other software capable of producing allelic count files.</p>
+<blockquote>
+<p><strong>Note:</strong> Male and female PON files need to be generated separately.</p>
+</blockquote>
+<div class="section level4">
+<h4 id="a-whitelist-blacklist-and-detectable-boundary-files">A. Whitelist, Blacklist, and Detectable Boundary Files<a class="anchor" aria-label="anchor" href="#a-whitelist-blacklist-and-detectable-boundary-files"></a>
+</h4>
+<p>These files are generated from the PON HD5 file (from GATK), a cytoband file, and gender information. They are essential for downstream processing and include:</p>
+<ul>
+<li>
+<strong>Blacklist BED:</strong> Regions to exclude</li>
+<li>
+<strong>Whitelist BED:</strong> Regions to include</li>
+<li>
+<strong>Detectable Edge File:</strong> Defines detectable boundaries</li>
+</ul>
+<p>These files are created based on the GATK Panel of Normals.<br>
+See the function documentation in R: <code><a href="reference/PonProcess.html">?PonProcess</a></code> or <code><a href="reference/PonProcess.html">help("PonProcess", package = "XploR")</a></code>.</p>
+<p><strong>Example usage:</strong></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/PonProcess.html">PonProcess</a></span><span class="op">(</span></span>
+<span>  pon_file <span class="op">=</span> <span class="va">pon_hdh5_file</span>,</span>
+<span>  blacklist_bed <span class="op">=</span> <span class="va">output_blacklist_bed</span>,</span>
+<span>  whitelist_bed <span class="op">=</span> <span class="va">output_whitelist_bed</span>,</span>
+<span>  cytoband <span class="op">=</span> <span class="va">cytoband</span>,</span>
+<span>  detectable_edge <span class="op">=</span> <span class="va">output_detectable_edge</span>,</span>
+<span>  gender <span class="op">=</span> <span class="va">gender</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="bpanel-of-normals-based-on-allelic-count-files">B.Panel of Normals Based on Allelic Count Files<a class="anchor" aria-label="anchor" href="#bpanel-of-normals-based-on-allelic-count-files"></a>
+</h4>
+<p>The ai_pon_file should be a text file listing the paths to normal allelic count files generated by GATK, DRAGEN, or other software.</p>
+<p>You can process these files to generate the PON reference for allelic imbalance using:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/PONAIprocess.html">PONAIprocess</a></span><span class="op">(</span></span>
+<span>  ai_pon_file <span class="op">=</span> <span class="va">ai_pon_file</span>,</span>
+<span>  aitype <span class="op">=</span> <span class="va">aitype</span>,</span>
+<span>  minsnpcov <span class="op">=</span> <span class="va">minsnpcov</span>,</span>
+<span>  output <span class="op">=</span> <span class="va">output</span>,</span>
+<span>  prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
+<span>  maxgap <span class="op">=</span> <span class="va">maxgap</span>,</span>
+<span>  maxbinsize <span class="op">=</span> <span class="va">maxbinsize</span>,</span>
+<span>  minbinsize <span class="op">=</span> <span class="va">minbinsize</span>,</span>
+<span>  snpnum <span class="op">=</span> <span class="va">snpnum</span>,</span>
+<span>  gender <span class="op">=</span> <span class="va">gender</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-ponaiprocess">Parameters for <code>PONAIprocess</code>
+<a class="anchor" aria-label="anchor" href="#parameters-for-ponaiprocess"></a>
+</h5>
+<table class="table">
+<colgroup>
+<col width="10%">
+<col width="8%">
+<col width="62%">
+<col width="18%">
+</colgroup>
+<thead><tr class="header">
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>ai_pon_file</code></td>
+<td>character</td>
+<td>Path to a text file listing PoN AI file paths (one per line)</td>
+<td><code>"pon_ai_file_list.txt"</code></td>
+</tr>
+<tr class="even">
+<td><code>aitype</code></td>
+<td>character</td>
+<td>Type of AI input file (<code>"gatk"</code>, <code>"dragen"</code>, or <code>"other"</code>), passed to <code><a href="reference/ReadPonAI.html">ReadPonAI()</a></code>
+</td>
+<td><code>"gatk"</code></td>
+</tr>
+<tr class="odd">
+<td><code>minsnpcov</code></td>
+<td>integer</td>
+<td>Minimum SNP coverage to include a site in the AI calculation</td>
+<td><code>20</code></td>
+</tr>
+<tr class="even">
+<td><code>maxgap</code></td>
+<td>numeric</td>
+<td>Maximum allowed gap between SNPs within a bin (in base pairs)</td>
+<td><code>1000000</code></td>
+</tr>
+<tr class="odd">
+<td><code>maxbinsize</code></td>
+<td>numeric</td>
+<td>Maximum allowed bin size (in base pairs)</td>
+<td><code>2000000</code></td>
+</tr>
+<tr class="even">
+<td><code>minbinsize</code></td>
+<td>numeric</td>
+<td>Minimum allowed bin size (in base pairs)</td>
+<td><code>500000</code></td>
+</tr>
+<tr class="odd">
+<td><code>snpnum</code></td>
+<td>integer</td>
+<td>Target number of SNPs per bin</td>
+<td><code>30</code></td>
+</tr>
+<tr class="even">
+<td><code>output</code></td>
+<td>character</td>
+<td>Output directory for the processed PoN AI Rdata file</td>
+<td><code>"results/"</code></td>
+</tr>
+<tr class="odd">
+<td><code>prefix</code></td>
+<td>character</td>
+<td>Prefix for the output file</td>
+<td><code>"PON"</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level4">
+<h4 id="gene-annotation-reference">Gene annotation reference:<a class="anchor" aria-label="anchor" href="#gene-annotation-reference"></a>
+</h4>
+<p>Gene annotation can be obtained from various sources (e.g., Ensembl, UCSC, Gencode, RefSeq). An example file is included with the package:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gene</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"RefSeqCurated.genePred.gene_region.txt"</span>, package <span class="op">=</span> <span class="st">"XploR"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="va">gene</span>, header <span class="op">=</span> <span class="cn">TRUE</span>, sep <span class="op">=</span> <span class="st">"\t"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<ol start="3" style="list-style-type: decimal">
-<li>Cytoband annotation: Cytoband annotation files are typically downloaded from UCSC. An example file is included:</li>
-</ol>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+</div>
+<div class="section level4">
+<h4 id="cytoband-annotation-reference">Cytoband annotation reference:<a class="anchor" aria-label="anchor" href="#cytoband-annotation-reference"></a>
+</h4>
+<p>Cytoband annotation files are typically downloaded from UCSC. An example file is included:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cytoband</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"hg19_cytoBand.dat"</span>, package <span class="op">=</span> <span class="st">"XploR"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="va">cytoband</span>, header <span class="op">=</span> <span class="cn">TRUE</span>, sep <span class="op">=</span> <span class="st">"\t"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<ol start="4" style="list-style-type: decimal">
-<li>Whitelist, Blacklist, and Detectable Boundary Files: These files are generated based on the GATK Panel of Normals. See the function documentation in R: <code><a href="reference/PonProcess.html">?PonProcess</a></code> or <code><a href="reference/PonProcess.html">help("PonProcess", package = "XploR")</a></code>. Example usage:</li>
-</ol>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/PonProcess.html">PonProcess</a></span><span class="op">(</span>pon_file <span class="op">=</span> <span class="va">pon_hdh5_file</span>,</span>
-<span>           blacklist_bed <span class="op">=</span> <span class="va">output_blacklist_bed</span>,</span>
-<span>           whitelist_bed <span class="op">=</span> <span class="va">output_whitelist_bed</span>,</span>
-<span>           cytoband <span class="op">=</span> <span class="va">cytoband</span>,</span>
-<span>           detectable_edge <span class="op">=</span> <span class="va">output_detectable_edge</span>,</span>
-<span>           gender <span class="op">=</span> <span class="va">gender</span></span>
-<span>          <span class="op">)</span></span></code></pre></div>
+</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="altorithm">Altorithm<a class="anchor" aria-label="anchor" href="#altorithm"></a>
 </h2>
 <div class="section level3">
-<h3 id="ai-segmentation-workflow">AI Segmentation Workflow<a class="anchor" aria-label="anchor" href="#ai-segmentation-workflow"></a>
+<h3 id="binning-strategy-for-allelic-count-data">Binning Strategy for allelic count Data<a class="anchor" aria-label="anchor" href="#binning-strategy-for-allelic-count-data"></a>
 </h3>
-<p>For each GATK segment, the workflow refines breakpoints using BAF/MAF data by dividing the segment into bins of user-defined size (aibinsize). Within each bin, Gaussian mixture modeling (GMM) is applied to identify clusters in the MAF distribution. Adjacent bins are merged if their MAF means are within a specified threshold (mergeai) or if quality criteria are not met, and segments with insufficient SNPs or small size are filtered out. Each resulting segment is then assigned a quality tag (“PASS” or “FAILED”) based on the GMM weight and SNP count.</p>
+<p>The <code>BinMaf</code> function implements a flexible binning strategy for minor allele frequency (MAF) data, supporting both tumor samples and panels of normal (PoN) samples. The binning can be performed using either a fixed number of SNPs per bin with additional criteria to handle genomic gaps and bin size limits. Within each bin, Gaussian mixture modeling (GMM) is applied to identify clusters in the MAF distribution.</p>
+<p><strong>Key features:</strong></p>
+<ul>
+<li>
+<strong>Flexible binning:</strong><br>
+Bins are created for each chromosome by grouping consecutive SNPs until one of the following conditions is met:
+<ul>
+<li>The number of SNPs in the bin reaches a specified target (e.g., 30 SNPs per bin).</li>
+<li>The genomic span of the bin exceeds a maximum bin size (e.g., 2,000,000 bp).</li>
+<li>The gap between consecutive SNPs exceeds a maximum allowed gap (e.g., 1,000,000 bp).</li>
+<li>The bin size is at least the specified minimum size (e.g., 500,000 bp).</li>
+</ul>
+</li>
+</ul>
+<p><strong>This strategy ensures that bins are of consistent size and SNP content, while avoiding the inclusion of widely separated SNPs in the same bin, and is robust for both tumor and normal samples.</strong></p>
+</div>
+<div class="section level3">
+<h3 id="segmentation-of-maf-track">Segmentation of MAF track<a class="anchor" aria-label="anchor" href="#segmentation-of-maf-track"></a>
+</h3>
+<p>In addition to CBS (Circular Binary Segmentation), our pipeline supports a “merge” mode for segmentation based on minor allele frequency (MAF) values. While CBS is the default and recommended strategy, “merge” mode offers a step-wise, rule-based approach to combine adjacent MAF segments.</p>
+<p><strong>Step-wise Merging Strategy:</strong></p>
+<ul>
+<li>The process begins with a minimal SNP counts, which is incrementally increased until reaching the final SNP count defined by “snpmin”.</li>
+<li>At each round, the following steps are performed:
+<ol style="list-style-type: decimal">
+<li>
+<strong>Remove Small Segments:</strong> Discard all segments smaller than the current minimum SNP count.</li>
+<li>
+<strong>Merge Adjacent Segments:</strong> Evaluate and merge adjacent segments if the difference in segment MAF values is less than or equal to the <code>mergeai</code> parameter (user-specified MAF difference threshold).</li>
+</ol>
+</li>
+</ul>
+<p><strong>Note:</strong><br>
+- CBS segmentation remains the default and is generally recommended for most workflows.<br>
+- The “merge” mode is useful for certain applications where a rule-based, stepwise merging of MAF segments is preferred.</p>
+</div>
+<div class="section level3">
+<h3 id="maf-bias-correction-using-panel-of-normal-pon-allelic-counts">MAF Bias Correction Using Panel of Normal (PoN) Allelic Counts<a class="anchor" aria-label="anchor" href="#maf-bias-correction-using-panel-of-normal-pon-allelic-counts"></a>
+</h3>
+<p>To correct for systemetic MAF bias estimates, we use a panel of normal (PoN) allelic count files as a reference. For each segment in the tumor or sample of interest, we compare the segment’s MAF to the distribution of MAF values observed in the PoN for the same genomic region. This process ensures that technical or locus-specific biases in MAF are removed only when the tumor segment does not show significant deviation from the normal reference.</p>
+<p><strong>Correction process:</strong> - For each segment, identify all overlapping PoN segments and extract their MAF values. - If the segment’s MAF is <strong>not significantly different</strong> from the PoN MAF distribution (assessed via a Wilcoxon test or a small absolute difference), apply a logit-based centering correction: - The segment MAF is transformed to the logit scale, centered by the PoN median MAF, and then inverse-logit transformed back and capped at 0.5. - If the segment’s MAF is <strong>significantly different</strong> from the PoN, the original segment MAF is retained (no correction is applied), thus preserving true biological signal. - This approach ensures that only technical or systematic biases are corrected, while real allelic imbalance events in the tumor are preserved.</p>
+<p><strong>This method uses the panel of normals as an adaptive reference, providing robust bias correction without shrinking true tumor signals.</strong></p>
 </div>
 <div class="section level3">
 <h3 id="purity-and-diploid-coverage-scale-factor-estimation">Purity and diploid coverage scale factor estimation<a class="anchor" aria-label="anchor" href="#purity-and-diploid-coverage-scale-factor-estimation"></a>
 </h3>
+<div class="section level4">
+<h4 id="estimate-a-betabinomial-over-dispersion-parameter-theta-from-a-panel-of-normals-pon">Estimate a <strong>Beta–Binomial Over-Dispersion</strong> Parameter <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> from a Panel of Normals (PoN)<a class="anchor" aria-label="anchor" href="#estimate-a-betabinomial-over-dispersion-parameter-theta-from-a-panel-of-normals-pon"></a>
+</h4>
+<p>To accurately model over-dispersion in minor allele frequency (MAF) data, we estimate a beta-binomial dispersion parameter (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>) using a panel of normal (PoN) samples. This allows us to account for extra-binomial variation and improves the likelihood calculation for each segment.</p>
+<p>For each bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math> and depth stratum:</p>
+<ul>
+<li>
+<strong>Observed variance across normals:</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>p</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+v_b = \mathrm{Var}_s(p_{sb})
+</annotation></semantics></math>
+</li>
+<li>
+<strong>Binomial expectation:</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>b</mi></msub><mo>=</mo><msub><mi>𝔼</mi><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">[</mo><mfrac><mrow><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">]</mo></mrow><mo>≈</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mn>1</mn><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+m_b = \mathbb{E}_s\left[\frac{p_{0b}(1-p_{0b})}{D_{sb}}\right]
+    \approx p_{0b}(1-p_{0b}) \cdot \mathrm{mean}_s\left(\frac{1}{D_{sb}}\right)
+</annotation></semantics></math>
+</li>
+<li>
+<strong>Representative depth in that (bin, stratum):</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+\tilde d_b = \mathrm{median}_s(D_{sb})
+</annotation></semantics></math>
+</li>
+<li>
+<strong>Moment estimator of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> per (bin, stratum):</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><mo>=</mo><mo>max</mo><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><msub><mi>v</mi><mi>b</mi></msub><mi>/</mi><msub><mi>m</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></mfrac><mo>,</mo><mspace width="0.222em"></mspace><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+\widehat{\theta}_{b} = \max\left(\frac{v_b/m_b - 1}{\tilde d_b - 1},\ 0\right)
+</annotation></semantics></math>
+</li>
+</ul>
+<p>Within each <strong>depth stratum</strong>, we take a robust center (median) of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><annotation encoding="application/x-tex">\widehat{\theta}_b</annotation></semantics></math> to obtain <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> for that stratum.</p>
+<p>where:</p>
+<ul>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><annotation encoding="application/x-tex">p_{sb}</annotation></semantics></math>: MAFs of per sample <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math> per bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><annotation encoding="application/x-tex">p_{0b}</annotation></semantics></math>: Reference (PoN) mean MAF for bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><annotation encoding="application/x-tex">D_{sb}</annotation></semantics></math>: Median depth for sample <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math> in bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>v</mi><mi>b</mi></msub><annotation encoding="application/x-tex">v_b</annotation></semantics></math>: Observed variance of MAF across samples in bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>m</mi><mi>b</mi></msub><annotation encoding="application/x-tex">m_b</annotation></semantics></math>: Expected binomial variance for bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><annotation encoding="application/x-tex">\tilde d_b</annotation></semantics></math>: Representative (median) depth in bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><annotation encoding="application/x-tex">\widehat{\theta}_b</annotation></semantics></math>: Estimated over-dispersion for bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>: Final over-dispersion parameter for the depth stratum</li>
+</ul>
+</div>
 <div class="section level4">
 <h4 id="prior-assignment-based-on-parsimony-principle">Prior assignment based on parsimony principle<a class="anchor" aria-label="anchor" href="#prior-assignment-based-on-parsimony-principle"></a>
 </h4>
@@ -734,8 +939,8 @@ For non-diploid segments, CCF is calculated; for diploid segments, it is set as 
 </h4>
 <ul>
 <li>
-<strong>BAF Likelihood:</strong><br>
-For each combination, the B allele frequency likelihood is computed using the beta distribution, parameterized by <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>, derived from the expected BAF:</li>
+<strong>MAF Likelihood:</strong><br>
+For each combination, the B allele frequency likelihood is computed using the beta distribution, parameterized by <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>, derived from the expected MAF:</li>
 </ul>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">B</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>α</mi><mo>,</mo><mi>β</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
 \mathrm{Beta}(\alpha, \beta)
@@ -744,18 +949,28 @@ For each combination, the B allele frequency likelihood is computed using the be
 <ul>
 <li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mi>K</mi><mo>×</mo><mrow><mi mathvariant="normal">B</mi><mi mathvariant="normal">A</mi><mi mathvariant="normal">F</mi></mrow><mo>+</mo><mi>ϵ</mi></mrow><annotation encoding="application/x-tex">\alpha = K \times \mathrm{BAF} + \epsilon</annotation></semantics></math></p></li>
 <li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>=</mo><mi>K</mi><mo>×</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mrow><mi mathvariant="normal">B</mi><mi mathvariant="normal">A</mi><mi mathvariant="normal">F</mi></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>ϵ</mi></mrow><annotation encoding="application/x-tex">\beta = K \times (1 - \mathrm{BAF}) + \epsilon</annotation></semantics></math></p></li>
-<li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>: Scaling factor controlling distribution precision</p></li>
+<li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>: Beta-binomial precision parameter, estimated for each segment based on local read depth and the over-dispersion parameter (see below).</p></li>
 <li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>: Small positive value for numerical stability</p></li>
+<li><p><strong>Estimation of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>:</strong></p></li>
+</ul>
+<p>For each segment, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> is calculated as:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mfrac><mtext mathvariant="normal">depth</mtext><mrow><mn>1</mn><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">depth</mtext><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><mi>θ</mi></mrow></mfrac><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+K = \frac{\text{depth}}{1 + (\text{depth} - 1) \cdot \theta} - 1
+</annotation></semantics></math></p>
+<p>where:</p>
+<ul>
+<li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtext mathvariant="normal">depth</mtext><annotation encoding="application/x-tex">\text{depth}</annotation></semantics></math>: Median SNP depth for the segment</p></li>
+<li><p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>: Beta-binomial over-dispersion parameter, estimated from the panel of normals (PoN) for the corresponding depth stratum</p></li>
 <li><p><strong>Posterior Likelihood:</strong><br>
 The posterior likelihood for each combination incorporates both the BAF likelihood and the prior, weighted by a factor <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>:</p></li>
 </ul>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Posterior Likelihood</mtext><mo>=</mo><mtext mathvariant="normal">BAF Likelihood</mtext><mo>×</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">Prior</mtext><mo stretchy="true" form="postfix">)</mo></mrow><mi>γ</mi></msup></mrow><annotation encoding="application/x-tex">
-\text{Posterior Likelihood} = \text{BAF Likelihood} \times (\text{Prior})^\gamma
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Posterior Likelihood</mtext><mo>=</mo><mtext mathvariant="normal">MAF Likelihood</mtext><mo>×</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">Prior</mtext><mo stretchy="true" form="postfix">)</mo></mrow><mi>γ</mi></msup></mrow><annotation encoding="application/x-tex">
+\text{Posterior Likelihood} = \text{MAF Likelihood} \times (\text{Prior})^\gamma
 </annotation></semantics></math></p>
 <p>where:</p>
 <ul>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtext mathvariant="normal">BAF Likelihood</mtext><annotation encoding="application/x-tex">\text{BAF Likelihood}</annotation></semantics></math>: Likelihood of the observed B-allele frequency under the current model<br>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtext mathvariant="normal">MAF Likelihood</mtext><annotation encoding="application/x-tex">\text{MAF Likelihood}</annotation></semantics></math>: Likelihood of the observed minor frequency under the current model<br>
 </li>
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtext mathvariant="normal">Prior</mtext><annotation encoding="application/x-tex">\text{Prior}</annotation></semantics></math>: Prior probability assigned to the allele combination based on biological plausibility<br>
@@ -763,11 +978,6 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>: Weighting factor controlling the influence of the prior in the posterior calculation</li>
 </ul>
-</div>
-<div class="section level4">
-<h4 id="purity-and-diploid-coverage-scale-factor-estimation-1">Purity and Diploid Coverage Scale Factor Estimation<a class="anchor" aria-label="anchor" href="#purity-and-diploid-coverage-scale-factor-estimation-1"></a>
-</h4>
-<p>A grid of candidate tumor purity (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>) and diploid coverage scale factor (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>μ</mi><annotation encoding="application/x-tex">\mu</annotation></semantics></math>) values is generated. For each (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>μ</mi><annotation encoding="application/x-tex">\mu</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>) pair, the model calculates the total log-likelihood across all segments, considering only biologically feasible configurations and ccf values. The best-fitting model is selected based on the highest total log-likelihood and the smallest distance between segment copy numbers and integer values, in accordance with the parsimony principle.</p>
 </div>
 <div class="section level4">
 <h4 id="assigning-calls-for-each-segment">Assigning Calls for Each Segment<a class="anchor" aria-label="anchor" href="#assigning-calls-for-each-segment"></a>
@@ -784,7 +994,7 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <li>
 <strong>Selection of Top Likelihood Models:</strong>
 <ul>
-<li>For each segment, identify the top two models with the highest BAF likelihoods.</li>
+<li>For each segment, identify the top two models with the highest MAF likelihoods.</li>
 <li>If a subclonal event is likely (e.g., the second-ranked model has ccf &gt; 0.3 and comparable likelihood), select it as a subclonal event.</li>
 <li>If both major and minor copy numbers are equal, selection is based on <code>cov_diff</code>.</li>
 </ul>
@@ -792,14 +1002,14 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <li>
 <strong>Handling Models with <code>minor = 0</code>:</strong>
 <ul>
-<li>For segments with <code>minor = 0</code>, where BAF likelihood is unreliable, select the model with the smallest <code>cov_diff</code>.</li>
+<li>For segments with <code>minor = 0</code>, where MAF likelihood is unreliable, select the model with the smallest <code>cov_diff</code>.</li>
 <li>Ensure consistency in selection for both <code>minor = 0</code> and <code>minor ≠ 0</code> cases.</li>
 </ul>
 </li>
 <li>
 <strong>Post-Processing:</strong>
 <ul>
-<li>Calculate and store the log-transformed likelihood value (<code>log_BAF_likelihood</code>) for each selected model.</li>
+<li>Calculate and store the log-transformed likelihood value (<code>log_MAF_likelihood</code>) for each selected model.</li>
 </ul>
 </li>
 </ul>

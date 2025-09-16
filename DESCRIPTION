@@ -39,5 +39,7 @@ Imports:
   IRanges,
   tibble,
   zoo,
-  magrittr
+  magrittr,
+  DNAcopy,
+  irlba
 RoxygenNote: 7.3.2

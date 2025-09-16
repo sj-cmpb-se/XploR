@@ -4,12 +4,30 @@
 \alias{BinMaf}
 \title{Bin MAF Data and Estimate MAF Metrics per Bin}
 \usage{
-BinMaf(data, bin_size)
+BinMaf(
+  data,
+  datatype,
+  maxgap = 1e+06,
+  snpnum = 30,
+  maxbinsize = 2e+06,
+  minbinsize = 5e+05,
+  minsnpcov = 20
+)
 }
 \arguments{
-\item{data}{A data frame or tibble containing at least \code{Chromosome}, \code{Start}, and \code{maf} columns.}
+\item{data}{A data frame or tibble containing at least \code{Chromosome}, \code{Pos}, \code{Start}, \code{End} and \code{maf} columns.}
 
-\item{bin_size}{Numeric. The bin size to use (e.g., 1e6 for 1Mb bins).}
+\item{datatype}{If individual tumor data then choose "tumor", if aggregated panel of normal samples choose "pon".}
+
+\item{maxgap}{Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)}
+
+\item{snpnum}{SNP number in each bin.( default: 30 )}
+
+\item{maxbinsize}{Maximum bin size.( default: 2000000 )}
+
+\item{minbinsize}{Minimum bin size.( default: 500000 )}
+
+\item{minsnpcov}{Minimum coverage of SNP sites to be included. ( default: 20 )}
 }
 \value{
 A tibble with one row per bin and columns:
@@ -17,11 +35,10 @@ A tibble with one row per bin and columns:
 \item{bin}{Bin start coordinate.}
 \item{Start}{Minimum \code{End} value in the bin.}
 \item{End}{Maximum \code{End} value in the bin.}
-\item{Estimated_maf}{List column with GMM-based maf estimation results.}
 \item{nonzero_count}{Number of nonzero maf values in the bin.}
 \item{each_maf}{Semicolon-separated string of nonzero maf values in the bin.}
 \item{gmm_mean, gmm_weight, gmm_G}{Unnested maf GMM metrics.}
 }
 \description{
-Bins input MAF data into fixed-size windows and calculates summary metrics (e.g., estimated MAF, nonzero counts) for each bin.
+Bins input MAF data into fixed-size windows or fixed-snp-count window and calculates summary metrics (e.g., estimated MAF, nonzero counts) for each bin.
 }

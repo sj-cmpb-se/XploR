@@ -29,7 +29,7 @@ RunModelLikelihood(
 
 \item{gender}{Sample gender ("male" or "female").}
 
-\item{lambda, }{gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).}
+\item{modelminprobes, }{modelminAIsize, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).}
 }
 \value{
 Invisibly returns the output file paths.

@@ -2,27 +2,54 @@
 % Please edit documentation in R/AIsegmentation.R
 \name{SearchBreakpoint}
 \alias{SearchBreakpoint}
-\title{Search for Breakpoints within a Segment Using MAF Data}
+\title{Refine Breakpoints Within a Segment Using MAF Data}
 \usage{
-SearchBreakpoint(seg_row, maf, mergeai, snpmin, minaisize, aibinsize)
+SearchBreakpoint(
+  seg_row,
+  maf,
+  pon_ref,
+  mergeai = 0.15,
+  snpmin = 7,
+  maxgap = 2e+06,
+  snpnum = 30,
+  maxbinsize = 2e+06,
+  minbinsize = 5e+05,
+  minsnpcov = 20,
+  segmethod = "cbs",
+  cbssmooth = "no"
+)
 }
 \arguments{
-\item{seg_row}{A data frame row (list or tibble row) representing a single segment. Must have columns: Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, Segment_Mean_raw, Count, Baseline_cov, gatk_gender, pipeline_gender, size.}
+\item{seg_row}{Data frame row (list or tibble row) representing a single segment. Must have columns: Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, Segment_Mean_raw, Count, Baseline_cov, gatk_gender, pipeline_gender, size.}
 
-\item{maf}{A data frame or tibble containing MAF data. Must include columns: Chromosome, Start, End, maf.}
+\item{maf}{Data frame or tibble containing MAF data. Must include columns: Chromosome, Pos, maf.}
 
-\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.}
+\item{pon_ref}{Data frame. Panel of normal reference for bias correction (required for bias correction step).}
 
-\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment.}
+\item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging under \code{"merge"} mode segmentation.}
 
-\item{minaisize}{Numeric, smallest AI segment size (default: 1000000).}
+\item{snpmin}{Numeric. Minimum SNP count required for a segment to be considered as a separate segment under \code{"merge"} mode segmentation.}
 
-\item{aibinsize}{Numeric, AI bin size (default: 500000).}
+\item{maxgap}{Numeric. Maximum allowed gap between SNPs within a bin.}
+
+\item{snpnum}{Integer. Target number of SNPs per bin.}
+
+\item{maxbinsize}{Numeric. Maximum allowed bin size (bp).}
+
+\item{minbinsize}{Numeric. Minimum allowed bin size (bp). The minimum segment size under \code{"merge"} mode is 2*minbinsize.}
+
+\item{minsnpcov}{Integer. Minimum coverage of SNP sites to be included.}
+
+\item{segmethod}{Character. Segmentation method to use: if \code{"merge"}, perform stepwise merging; if \code{"cbs"}, perform CBS (circular binary segmentation).}
+
+\item{cbssmooth}{Character. If using the \code{"cbs"} segmentation method, set to \code{"yes"} to apply smoothing before segmentation, or \code{"no"} to skip smoothing.}
 }
 \value{
 A data frame with the refined segment(s), including updated breakpoints, MAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
 }
 \description{
-Refines breakpoints within a segment using MAF data.
-If enough informative MAF sites are present, the segment may be split into finer regions based on MAF clustering and merging.
+Refines breakpoints within a segment using minor allele frequency (MAF) data. If enough informative MAF sites are present, the segment is binned and can be split into finer regions using either stepwise merging or CBS (circular binary segmentation). Optionally, PON-based bias correction is applied to the resulting segments.
+}
+\details{
+The function first bins the MAF data within the segment. If \code{segmethod = "merge"}, segments are merged stepwise based on the MAF difference and SNP count. If \code{segmethod = "cbs"}, CBS segmentation is performed on the binned MAF values, with optional smoothing. After segmentation, bias correction using the panel of normal can be applied. The function returns refined segments with updated metrics and a \code{BreakpointSource} label.
 }

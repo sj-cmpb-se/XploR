@@ -6,7 +6,7 @@
 #' @param out_dir Output directory.
 #' @param prefix Output file prefix.
 #' @param gender Sample gender ("male" or "female").
-#' @param lambda, gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).
+#' @param modelminprobes, modelminAIsize, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).
 #' @return Invisibly returns the output file paths.
 #' @importFrom data.table fread
 #' @importFrom dplyr filter mutate arrange rowwise ungroup select group_by summarise desc left_join
@@ -27,12 +27,8 @@ RunModelLikelihood <- function(
   print(paste0("Output dir is: ", out_dir))
   print(paste0("Prefix is: ", prefix))
   print(paste0("Gender is: ", gender))
-  print(paste0("Lambda is: ", lambda))
-  print(paste0("gamma is: ", gamma))
-  print(paste0("epsilon is: ", epsilon))
   print(paste0("modelminprobes is: ", modelminprobes))
   print(paste0("modelminAIsize is: ", modelminAIsize))
-  print(paste0("minsf is: ", minsf ))
   print(paste0("callcov is: ", callcov ))
   print(paste0("thread is: ", thread ))
 
@@ -66,7 +62,7 @@ RunModelLikelihood <- function(
     Segcov = autosome$Segcov,
     MAF = autosome$MAF,
     Tag = autosome$Purity_estimate,
-    k = CategorizeK(K = autosome$MAF_Probes)
+    k = autosome$K
   )
 
   # 3. Model source
@@ -104,8 +100,7 @@ RunModelLikelihood <- function(
     .errorhandling = "pass",
     .packages = c("XploR"),
     .export = c(
-      "observeddata", "var_sf", "purity_sf", "chunks","lambda",
-      "gamma", "epsilon", "modelminprobes", "modelminAIsize",
+      "observeddata", "var_sf", "purity_sf", "chunks", "modelminprobes", "modelminAIsize",
       "minsf", "callcov", "thread"
     )
   ) %dopar% {
@@ -113,10 +108,7 @@ RunModelLikelihood <- function(
       result <- RunCallikelihood(
         purity_sf = chunk_df,
         data = observeddata,
-        sigma_C = var_sf,
-        lambda = lambda,
-        gamma = gamma,
-        epsilon = epsilon
+        sigma_C = var_sf
       )
       message("Worker finished on PID: ", Sys.getpid())
       return(result)
@@ -174,15 +166,6 @@ RunModelLikelihood <- function(
               max_L_mu = return_models$Final_model$Final_mu,
               max_L_rho = return_models$Final_model$Final_rho)
 
-    PlotModelcluster(
-      models = models,
-      refined_calls = refined_calls,
-      out_dir = out_dir,
-      prefix = prefix
-
-    )
-
-
   } else if (model_source == "Coverage") {
     return_models <- EstimatePurityCov(seg = seg,gender = gender)
     PlotCovDisCN(dis = return_models$dis_df,
@@ -215,6 +198,14 @@ RunModelLikelihood <- function(
     callcov = callcov,
     gender = gender
   )
+  if( model_source == "Coverage + MAF"){
+    PlotModelcluster(
+      models = return_models$models,
+      refined_calls = refined_call,
+      out_dir = out_dir,
+      prefix = prefix
+    )
+  }
   print(paste0("Reporting final calls at: ", paste0(out_dir,"/",paste0(prefix, "_final_calls.tsv"))))
   final_call$Model_source <- model_source
   final_call$rho <- return_models$Final_model$Final_rho

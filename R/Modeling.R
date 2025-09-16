@@ -1,33 +1,3 @@
-#' Categorize Beta Distribution K Values
-#'
-#' Categorizes a numeric K value (e.g., from a beta distribution) into bins based on its sample quantiles.
-#'
-#' @param K Numeric vector. The K values to categorize.
-#'
-#' @return Integer vector of categories, with possible values 50, 100, 200, 300, corresponding to increasing quantile bins.
-#'
-#' @details
-#' The function computes quantiles of \code{K} (using default quartiles), then assigns each value to a category:
-#' \itemize{
-#'   \item 50: lowest quantile
-#'   \item 100: 2nd quantile
-#'   \item 200: 3rd quantile
-#'   \item 300: highest quantile
-#' }
-#'
-#' @examples
-#' set.seed(1)
-#' K <- rbeta(100, 2, 5)
-#' CategorizeK(K)
-#'
-#' @export
-CategorizeK <- function( K ) {
-  breaks_level <- stats::quantile(K, probs = seq(0, 1, by = 0.25), na.rm = TRUE)
-  breaks <- c( breaks_level[1:4], Inf)
-  values <- c(50, 100, 200, 300 )
-  values[findInterval(K, breaks)]
-}
-
 #' Convert Segment Mean to Original Coverage
 #'
 #' Calculates the original coverage for a segment based on its segment mean (log2 ratio), gender, chromosome, and assumed diploid coverage.
@@ -569,9 +539,6 @@ Callikelihood <- function(mu, rho, data, sigma_C, lambda, gamma, epsilon) {
 #' @param purity_sf Data frame or tibble. Grid of purity and scale factor values to evaluate; must include columns \code{mu} and \code{rho}.
 #' @param data Data frame or tibble. Segment data (see \code{\link{Callikelihood}} for required columns).
 #' @param sigma_C Numeric. Parameter for segment likelihood (passed to \code{Callikelihood}).
-#' @param lambda Numeric. Exponential decay parameter for the prior.
-#' @param gamma Numeric. Weight for the prior in the likelihood calculation.
-#' @param epsilon Numeric. Small value to avoid log(0) and zero parameters in beta.
 #'
 #' @return A data frame with all likelihoods for each segment and each (mu, rho) combination, with NA minor alleles removed and NA ccf values set to 1.
 #'
@@ -580,7 +547,7 @@ Callikelihood <- function(mu, rho, data, sigma_C, lambda, gamma, epsilon) {
 #' # RunCallikelihood(purity_sf, data, sigma_C = 0.1, lambda = 1, gamma = 1, epsilon = 0.01)
 #'
 #' @export
-RunCallikelihood <- function( purity_sf, data, sigma_C, lambda, gamma, epsilon){
+RunCallikelihood <- function( purity_sf, data, sigma_C, lambda = 1, gamma = 1, epsilon = 0.01){
 
   results_ll <- lapply(1:nrow(purity_sf ), function(n) {
     mu <- purity_sf[n,"mu"]
