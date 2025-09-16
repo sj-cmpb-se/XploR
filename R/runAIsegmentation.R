@@ -15,7 +15,7 @@
 #' @param minsnpcov Numeric, minimum coverage of SNPs to included (default: 20).
 #' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)
 #' @param snpnum SNP number in each bin.( default: 30 )
-#' @param maxbinsize Maximum bin size.( default: 2000000 )
+#' @param maxbinsize Maximum bin size.( default: 5000000 )
 #' @param minbinsize Minimum bin size.( default: 500000 )
 #' @param minsnpcallaicutoff Numeric, minimum SNPs for reliable CNLOH/GAINLOH (default: 10).
 #' @param mergecovminsize Numeric, minimum size for GATK segment merge (default: 500000).
@@ -41,7 +41,7 @@ RunAIsegmentation <- function(
     mergecovminsize = 500000,
     maxgap = 2000000,
     snpnum = 30,
-    maxbinsize = 2000000,
+    maxbinsize = 5000000,
     minbinsize = 500000,
     aitype="gatk",
     segmethod = "cbs",
@@ -90,7 +90,7 @@ RunAIsegmentation <- function(
                      segmethod = "cbs", cbssmooth = "no",
                      pon_ref = pon_ref,maf = maf, mergeai = mergeai, snpmin = snpmin,
                      snpnum =  snpnum, maxgap = maxgap, maxbinsize = maxbinsize,
-                     minbinsize = minbinsize, minsnpcov = minsnpcov)
+                     minbinsize = minbinsize, minsnpcov = minsnpcov, gender = gender)
   })
   combined_result <- do.call(rbind, combindAIseg)
 

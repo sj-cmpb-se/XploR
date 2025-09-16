@@ -129,11 +129,11 @@ EstimateTheta <- function(normals_dt, pon_ref, n_bins) {
 #'
 #' @param ai_pon_file Character. Path to a text file listing PoN AI file paths (one per line).
 #' @param aitype Character. Type of AI input file (passed to \code{ReadPonAI()}, e.g., \code{"gatk"}, \code{"dragen"}, \code{"other"}).
-#' @param minsnpcov Integer. Minimum SNP coverage to include a site in the AI calculation.
-#' @param maxgap Numeric. Maximum allowed gap between SNPs within a bin.
-#' @param maxbinsize Numeric. Maximum allowed bin size (bp).
-#' @param minbinsize Numeric. Minimum allowed bin size (bp).
-#' @param snpnum Integer. Target number of SNPs per bin.
+#' @param minsnpcov Integer. Minimum SNP coverage to include a site in the AI calculation. (default: 20)
+#' @param maxgap Numeric. Maximum allowed gap between SNPs within a bin. (default: 2000000)
+#' @param maxbinsize Numeric. Maximum allowed bin size (bp). (default: 5000000)
+#' @param minbinsize Numeric. Minimum allowed bin size (bp). (default: 500000)
+#' @param snpnum Integer. Target number of SNPs per bin. (default: )
 #' @param output Character. Output directory for the processed PoN AI Rdata file.
 #' @param prefix Character. Prefix for the output file.
 #'
@@ -145,9 +145,9 @@ EstimateTheta <- function(normals_dt, pon_ref, n_bins) {
 #' @importFrom dplyr group_by summarise mutate left_join
 #' @importFrom stats median
 #' @export
-PONAIprocess <- function( ai_pon_file, aitype, minsnpcov, output,
-                          prefix, maxgap, maxbinsize,
-                          minbinsize, snpnum, gender
+PONAIprocess <- function( ai_pon_file, aitype, minsnpcov = 20, output,
+                          prefix, maxgap = 2000000, maxbinsize = 5000000,
+                          minbinsize = 500000, snpnum = 30, gender
                           ){
 
   aipondt <- ReadPonAI(ai_pon_file = ai_pon_file,

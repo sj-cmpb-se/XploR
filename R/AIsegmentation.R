@@ -313,7 +313,7 @@ CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
 #' @param datatype If individual tumor data then choose "tumor", if aggregated panel of normal samples choose "pon".
 #' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)
 #' @param snpnum SNP number in each bin.( default: 30 )
-#' @param maxbinsize Maximum bin size.( default: 2000000 )
+#' @param maxbinsize Maximum bin size.( default: 5000000 )
 #' @param minbinsize Minimum bin size.( default: 500000 )
 #' @param minsnpcov Minimum coverage of SNP sites to be included. ( default: 20 )
 #'
@@ -331,7 +331,7 @@ CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
 #' @export
 BinMaf <- function(data, datatype,
                    maxgap = 1000000, snpnum = 30,
-                   maxbinsize = 2000000, minbinsize = 500000,
+                   maxbinsize = 5000000, minbinsize = 500000,
                    minsnpcov = 20 ){
 
   if (datatype == "pon"){
@@ -373,17 +373,28 @@ BinMaf <- function(data, datatype,
 
         for (i in 1:n) {
           bin[i] <- current_bin_id
-          bin_count <- i - start_index + 1
+          bin_count    <- i - start_index + 1
           current_span <- df$Pos[i] - df$Pos[start_index]
 
-          # Check bin break conditions
+          # look-ahead
           if (i < n) {
-            if ( (bin_count == snpnum  || df$gap[i] > maxgap || current_span > maxbinsize) && current_span >= minbinsize ) {
-              current_bin_id <- current_bin_id + 1
-              start_index <- i + 1
-            }
+            next_count <- bin_count + 1
+            next_span  <- df$Pos[i + 1] - df$Pos[start_index]
+            next_gap   <- df$Pos[i + 1] - df$Pos[i]
+          } else {
+            next_count <- Inf; next_span <- Inf; next_gap <- 0
+          }
+
+          # close BEFORE overshoot; always respect maxbinsize
+          if ( current_span >= maxbinsize ||
+               (current_span >= minbinsize &&
+                (next_count > snpnum || next_span > maxbinsize || next_gap > maxgap)) ) {
+
+            current_bin_id <- current_bin_id + 1
+            start_index <- i + 1
           }
         }
+
         df$bin <- bin
         df
       }) %>%
@@ -463,6 +474,7 @@ BinMaf <- function(data, datatype,
 #' @param segmethod Character. Segmentation method to use: if \code{"merge"}, perform stepwise merging; if \code{"cbs"}, perform CBS (circular binary segmentation).
 #' @param cbssmooth Character. If using the \code{"cbs"} segmentation method, set to \code{"yes"} to apply smoothing before segmentation, or \code{"no"} to skip smoothing.
 #' @param pon_ref Data frame. Panel of normal reference for bias correction (required for bias correction step).
+#' @param gender Character. If \code{"female"}, the X chromosome will also be proceed.
 #'
 #' @return A data frame with the refined segment(s), including updated breakpoints, MAF metrics, and a \code{BreakpointSource} column indicating whether breakpoints were post-processed or from GATK.
 #'
@@ -473,7 +485,7 @@ BinMaf <- function(data, datatype,
 #' @importFrom tidyr unnest_wider
 #' @importFrom DNAcopy CNA smooth.CNA segment
 #' @export
-SearchBreakpoint <- function(seg_row, maf, pon_ref,
+SearchBreakpoint <- function(seg_row, maf, pon_ref, gender,
                              mergeai = 0.15,
                              snpmin = 7,
                              maxgap = 2000000, snpnum = 30,
@@ -499,7 +511,7 @@ SearchBreakpoint <- function(seg_row, maf, pon_ref,
     MAF_gmm_weight = NA,
     #MAF_gmm_variance = NA,
     size = seg_row$size)
-if( ! seg_row$Chromosome %in% c("X","Y")){
+if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && ! seg_row$Chromosome %in% c("X", "Y") ) ) {
   tmp_maf <- maf %>%
     dplyr::filter( Chromosome == seg_row$Chromosome & Pos >= seg_row$Start & Pos <= seg_row$End ) %>%
     dplyr::filter( maf != 0 )

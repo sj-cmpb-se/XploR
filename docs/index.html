@@ -214,8 +214,8 @@
 <tr class="even">
 <td><code>maxbinsize</code></td>
 <td>numeric</td>
-<td>Maximum bin size (default: 2,000,000).</td>
-<td><code>2000000</code></td>
+<td>Maximum bin size (default: 5,000,000).</td>
+<td><code>5000000</code></td>
 </tr>
 <tr class="odd">
 <td><code>minbinsize</code></td>
@@ -675,15 +675,15 @@ See the function documentation in R: <code><a href="reference/PonProcess.html">?
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/PONAIprocess.html">PONAIprocess</a></span><span class="op">(</span></span>
 <span>  ai_pon_file <span class="op">=</span> <span class="va">ai_pon_file</span>,</span>
-<span>  aitype <span class="op">=</span> <span class="va">aitype</span>,</span>
-<span>  minsnpcov <span class="op">=</span> <span class="va">minsnpcov</span>,</span>
-<span>  output <span class="op">=</span> <span class="va">output</span>,</span>
-<span>  prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
-<span>  maxgap <span class="op">=</span> <span class="va">maxgap</span>,</span>
-<span>  maxbinsize <span class="op">=</span> <span class="va">maxbinsize</span>,</span>
-<span>  minbinsize <span class="op">=</span> <span class="va">minbinsize</span>,</span>
-<span>  snpnum <span class="op">=</span> <span class="va">snpnum</span>,</span>
-<span>  gender <span class="op">=</span> <span class="va">gender</span></span>
+<span>  aitype <span class="op">=</span> <span class="st">"GATK"</span>,</span>
+<span>  minsnpcov <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  output <span class="op">=</span> <span class="st">"/Pathtoresults"</span>,</span>
+<span>  prefix <span class="op">=</span> <span class="st">"PONAI"</span>,</span>
+<span>  maxgap <span class="op">=</span> <span class="fl">2000000</span>,</span>
+<span>  maxbinsize <span class="op">=</span> <span class="fl">5000000</span>,</span>
+<span>  minbinsize <span class="op">=</span> <span class="fl">500000</span>,</span>
+<span>  snpnum <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  gender <span class="op">=</span> <span class="st">"female"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="section level5">
 <h5 id="parameters-for-ponaiprocess">Parameters for <code>PONAIprocess</code>
@@ -732,7 +732,7 @@ See the function documentation in R: <code><a href="reference/PonProcess.html">?
 <td><code>maxbinsize</code></td>
 <td>numeric</td>
 <td>Maximum allowed bin size (in base pairs)</td>
-<td><code>2000000</code></td>
+<td><code>5000000</code></td>
 </tr>
 <tr class="even">
 <td><code>minbinsize</code></td>

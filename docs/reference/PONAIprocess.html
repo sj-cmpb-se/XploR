@@ -40,13 +40,13 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">PONAIprocess</span><span class="op">(</span></span>
 <span>  <span class="va">ai_pon_file</span>,</span>
 <span>  <span class="va">aitype</span>,</span>
-<span>  <span class="va">minsnpcov</span>,</span>
+<span>  minsnpcov <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="va">output</span>,</span>
 <span>  <span class="va">prefix</span>,</span>
-<span>  <span class="va">maxgap</span>,</span>
-<span>  <span class="va">maxbinsize</span>,</span>
-<span>  <span class="va">minbinsize</span>,</span>
-<span>  <span class="va">snpnum</span>,</span>
+<span>  maxgap <span class="op">=</span> <span class="fl">2e+06</span>,</span>
+<span>  maxbinsize <span class="op">=</span> <span class="fl">5e+06</span>,</span>
+<span>  minbinsize <span class="op">=</span> <span class="fl">5e+05</span>,</span>
+<span>  snpnum <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  <span class="va">gender</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -64,7 +64,7 @@
 
 
 <dt id="arg-minsnpcov">minsnpcov<a class="anchor" aria-label="anchor" href="#arg-minsnpcov"></a></dt>
-<dd><p>Integer. Minimum SNP coverage to include a site in the AI calculation.</p></dd>
+<dd><p>Integer. Minimum SNP coverage to include a site in the AI calculation. (default: 20)</p></dd>
 
 
 <dt id="arg-output">output<a class="anchor" aria-label="anchor" href="#arg-output"></a></dt>
@@ -76,19 +76,19 @@
 
 
 <dt id="arg-maxgap">maxgap<a class="anchor" aria-label="anchor" href="#arg-maxgap"></a></dt>
-<dd><p>Numeric. Maximum allowed gap between SNPs within a bin.</p></dd>
+<dd><p>Numeric. Maximum allowed gap between SNPs within a bin. (default: 2000000)</p></dd>
 
 
 <dt id="arg-maxbinsize">maxbinsize<a class="anchor" aria-label="anchor" href="#arg-maxbinsize"></a></dt>
-<dd><p>Numeric. Maximum allowed bin size (bp).</p></dd>
+<dd><p>Numeric. Maximum allowed bin size (bp). (default: 5000000)</p></dd>
 
 
 <dt id="arg-minbinsize">minbinsize<a class="anchor" aria-label="anchor" href="#arg-minbinsize"></a></dt>
-<dd><p>Numeric. Minimum allowed bin size (bp).</p></dd>
+<dd><p>Numeric. Minimum allowed bin size (bp). (default: 500000)</p></dd>
 
 
 <dt id="arg-snpnum">snpnum<a class="anchor" aria-label="anchor" href="#arg-snpnum"></a></dt>
-<dd><p>Integer. Target number of SNPs per bin.</p></dd>
+<dd><p>Integer. Target number of SNPs per bin. (default: )</p></dd>
 
 </dl></div>
     <div class="section level2">

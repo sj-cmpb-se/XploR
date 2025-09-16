@@ -88,7 +88,7 @@ RunAIsegmentation(
 | `minsnpcov`           | numeric   | Minimum coverage of SNPs to be included (default: 20).                                           | `20`                              |
 | `maxgap`              | numeric   | Maximum gap size inside a bin; if exceeded, start a new bin (default: 1,000,000).                | `1000000`                         |
 | `snpnum`              | integer   | SNP number in each bin (default: 30).                                                            | `30`                              |
-| `maxbinsize`          | numeric   | Maximum bin size (default: 2,000,000).                                                           | `2000000`                         |
+| `maxbinsize`          | numeric   | Maximum bin size (default: 5,000,000).                                                           | `5000000`                         |
 | `minbinsize`          | numeric   | Minimum bin size (default: 500,000).                                                             | `500000`                          |
 | `minsnpcallaicutoff`  | numeric   | Minimum SNPs for reliable CNLOH/GAINLOH (default: 10).                                           | `10`                              |
 | `mergecovminsize`     | numeric   | Minimum size for GATK segment merge (default: 500,000).                                          | `500000`                          |
@@ -258,15 +258,15 @@ You can process these files to generate the PON reference for allelic imbalance 
 ```{r, eval = FALSE}
 PONAIprocess(
   ai_pon_file = ai_pon_file,
-  aitype = aitype,
-  minsnpcov = minsnpcov,
-  output = output,
-  prefix = prefix,
-  maxgap = maxgap,
-  maxbinsize = maxbinsize,
-  minbinsize = minbinsize,
-  snpnum = snpnum,
-  gender = gender
+  aitype = "GATK",
+  minsnpcov = 20,
+  output = "/Pathtoresults",
+  prefix = "PONAI",
+  maxgap = 2000000,
+  maxbinsize = 5000000,
+  minbinsize = 500000,
+  snpnum = 30,
+  gender = "female"
 )
 ```
 ##### Parameters for `PONAIprocess`
@@ -277,7 +277,7 @@ PONAIprocess(
 | `aitype`      | character | Type of AI input file (`"gatk"`, `"dragen"`, or `"other"`), passed to `ReadPonAI()`    | `"gatk"`                      |
 | `minsnpcov`   | integer   | Minimum SNP coverage to include a site in the AI calculation                           | `20`                          |
 | `maxgap`      | numeric   | Maximum allowed gap between SNPs within a bin (in base pairs)                          | `1000000`                     |
-| `maxbinsize`  | numeric   | Maximum allowed bin size (in base pairs)                                               | `2000000`                     |
+| `maxbinsize`  | numeric   | Maximum allowed bin size (in base pairs)                                               | `5000000`                     |
 | `minbinsize`  | numeric   | Minimum allowed bin size (in base pairs)                                               | `500000`                      |
 | `snpnum`      | integer   | Target number of SNPs per bin                                                          | `30`                          |
 | `output`      | character | Output directory for the processed PoN AI Rdata file                                   | `"results/"`                  |

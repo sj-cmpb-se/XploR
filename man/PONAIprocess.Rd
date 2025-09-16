@@ -7,13 +7,13 @@
 PONAIprocess(
   ai_pon_file,
   aitype,
-  minsnpcov,
+  minsnpcov = 20,
   output,
   prefix,
-  maxgap,
-  maxbinsize,
-  minbinsize,
-  snpnum,
+  maxgap = 2e+06,
+  maxbinsize = 5e+06,
+  minbinsize = 5e+05,
+  snpnum = 30,
   gender
 )
 }
@@ -22,19 +22,19 @@ PONAIprocess(
 
 \item{aitype}{Character. Type of AI input file (passed to \code{ReadPonAI()}, e.g., \code{"gatk"}, \code{"dragen"}, \code{"other"}).}
 
-\item{minsnpcov}{Integer. Minimum SNP coverage to include a site in the AI calculation.}
+\item{minsnpcov}{Integer. Minimum SNP coverage to include a site in the AI calculation. (default: 20)}
 
 \item{output}{Character. Output directory for the processed PoN AI Rdata file.}
 
 \item{prefix}{Character. Prefix for the output file.}
 
-\item{maxgap}{Numeric. Maximum allowed gap between SNPs within a bin.}
+\item{maxgap}{Numeric. Maximum allowed gap between SNPs within a bin. (default: 2000000)}
 
-\item{maxbinsize}{Numeric. Maximum allowed bin size (bp).}
+\item{maxbinsize}{Numeric. Maximum allowed bin size (bp). (default: 5000000)}
 
-\item{minbinsize}{Numeric. Minimum allowed bin size (bp).}
+\item{minbinsize}{Numeric. Minimum allowed bin size (bp). (default: 500000)}
 
-\item{snpnum}{Integer. Target number of SNPs per bin.}
+\item{snpnum}{Integer. Target number of SNPs per bin. (default: )}
 }
 \value{
 Invisibly returns \code{NULL}. Saves an \code{Rdata} file containing the processed PoN reference (\code{pon_ref}) and the estimated dispersion parameters (\code{theta_fit}).

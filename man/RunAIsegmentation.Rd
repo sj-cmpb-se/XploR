@@ -20,7 +20,7 @@ RunAIsegmentation(
   mergecovminsize = 5e+05,
   maxgap = 2e+06,
   snpnum = 30,
-  maxbinsize = 2e+06,
+  maxbinsize = 5e+06,
   minbinsize = 5e+05,
   aitype = "gatk",
   segmethod = "cbs",
@@ -58,7 +58,7 @@ RunAIsegmentation(
 
 \item{snpnum}{SNP number in each bin.( default: 30 )}
 
-\item{maxbinsize}{Maximum bin size.( default: 2000000 )}
+\item{maxbinsize}{Maximum bin size.( default: 5000000 )}
 
 \item{minbinsize}{Minimum bin size.( default: 500000 )}
 

@@ -8,6 +8,7 @@ SearchBreakpoint(
   seg_row,
   maf,
   pon_ref,
+  gender,
   mergeai = 0.15,
   snpmin = 7,
   maxgap = 2e+06,
@@ -25,6 +26,8 @@ SearchBreakpoint(
 \item{maf}{Data frame or tibble containing MAF data. Must include columns: Chromosome, Pos, maf.}
 
 \item{pon_ref}{Data frame. Panel of normal reference for bias correction (required for bias correction step).}
+
+\item{gender}{Character. If \code{"female"}, the X chromosome will also be proceed.}
 
 \item{mergeai}{Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging under \code{"merge"} mode segmentation.}
 
