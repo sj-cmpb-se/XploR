@@ -10,7 +10,6 @@ RunExamplePipeline <- function(out_dir) {
   cov <- system.file("extdata", "example_female.counts", package = "XploR")
   ai <- system.file("extdata", "example_female_dragen.tumor.ballele.counts.gz", package = "XploR")
   cr <- system.file("extdata", "example_female.denoisedCR.tsv", package = "XploR")
-  pon <- system.file("extdata", "PON_AI.Rdata", package = "XploR")
   cytoband <- system.file("extdata", "hg19_cytoBand.dat", package = "XploR")
   whitelist_bed <- system.file("extdata", "hg19_gatk_female_pon_whitelist.bed", package = "XploR")
   blacklist_bed <- system.file("extdata", "hg19_gatk_female_pon_blacklist.bed", package = "XploR")

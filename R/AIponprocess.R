@@ -136,6 +136,7 @@ EstimateTheta <- function(normals_dt, pon_ref, n_bins) {
 #' @param snpnum Integer. Target number of SNPs per bin. (default: )
 #' @param output Character. Output directory for the processed PoN AI Rdata file.
 #' @param prefix Character. Prefix for the output file.
+#' @param gender Character. Gender of sample "male" or "female".
 #'
 #' @return Invisibly returns \code{NULL}. Saves an \code{Rdata} file containing the processed PoN reference (\code{pon_ref}) and the estimated dispersion parameters (\code{theta_fit}).
 #'

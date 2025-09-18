@@ -35,6 +35,8 @@ PONAIprocess(
 \item{minbinsize}{Numeric. Minimum allowed bin size (bp). (default: 500000)}
 
 \item{snpnum}{Integer. Target number of SNPs per bin. (default: )}
+
+\item{gender}{Character. Gender of sample "male" or "female".}
 }
 \value{
 Invisibly returns \code{NULL}. Saves an \code{Rdata} file containing the processed PoN reference (\code{pon_ref}) and the estimated dispersion parameters (\code{theta_fit}).
