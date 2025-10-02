@@ -311,9 +311,9 @@ CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
 #'
 #' @param data A data frame or tibble containing at least \code{Chromosome}, \code{Pos}, \code{Start}, \code{End} and \code{maf} columns.
 #' @param datatype If individual tumor data then choose "tumor", if aggregated panel of normal samples choose "pon".
-#' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)
-#' @param snpnum SNP number in each bin.( default: 30 )
-#' @param maxbinsize Maximum bin size.( default: 5000000 )
+#' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)
+#' @param snpnum SNP number in each bin.( default: 20 )
+#' @param maxbinsize Maximum bin size.( default: 1000000 )
 #' @param minbinsize Minimum bin size.( default: 500000 )
 #' @param minsnpcov Minimum coverage of SNP sites to be included. ( default: 20 )
 #'
@@ -330,8 +330,8 @@ CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
 #' @importFrom tidyr unnest_wider
 #' @export
 BinMaf <- function(data, datatype,
-                   maxgap = 1000000, snpnum = 30,
-                   maxbinsize = 5000000, minbinsize = 500000,
+                   maxgap = 2000000, snpnum = 20,
+                   maxbinsize = 1000000, minbinsize = 500000,
                    minsnpcov = 20 ){
 
   if (datatype == "pon"){
@@ -487,12 +487,13 @@ BinMaf <- function(data, datatype,
 #' @export
 SearchBreakpoint <- function(seg_row, maf, pon_ref, gender,
                              mergeai = 0.15,
-                             snpmin = 7,
-                             maxgap = 2000000, snpnum = 30,
-                             maxbinsize = 2000000,minbinsize = 500000,
+                             snpmin = 3,
+                             maxgap = 1000000, snpnum = 20,
+                             maxbinsize = 1000000,minbinsize = 500000,
                              minsnpcov = 20,
                              segmethod = "cbs",
                              cbssmooth = "no"){
+
   tmp_seg <- data.frame(
     Sample = seg_row$Sample,
     Chromosome = seg_row$Chromosome,
@@ -511,10 +512,11 @@ SearchBreakpoint <- function(seg_row, maf, pon_ref, gender,
     MAF_gmm_weight = NA,
     #MAF_gmm_variance = NA,
     size = seg_row$size)
-if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && ! seg_row$Chromosome %in% c("X", "Y") ) ) {
+if( ! seg_row$Chromosome %in% c("X", "Y") ) {
   tmp_maf <- maf %>%
     dplyr::filter( Chromosome == seg_row$Chromosome & Pos >= seg_row$Start & Pos <= seg_row$End ) %>%
-    dplyr::filter( maf != 0 )
+    dplyr::filter( maf != 0 ) %>%
+    dplyr::mutate( BAF = alt_count/(alt_count + ref_count))
   n_maf <- nrow(tmp_maf)
   if( is.null(n_maf) ){ n_maf <- 0}
   if(n_maf > 0 ){
@@ -531,10 +533,10 @@ if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && 
     if(segmethod == "merge"){
 
       for ( min_prob in c(0: min( snpmin, max_nonzero_n - 1 ) ) ){
-        binned_data <- binned_data %>% filter(nonzero_count >= min_prob )
+        binned_data <- binned_data %>% dplyr::filter(nonzero_count >= min_prob )
         binned_data <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai = mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
       }
-      binned_data <- binned_data %>% filter( End - Start >= 2*minbinsize)
+      binned_data <- binned_data %>% dplyr::filter( End - Start >= 2*minbinsize)
       if( nrow(binned_data) > 0 ){
         merge_ai <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai= mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
         merge_ai <- merge_ai %>%
@@ -570,7 +572,8 @@ if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && 
       maf_seg_data <- data.frame(
         chrom = binned_data$Chromosome,
         maploc = binned_data$Start,    # or bin center if you prefer
-        maf = binned_data$gmm_mean
+        maf = binned_data$gmm_mean,
+        weights = binned_data$nonzero_count
       )
 
       # Create CNA object
@@ -583,9 +586,9 @@ if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && 
 
       if( cbssmooth == "yes"){
         maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA)
-        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, verbose = 1)
+        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, weights = maf_seg_data$weights, verbose = 1)
       }else{
-        maf_cbs <- DNAcopy::segment(maf_CNA, verbose = 1)
+        maf_cbs <- DNAcopy::segment(maf_CNA,  weights = maf_seg_data$weights, verbose = 1 )
       }
       maf_cbs$segRows <- maf_cbs$segRows %>%
         dplyr::mutate( n_bins = endRow - startRow + 1,
@@ -627,6 +630,8 @@ if( ( gender == "female" && seg_row$Chromosome != "Y") || ( gender == "male" && 
   if(nrow(tmp_seg) > 1){
     tmp_seg$BreakpointSource <- "Postprocess"}else{tmp_seg$BreakpointSource <- "GATK"}
 }else{
+    tmp_seg$gmm_mean_corr <- NA
+    tmp_seg$balance_tag <- NA
  tmp_seg["BreakpointSource"] <- "GATK"
 }
   return(tmp_seg)
@@ -655,7 +660,7 @@ AddQualTag <- function(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin
 
   if(!is.na(MAF_gmm_G)){
     if( MAF_Probes >= 2*snpmin ){
-      if( MAF_gmm_weight >= 0.35){Qualtag <- "PASS" }
+      if( MAF_gmm_weight >= 0.4){Qualtag <- "PASS" }
       else{ Qualtag <- "FAILED" }
 
 
@@ -684,6 +689,83 @@ AddQualTag <- function(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin
 #' @importFrom dplyr group_by summarise mutate select relocate filter
 #' @export
 CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
+  logit  <- function(p) qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
+  ilogit <- function(x) plogis(x)
+  extract_BAF <- function( tmp_maf, Start, End){
+
+    each_BAFs <- tmp_maf %>%
+      dplyr::filter( Start <= Pos & End >= Pos ) %>%
+      dplyr::filter( maf != 0 )
+
+    each_BAFs <- paste0( each_BAFs$BAF, collapse = ";")
+    return(each_BAFs)
+  }
+  test_balance <- function( each_BAFs){
+    each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
+    ## cluster to filter out noise
+    each_BAFs <- each_BAFs[ each_BAFs > 0.05 & each_BAFs < 0.95]
+    noise <- Mclust(each_BAFs, G = c(1:2) )
+    if( !is.null(noise) ){
+      if( noise$G == 1 ){ balance <- TRUE }else{
+
+        if( min(noise$parameters$pro) > 0.3 ){
+          balance <- FALSE ## after remove extreme values, has two peaks
+
+        }else{
+          keep <- c(1:2)[order(noise$parameters$pro)][2] ## remove noise
+          fit <- Mclust(each_BAFs[noise$classification == keep], G = c(1:2) )
+          if(!is.null(fit)){
+            mu  <- fit$parameters$mean
+            pi  <- fit$parameters$pro
+            pi <- pi[order(pi)]
+            balance <- ( fit$G == 1 || ( fit$G == 2 && pi[1] <= 0.3 ) ) ## only one peak or has two peaks, however, the smaller peak is noise.
+
+          }else{ balance <- mean(each_BAFs[noise$classification == keep]) >= 0.43 }
+
+
+        }
+
+      }
+
+    }else{
+      balance <- ifelse( mean(each_BAFs) >= 0.4, TRUE, FALSE )
+    }
+
+    return(balance)
+  }
+  correct <- function( pon_mafs, each_BAFs, gmm_mean){
+    gmm_mean <- gmm_mean[1]
+    pon_mafs <- as.numeric(unlist(strsplit(pon_mafs, ",")))
+    each_BAFs <- as.numeric(unlist(strsplit(each_BAFs, ";")))
+    pon_median <- median(pon_mafs,na.rm = T)
+    gmm_mean_corr <- NA
+
+    if( !is.na(gmm_mean) ){
+      if(gmm_mean >= 0.4 && gmm_mean < 0.45 ){
+        balanced <- test_balance( each_BAFs )
+        }else if( gmm_mean < 0.4 ){
+          balanced <- FALSE
+        }else if(gmm_mean >= 0.45){
+          balanced <- TRUE
+        }
+    }else{
+      balanced <- NA }
+
+    if ( !is.na(balanced) && balanced ){
+      y_centered = logit(gmm_mean) - logit( pon_median )
+      gmm_mean_corr = pmin( ilogit(y_centered), 0.5 )
+      if(gmm_mean_corr >= 0.47){ gmm_mean_corr = 0.5 }
+      balance_tag <- "balanced"
+    }else if( !is.na(balanced) && ! balanced ){
+      gmm_mean_corr = gmm_mean
+      balance_tag <- "imbalanced"
+    }else{
+      gmm_mean_corr = gmm_mean
+      balance_tag <- NA
+    }
+    return( list(gmm_mean_corr = gmm_mean_corr, balance_tag = balance_tag) )
+  }
+
   data.table::setDT(tmp_seg)
   data.table::setDT(pon_ref)
   data.table::setkey( pon_ref, Chromosome, Start, End )
@@ -697,50 +779,18 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     dplyr::group_by( Chromosome, Sample, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw, gatk_count, gatk_baselinecov, gatk_gender,
               pipeline_gender, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
     dplyr::summarise( pon_mafs = paste( pon_mafs, collapse = ","))
-  logit  <- function(p) qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
-  ilogit <- function(x) plogis(x)
-  correct <- function( pon_mafs, each_mafs, gmm_mean){
-    gmm_mean <- gmm_mean[1]
-    if( !is.na(gmm_mean)){
-    pon_mafs <- as.numeric(unlist(strsplit(pon_mafs, ",")))
-    each_mafs <- as.numeric(unlist(strsplit(each_mafs, ";")))
-    pon_median <- median(pon_mafs,na.rm = T)
-    gmm_mean_corr <- NA
-    if( length(pon_mafs) >= 10 && length(each_mafs) >= 5 ){
-      w <- wilcox.test(pon_mafs, each_mafs )
-      if( gmm_mean >= pon_median ||  (gmm_mean - pon_median <= 0.05 && w$p.value >= 0.01 ) ){
-        y_centered = logit(gmm_mean) - logit( pon_median )
-        gmm_mean_corr = pmin( ilogit(y_centered), 0.5 )
-      }
-    }else{
-      if( !is.na(pon_median) ){
-        if( gmm_mean - pon_median <= 0.1 ){
-          y_centered = logit(gmm_mean) - logit( pon_median )
-          gmm_mean_corr = pmin( ilogit(y_centered), 0.5 )
-        }
-      }
-    }
-    gmm_mean_corr <- ifelse( is.na(gmm_mean_corr), gmm_mean, gmm_mean_corr) }else{ gmm_mean_corr <- NA}
-    return( gmm_mean_corr )
-  }
-  extract_maf <- function( tmp_maf, Start, End){
 
-    each_mafs <- tmp_maf %>%
-      dplyr::filter( Start <= Pos & End >= Pos ) %>%
-      dplyr::filter( maf != 0 )
 
-    each_mafs <- paste0( each_mafs$maf, collapse = ";")
-    return(each_mafs)
+  if( nrow(seg_corr) > 0){
+    seg_corr <- seg_corr %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate( each_BAFs = extract_BAF( tmp_maf, Start, End)) %>%
+      dplyr::mutate( gmm_mean_corr = list(correct(pon_mafs, each_BAFs, gmm_mean=MAF))) %>%
+      tidyr::unnest_wider( gmm_mean_corr) %>%
+      dplyr::select( -pon_mafs, -each_BAFs)
   }
 
-  tmp_seg_corr <- seg_corr %>%
-    dplyr::mutate( each_mafs = extract_maf( tmp_maf, Start, End)) %>%
-    dplyr::mutate( gmm_mean_corr = correct(pon_mafs, each_mafs, gmm_mean=MAF)) %>%
-    dplyr::mutate( MAF = gmm_mean_corr) %>%
-    dplyr::select( -gmm_mean_corr, -each_mafs, -pon_mafs ) %>%
-    dplyr::relocate( MAF, .before = MAF_Probes)
-
-  return(tmp_seg_corr)
+  return(seg_corr)
 }
 
 
@@ -782,3 +832,6 @@ EstimateK <- function( result, theta_fit, maf){
   return(result)
 
 }
+
+
+

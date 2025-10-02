@@ -35,11 +35,12 @@ Imports:
   purrr,
   scales,
   tidyr,
-  hdf5r,
   IRanges,
   tibble,
   zoo,
   magrittr,
   DNAcopy,
   irlba
+Suggests:
+  hdf5r
 RoxygenNote: 7.3.2

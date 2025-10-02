@@ -13,7 +13,8 @@ CallwoModel(
   MAF_gmm_weight,
   callcovcutoff = 0.3,
   callaicutoff = 0.3,
-  minsnpcallaicutoff = 10
+  minsnpcallaicutoff = 10,
+  gender
 )
 }
 \arguments{
@@ -35,7 +36,7 @@ CallwoModel(
 
 \item{minsnpcallaicutoff}{Integer. Minimum number of SNP probes to call CNLOH (default: 10).}
 
-\item{gender}{Character. Sample gender ("male" or "female").}
+\item{gender}{Character. Gender information "male" or "female".}
 }
 \value{
 Character. Copy number call: one of "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".

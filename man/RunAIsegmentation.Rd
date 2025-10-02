@@ -14,13 +14,12 @@ RunAIsegmentation(
   ai_pon,
   mergeai = 0.15,
   mergecov = 0.2,
-  snpmin = 7,
+  snpmin = 4,
   minsnpcov = 20,
-  minsnpcallaicutoff = 10,
   mergecovminsize = 5e+05,
   maxgap = 2e+06,
-  snpnum = 30,
-  maxbinsize = 5e+06,
+  snpnum = 20,
+  maxbinsize = 1e+06,
   minbinsize = 5e+05,
   aitype = "gatk",
   segmethod = "cbs",
@@ -46,19 +45,17 @@ RunAIsegmentation(
 
 \item{mergecov}{Numeric, CNV difference threshold for merging segments (default: 0.2).}
 
-\item{snpmin}{Numeric, minimum SNPs for MAF segmentation (default: 7).}
+\item{snpmin}{Numeric, minimum SNPs for MAF segmentation (default: 4).}
 
 \item{minsnpcov}{Numeric, minimum coverage of SNPs to included (default: 20).}
 
-\item{minsnpcallaicutoff}{Numeric, minimum SNPs for reliable CNLOH/GAINLOH (default: 10).}
-
 \item{mergecovminsize}{Numeric, minimum size for GATK segment merge (default: 500000).}
 
-\item{maxgap}{Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)}
+\item{maxgap}{Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)}
 
-\item{snpnum}{SNP number in each bin.( default: 30 )}
+\item{snpnum}{SNP number in each bin.( default: 20 )}
 
-\item{maxbinsize}{Maximum bin size.( default: 5000000 )}
+\item{maxbinsize}{Maximum bin size.( default: 1000000 )}
 
 \item{minbinsize}{Minimum bin size.( default: 500000 )}
 

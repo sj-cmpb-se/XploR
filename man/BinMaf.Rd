@@ -7,9 +7,9 @@
 BinMaf(
   data,
   datatype,
-  maxgap = 1e+06,
-  snpnum = 30,
-  maxbinsize = 5e+06,
+  maxgap = 2e+06,
+  snpnum = 20,
+  maxbinsize = 1e+06,
   minbinsize = 5e+05,
   minsnpcov = 20
 )
@@ -19,11 +19,11 @@ BinMaf(
 
 \item{datatype}{If individual tumor data then choose "tumor", if aggregated panel of normal samples choose "pon".}
 
-\item{maxgap}{Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)}
+\item{maxgap}{Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)}
 
-\item{snpnum}{SNP number in each bin.( default: 30 )}
+\item{snpnum}{SNP number in each bin.( default: 20 )}
 
-\item{maxbinsize}{Maximum bin size.( default: 5000000 )}
+\item{maxbinsize}{Maximum bin size.( default: 1000000 )}
 
 \item{minbinsize}{Minimum bin size.( default: 500000 )}
 

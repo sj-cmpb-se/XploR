@@ -242,7 +242,8 @@ EstimatePurityCov <- function( seg, gender ){
                                  MAF_correct = MAF_correct,
                                  MAF_gmm_G = MAF_gmm_G,
                                  MAF_Probes = MAF_Probes,
-                                 MAF_gmm_weight = MAF_gmm_weight
+                                 MAF_gmm_weight = MAF_gmm_weight,
+                                 gender = gender
                                   )) %>%
       dplyr::mutate( CN = RoundCN(Chrom = Chromosome, Call = Call, CNF = CNF_correct)) %>%
       dplyr::mutate( rho = p )
@@ -514,7 +515,7 @@ Callikelihood <- function(mu, rho, data, sigma_C, lambda, gamma, epsilon) {
                                                epsilon= epsilon )
     ## if the ccf is higher than 1.2 will be removed
     segment_likelihood <- segment_likelihood %>%
-      dplyr::filter(is.na( ccf ) |ccf <= 1.2 ) %>%
+      dplyr::filter(is.na( ccf ) |ccf <= 1.3 ) %>%
       dplyr::mutate( index = index_i,
               Tag = Tag_i )
 
@@ -552,7 +553,7 @@ RunCallikelihood <- function( purity_sf, data, sigma_C, lambda = 1, gamma = 1, e
   results_ll <- lapply(1:nrow(purity_sf ), function(n) {
     mu <- purity_sf[n,"mu"]
     rho <- purity_sf[n,"rho"]
-    tmp_result <- XploR::Callikelihood(mu = mu,
+    tmp_result <- Callikelihood(mu = mu,
                                 rho = rho,
                                 data = data,
                                 sigma_C = var_sf,
@@ -604,7 +605,7 @@ SelectCallpersegment <- function( results ){
       cov_diff = abs(Segcov - expected_cov) )
   #1. choose top likelihood allele combinations for each segment
   top_likelihood_rows <- results %>%
-    dplyr::filter( ccf <= 1.05) %>%
+    dplyr::filter( ccf <= 1.3) %>%
     dplyr::group_by(Segcov, MAF, mu, rho, index) %>%
     dplyr::group_modify(~ {
       .x %>%
@@ -619,7 +620,7 @@ SelectCallpersegment <- function( results ){
           choose_second = dplyr::if_else(
             ## if the first call is ref, but the second call is a subclonal has ccf > 0.3 and the maf_ll of the second call
             ## is higher than the first call then choose second one,
-            ## when the first call ccf_MAF is higher than 1.3 then choose the second one, this is to avoid choos someting is really off from the MAF.
+            ## when the first call ccf_MAF is higher than 1.3 then choose the second one, this is to avoid choos something is really off from the MAF.
             ( ( minor[1] == 1 & major[1] == 1 &  between(ccf[2], 0.3, 1) & maf_ll[2] >= maf_ll[1] ) ) |
               ( ccf_MAF[1] >= 1.3) ,
             2, 1
@@ -855,7 +856,7 @@ RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_m
     tmp_call <- RefineCallsSecond(df = tmp_call,results = results,final_mu = tmp_mu, final_rho = tmp_rho, gender = gender, callcov = callcov)
     tmp_model_call <- tmp_call %>%
       dplyr::filter( ! Chromosome %in% c("X","Y")) %>%
-      dplyr::filter( size >= modelminAIsize & FILTER != "FAILED" ) %>%
+      dplyr::filter( size >= modelminAIsize & FILTER != "FAILED"  & MAF_Probes >= modelminprobes ) %>%
       dplyr::filter(!(major == 0 & minor == 0)) %>%
       dplyr::mutate( dis_integer_CN = abs(CNF_correct - CN) ) %>%
       dplyr::mutate( dis_integer_CN = ifelse(MAF_Probes <= modelminprobes, 0, dis_integer_CN )) %>%
@@ -1123,8 +1124,7 @@ SelectFinalModel <- function( results, top_likelihood_rows, groupinfo, prefix, g
   }
 
   tier1 <- models[c(1:tier1_index),]
-  ## Refine Tier1 model calls by using RefineCalls and RefineCallsecond function to make the total likelihood and distance to
-  ## integer result more accurate
+  ## Refine Tier1 model calls by using RefineCalls and RefineCallsecond function
 
   tier1_calls <- RefineTier1Models(tier1 = tier1,
                                    results = results,
@@ -1195,6 +1195,7 @@ SelectFinalModel <- function( results, top_likelihood_rows, groupinfo, prefix, g
 #' @export
 ExtractCall <- function( df, max_L_mu, max_L_rho, seg  ){
   seg$index <- as.character(seg$index)
+  df$index <- as.character(df$index)
   final_call <- df %>%
     dplyr::filter( mu == max_L_mu & rho == max_L_rho  ) %>%
     dplyr::right_join( seg, by = "index" )
@@ -1236,7 +1237,7 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
                 "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
-                "MAF_gmm_G", "MAF_gmm_weight", "BreakpointSource", "FILTER",
+                "MAF_gmm_G", "MAF_gmm_weight","balance_tag", "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",  "index",
                 "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
                 "gatk_gender", "pipeline_gender"
@@ -1299,7 +1300,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
                 "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
-                "MAF_gmm_G", "MAF_gmm_weight",
+                "MAF_gmm_G", "MAF_gmm_weight","balance_tag",
                 "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",
                 "index", "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
@@ -1307,7 +1308,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
   df <- df %>%
     dplyr::mutate( cov_diff = abs( CNF_correct - CN) )
   bad <- df %>%
-    dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.6 & ! is.na(MAF) ) |
+    dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.8 & ! is.na(MAF) ) |
               ( cov_diff >= 0.6 & ccf == 1 & ! is.na(MAF) ) |
               ( cov_diff >= callcov & CN == 2 & !is.na(MAF)))
   if( nrow(bad) > 0 ){
@@ -1357,7 +1358,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
     dplyr::rowwise() %>%
     dplyr::mutate( ccf = ifelse( ccf > 1, 1 , ccf)) %>%
     dplyr::mutate( ccf_MAF = ifelse( ccf_MAF > 1, 1, ccf_MAF )) %>%
-    dplyr::mutate( CN_mix = ifelse( CN %% 2 != 0 & abs(ccf - ccf_MAF) >= 0.5 & ccf_MAF != 0  , "CN_Mix", "No")) %>%
+    dplyr::mutate( CN_mix = ifelse( CN %% 2 != 0 & abs(ccf - ccf_MAF) >= 0.3 & ccf_MAF != 0  , "CN_Mix", "No")) %>%
     dplyr::mutate( ccf_final = ifelse( minor == 0 , ccf_MAF, ccf ) )
 
   colnames(df)[7] <- "ccf_COV"
