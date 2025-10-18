@@ -53,7 +53,7 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
 #' @importFrom stats median
 #' @export
 CheckGender <- function( cov, seg, gender ){
-  ## check what is the baseline cov is used in autosome and x and Y seperately.
+  ## check what is the baseline cov is used in autosome and x and Y separately.
 
   seg <- seg %>%
     dplyr::rowwise() %>%
@@ -65,10 +65,23 @@ CheckGender <- function( cov, seg, gender ){
   autobasecov <- seg %>%
     dplyr::filter( ! Chromosome %in% c("X","Y") ) %>%
     dplyr::filter( Num_Probes >= 500 )
-  autobasecov <- median(autobasecov$Baseline_cov)
+ # autobasecov <- median(autobasecov$Baseline_cov)
+  autobasecov <- sum(autobasecov$Baseline_cov * autobasecov$Num_Probes) /sum( autobasecov$Num_Probes)
   xbasecov <- seg %>% dplyr::filter( Chromosome == "X" )
-  xbasecov <- median(xbasecov$Baseline_cov)
+  xbasecov <- sum(xbasecov$Baseline_cov * xbasecov$Num_Probes) /sum( xbasecov$Num_Probes)
+   ybasecov <- seg %>% dplyr::filter( Chromosome == "Y" )
 
+  if( nrow(ybasecov) > 0){
+    ybasecov <- (ybasecov$Baseline_cov * ybasecov$Num_Probes) /sum( ybasecov$Num_Probes)
+    print( paste0("The Y baseline cov/autosome is: ", ybasecov/autobasecov))
+
+    print( paste0("Y chromosome baseline cov is: ", ybasecov))
+  }
+
+  print( paste0("The autosome baseline cov is: ", autobasecov))
+  print( paste0("X chromosome baseline cov is: ", xbasecov))
+
+  print( paste0("The X baseline cov/autosome is: ", xbasecov/autobasecov))
   if( xbasecov <= autobasecov/1.5 ){
     gatkgender <- "male"
   }else{gatkgender <- "female"}
@@ -88,7 +101,7 @@ CheckGender <- function( cov, seg, gender ){
       dplyr::mutate(Segment_Mean = ifelse( gatk_gender != gender & Chromosome == "X",
                                     FixsegmentMean( sm = Segment_Mean,
                                                     gatkgender = gatk_gender,
-                                                    pipelinegender = gender ), Segment_Mean ))
+                                                    pipeline_gender = gender ), Segment_Mean ))
 
   }
   return(seg)

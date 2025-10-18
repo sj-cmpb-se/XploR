@@ -103,9 +103,9 @@ RunAIsegmentation <- function(
 ## seg_method "merge" and "cbs"
   # Step 4: Search for breakpoints in each segment
   combindAIseg <- lapply(seq_len(nrow(merge_seg)), function(x) {
-    print( x )
+
     SearchBreakpoint(seg_row = merge_seg[x, ],
-                     segmethod = "cbs", cbssmooth = "no",
+                     segmethod = segmethod, cbssmooth = cbssmooth,
                      pon_ref = pon_ref,maf = maf, mergeai = mergeai, snpmin = snpmin,
                      snpnum =  snpnum, maxgap = maxgap, maxbinsize = maxbinsize,
                      minbinsize = minbinsize, minsnpcov = minsnpcov, gender = gender)

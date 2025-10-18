@@ -1310,7 +1310,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
   bad <- df %>%
     dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.8 & ! is.na(MAF) ) |
               ( cov_diff >= 0.6 & ccf == 1 & ! is.na(MAF) ) |
-              ( cov_diff >= callcov & CN == 2 & !is.na(MAF)))
+              ( cov_diff >= callcov & CN == 2 & (!is.na(MAF)) & MAF != 0.5 ))
   if( nrow(bad) > 0 ){
     good <- df %>%
       dplyr::filter( ! index %in% bad$index)

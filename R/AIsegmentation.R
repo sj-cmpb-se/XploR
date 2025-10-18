@@ -205,6 +205,18 @@ EstimateMAFbyGMM <- function(maf_values){
 
 }
 
+EstimateMode<- function(maf_vec){
+  x <- maf_vec[is.finite(maf_vec)]
+  x <- x[x > 0 & x < 0.5]
+  if (length(x) < 20) return(NA_real_)
+  # bandwidth: Sheather-Jones is a good default
+  bw <- stats::bw.SJ(x)
+  # reflect around both boundaries to reduce bias
+  xr <- c(x, -x, 1 - x)
+  d  <- density(xr, bw = bw, from = 0, to = 0.5, n = 4097)
+  d$x[which.max(d$y)]
+}
+
 
 #' Merge Adjacent AI Segments Based on Similarity Criteria
 #'
@@ -700,30 +712,61 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     each_BAFs <- paste0( each_BAFs$BAF, collapse = ";")
     return(each_BAFs)
   }
-  test_balance <- function( each_BAFs){
+
+  find_peaks <- function(BAFs){
+    baf <- BAFs
+    # Estimate density
+    dens <- density(baf, bw = "nrd0")  # 'bw' can be tuned
+
+    # Find local maxima (peaks)
+    peaks_idx <- which(diff(sign(diff(dens$y))) == -2) + 1
+    peak_positions <- dens$x[peaks_idx]
+    peak_heights <- dens$y[peaks_idx]
+
+    # Assign points to nearest peak (optional)
+    assignments <- sapply(baf, function(x) peak_positions[which.min(abs(x - peak_positions))])
+    proportions <- table(assignments) / length(baf)
+
+    # Results
+    re <- data.frame(
+      peak_mean = peak_positions,
+      proportion = as.numeric(proportions[match(peak_positions, names(proportions))])
+    )
+    return(re)
+  }
+
+
+
+  test_balance_GMM <- function( each_BAFs){
     each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
     ## cluster to filter out noise
-    each_BAFs <- each_BAFs[ each_BAFs > 0.05 & each_BAFs < 0.95]
+    each_BAFs <- each_BAFs[ each_BAFs > 0.1 & each_BAFs < 0.9]
     noise <- Mclust(each_BAFs, G = c(1:2) )
     if( !is.null(noise) ){
       if( noise$G == 1 ){ balance <- TRUE }else{
 
         if( min(noise$parameters$pro) > 0.3 ){
-          balance <- FALSE ## after remove extreme values, has two peaks
+            if( noise$G == 2 && abs(noise$parameters$mean[1] - noise$parameters$mean[2] ) <= 0.1 ){
+              balance <- TRUE
+              }else{
+              balance <- FALSE ## after remove extreme values, has two peaks
+            }
 
-        }else{
+        }else{ if( abs(noise$parameters$mean[1] - noise$parameters$mean[2] ) <= 0.05 ){balance <- TRUE}else{
+
           keep <- c(1:2)[order(noise$parameters$pro)][2] ## remove noise
           fit <- Mclust(each_BAFs[noise$classification == keep], G = c(1:2) )
           if(!is.null(fit)){
             mu  <- fit$parameters$mean
             pi  <- fit$parameters$pro
             pi <- pi[order(pi)]
-            balance <- ( fit$G == 1 || ( fit$G == 2 && pi[1] <= 0.3 ) ) ## only one peak or has two peaks, however, the smaller peak is noise.
+            balance <- ( fit$G == 1 ||
+                           ( fit$G == 2 && pi[1] <= 0.3 ) ||
+                           abs( fit$parameters$mean[1] - fit$parameters$mean[2] ) <= 0.1 ) ## only one peak or has two peaks, however, the smaller peak is noise.
 
           }else{ balance <- mean(each_BAFs[noise$classification == keep]) >= 0.43 }
-
-
         }
+         }
 
       }
 
@@ -731,6 +774,25 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
       balance <- ifelse( mean(each_BAFs) >= 0.4, TRUE, FALSE )
     }
 
+    return(balance)
+  }
+
+  test_balance_KDE <- function( each_BAFs){
+    each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
+    kde_re <- find_peaks(each_BAFs)
+    kde_re <- kde_re %>% dplyr::filter( proportion >= 0.25)
+    if(nrow(kde_re) == 1 ){
+      balance <- TRUE
+    }else{
+      kde_re <- kde_re %>% arrange( desc(proportion))
+      peak_diff <- abs(kde_re$peak_mean[1] - kde_re$peak_mean[2])
+      if( peak_diff <= 0.1 || max(kde_re$peak_mean) <= 0.52 ){
+        balance <- TRUE
+      }else{
+        balance <- FALSE
+      }
+
+    }
     return(balance)
   }
   correct <- function( pon_mafs, each_BAFs, gmm_mean){
@@ -742,7 +804,7 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
 
     if( !is.na(gmm_mean) ){
       if(gmm_mean >= 0.4 && gmm_mean < 0.45 ){
-        balanced <- test_balance( each_BAFs )
+        balanced <- test_balance_KDE( each_BAFs )
         }else if( gmm_mean < 0.4 ){
           balanced <- FALSE
         }else if(gmm_mean >= 0.45){
