@@ -107,7 +107,7 @@ RerunCNV <- function(
     print(paste0("start: ", start))
   }
   if(! is.null(end)){
-    print(paset0("end: ", end ))
+    print(paste0("end: ", end ))
   }
 
 

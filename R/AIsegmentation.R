@@ -205,18 +205,6 @@ EstimateMAFbyGMM <- function(maf_values){
 
 }
 
-EstimateMode<- function(maf_vec){
-  x <- maf_vec[is.finite(maf_vec)]
-  x <- x[x > 0 & x < 0.5]
-  if (length(x) < 20) return(NA_real_)
-  # bandwidth: Sheather-Jones is a good default
-  bw <- stats::bw.SJ(x)
-  # reflect around both boundaries to reduce bias
-  xr <- c(x, -x, 1 - x)
-  d  <- density(xr, bw = bw, from = 0, to = 0.5, n = 4097)
-  d$x[which.max(d$y)]
-}
-
 
 #' Merge Adjacent AI Segments Based on Similarity Criteria
 #'
@@ -336,7 +324,7 @@ CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
 #'   \item{End}{Maximum \code{End} value in the bin.}
 #'   \item{nonzero_count}{Number of nonzero maf values in the bin.}
 #'   \item{each_maf}{Semicolon-separated string of nonzero maf values in the bin.}
-#'   \item{gmm_mean, gmm_weight, gmm_G}{Unnested maf GMM metrics.}
+#'   \item{gmm_mean, gmm_weight, gmm_G}{Unnested maf or BAF metrics.}
 #'
 #' @importFrom dplyr mutate group_by summarise ungroup filter n
 #' @importFrom tidyr unnest_wider
@@ -734,8 +722,6 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     )
     return(re)
   }
-
-
 
   test_balance_GMM <- function( each_BAFs){
     each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
