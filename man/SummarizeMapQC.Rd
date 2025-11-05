@@ -2,20 +2,25 @@
 % Please edit documentation in R/SummarizeMapQC.R
 \name{SummarizeMapQC}
 \alias{SummarizeMapQC}
-\title{Summarise QC Tables for a Sample}
+\title{Summarize QC Metrics for a Sample from a DRAGEN run.}
 \usage{
-SummarizeMapQC(input_dir, prefix, out_dir)
+SummarizeMapQC(input_dir, prefix, platform, out_dir)
 }
 \arguments{
-\item{input_dir}{Path to the directory containing the QC files.}
+\item{input_dir}{Character. Path to the directory containing QC files for the sample.}
 
-\item{prefix}{Sample ID and file prefix.}
+\item{prefix}{Character. Sample ID and file prefix.}
 
-\item{out_dir}{Output directory.}
+\item{platform}{Character. Sequencing platform, either \code{"wgs"} (whole genome sequencing) or \code{"targeted"}.}
+
+\item{out_dir}{Character. Output directory for the summary table.}
 }
 \value{
-Invisibly returns the QC summary data frame.
+Invisibly returns a data frame containing the QC summary metrics.
 }
 \description{
-Reads and summarizes mapping and coverage QC metrics for a sample, and writes a summary table.
+Reads mapping and coverage quality control (QC) files for a sample, summarizes key metrics, and writes a summary table to the output directory.
+}
+\details{
+The function reads mapping and coverage QC files from \code{input_dir}, extracts key metrics, and writes a summary table to \code{out_dir} with the specified \code{prefix}. The summary includes metrics relevant to the specified \code{platform}.
 }

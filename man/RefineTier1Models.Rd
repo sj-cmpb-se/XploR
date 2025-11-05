@@ -31,7 +31,7 @@ RefineTier1Models(
 
 \item{gender}{Character. Sample gender ("male" or "female").}
 
-\item{callcov}{Numeric. Subclonal events calling cutoff based on coverage.}
+\item{callcov}{Numeric. Subclonal events calling cutoff based on CNF.}
 
 \item{modelminAIsize}{Numeric. Minimum segment size for model inclusion.}
 }

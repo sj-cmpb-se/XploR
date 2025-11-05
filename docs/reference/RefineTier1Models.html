@@ -43,7 +43,10 @@
 <span>  <span class="va">top_likelihood_rows</span>,</span>
 <span>  <span class="va">likelihood_min</span>,</span>
 <span>  <span class="va">seg</span>,</span>
-<span>  <span class="va">opt</span></span>
+<span>  <span class="va">modelminprobes</span>,</span>
+<span>  <span class="va">gender</span>,</span>
+<span>  <span class="va">callcov</span>,</span>
+<span>  <span class="va">modelminAIsize</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -64,15 +67,27 @@
 
 
 <dt id="arg-likelihood-min">likelihood_min<a class="anchor" aria-label="anchor" href="#arg-likelihood-min"></a></dt>
-<dd><p>Numeric. The minimum likelihood value to use as a penalty.</p></dd>
+<dd><p>Numeric. The minimum log-likelihood value to use as a penalty.</p></dd>
 
 
 <dt id="arg-seg">seg<a class="anchor" aria-label="anchor" href="#arg-seg"></a></dt>
 <dd><p>Data frame or tibble. Segment information.</p></dd>
 
 
-<dt id="arg-opt">opt<a class="anchor" aria-label="anchor" href="#arg-opt"></a></dt>
-<dd><p>List of options. Must include <code>modelminAIsize</code> and <code>modelminprobes</code>.</p></dd>
+<dt id="arg-modelminprobes">modelminprobes<a class="anchor" aria-label="anchor" href="#arg-modelminprobes"></a></dt>
+<dd><p>Integer. Minimum number of probes for model inclusion.</p></dd>
+
+
+<dt id="arg-gender">gender<a class="anchor" aria-label="anchor" href="#arg-gender"></a></dt>
+<dd><p>Character. Sample gender ("male" or "female").</p></dd>
+
+
+<dt id="arg-callcov">callcov<a class="anchor" aria-label="anchor" href="#arg-callcov"></a></dt>
+<dd><p>Numeric. Subclonal events calling cutoff based on CNF.</p></dd>
+
+
+<dt id="arg-modelminaisize">modelminAIsize<a class="anchor" aria-label="anchor" href="#arg-modelminaisize"></a></dt>
+<dd><p>Numeric. Minimum segment size for model inclusion.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -90,6 +105,12 @@
     <p>For each (mu, rho) combination, extracts and refines calls, computes distances to integer copy number, ploidy, and likelihoods, and summarizes the results.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># RefineTier1Models(tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes = 20, gender = "female", callcov = 0.3, modelminAIsize = 500000)</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

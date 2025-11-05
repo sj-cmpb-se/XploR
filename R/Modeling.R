@@ -861,7 +861,7 @@ EstimateMinPurity <- function( df ){
 #' @param seg Data frame or tibble. Segment information.
 #' @param modelminprobes Integer. Minimum number of probes for model inclusion.
 #' @param gender Character. Sample gender ("male" or "female").
-#' @param callcov Numeric. Subclonal events calling cutoff based on coverage.
+#' @param callcov Numeric. Subclonal events calling cutoff based on CNF.
 #' @param modelminAIsize Numeric. Minimum segment size for model inclusion.
 #'
 #' @return A list of length equal to \code{nrow(tier1)}. Each element is a list with:

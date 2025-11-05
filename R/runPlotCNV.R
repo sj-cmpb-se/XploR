@@ -4,7 +4,7 @@
 #'
 #' @param seg Path to the GATK-processed segment file.
 #' @param cr Path to the GATK denoised CR file with extension denoisedCR.tsv.
-#' @param ballele Path to the DRAGEN B-allele file. Or other souce B-allele file with column chrom ref alt baf
+#' @param ballele Path to the DRAGEN B-allele file. Or other source B-allele file with column chrom ref alt baf
 #' @param ai_binsize Numeric. Bin size for AI plot (default 100000).
 #' @param cov_binsize Numeric. Bin size for coverage plot (default 100000).
 #' @param whitelist Path to whitelist file.
@@ -93,7 +93,7 @@ RunPlotCNV <- function(
     purity = purity
   )
 
-  outFile <- paste0(prefix, "_CNV_DRAGEN_plot.png")
+  outFile <- paste0(prefix, "_CNV_plot.png")
   ggplot2::ggsave(
     filename = outFile,
     plot = final_plot,
