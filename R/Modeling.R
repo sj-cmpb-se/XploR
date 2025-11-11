@@ -1308,9 +1308,15 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
   df <- df %>%
     dplyr::mutate( cov_diff = abs( CNF_correct - CN) )
   bad <- df %>%
-    dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.8 & ! is.na(MAF) ) |
+    dplyr::filter( ( cov_diff >= 0.6 & ccf <= 0.8 & ! is.na(MAF)  ) |
               ( cov_diff >= 0.6 & ccf == 1 & ! is.na(MAF) ) |
-              ( cov_diff >= callcov & CN == 2 & (!is.na(MAF)) & MAF != 0.5 ))
+              ( cov_diff >= callcov & CN == 2 & (!is.na(MAF)) & MAF != 0.5 ) |
+              ( CN == 2 & !is.na( MAF ) & MAF <= 0.44 & Call == "REF" & cov_diff >= 0.3 )  ) ## possible missed subclonal event
+  bad <- bad %>%
+    dplyr::mutate( rough_round = round(CNF_correct) ) %>%
+    dplyr::filter( ! ( rough_round != CN & rough_round == 2 & (!is.na(MAF)) & MAF <= 0.46 ) ) %>%
+    dplyr::select( - rough_round)
+
   if( nrow(bad) > 0 ){
     good <- df %>%
       dplyr::filter( ! index %in% bad$index)
@@ -1352,6 +1358,27 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
     }
     df <- rbind(good, bad)
   }
+
+  ## Double check CNLOH
+   bad2 <- df %>%
+     rowwise() %>%
+     dplyr::filter( CN == 2 & Call == "REF" & !is.na(MAF) & MAF <= 0.42 & CNF_correct <= 2.3 & CNF_correct >= 1.7 )
+   if(nrow(bad2) > 0){
+
+     bad2 <- bad2 %>%
+       dplyr::mutate( Call = "CNLOH") %>%
+       dplyr::mutate( major = 2,
+                      minor = 0 ) %>%
+       dplyr::mutate( ccf_MAF = CcfLOH(major = major, rho = final_rho,MAF = MAF,minor = minor)) %>%
+       dplyr::mutate( expected_maf = 0.5 * final_rho * (1-ccf_MAF) )
+
+     good2 <- df %>%
+       dplyr::rowwise() %>%
+       dplyr::filter(!(index %in% bad2$index))
+
+     df <- rbind( good2, bad2)
+   }
+
   df <- df %>%
     dplyr::select(all_of(col_name)) %>%
     dplyr::arrange( Chromosome, Start ) %>%
