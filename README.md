@@ -12,7 +12,7 @@ estimation. XploR supports flexible rerun options based on chromosome
 region, tumor purity, or diploid coverage, and includes integrated ISCN
 annotation and visualization. These capabilities make XploR a powerful
 solution for clinical and research applications in genomic copy number
-analysis.
+analysis. 
 
 ------------------------------------------------------------------------
 
