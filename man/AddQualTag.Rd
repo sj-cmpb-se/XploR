@@ -4,9 +4,11 @@
 \alias{AddQualTag}
 \title{Assign Quality Tag to a Segment Based on maf GMM Metrics}
 \usage{
-AddQualTag(MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin)
+AddQualTag(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin)
 }
 \arguments{
+\item{Chromosome}{Character.}
+
 \item{MAF_gmm_weight}{Numeric. The mixture weight of the most prominent maf GMM cluster.}
 
 \item{MAF_Probes}{Integer. The number of nonzero maf probes in the segment.}
@@ -25,7 +27,7 @@ Assigns a quality tag ("PASS" or "FAILED") to a segment based on the maf GMM wei
 A segment is marked as "PASS" if the maf GMM weight is at least 0.35 and the probe count is at least twice the minimum SNP count (\code{snpmin}). Otherwise, it is marked as "FAILED".
 }
 \examples{
-AddQualTag(MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
-AddQualTag(MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
+AddQualTag(Chromosome = "1", MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
+AddQualTag(Chromosome = "X", MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
 
 }

@@ -3,10 +3,16 @@
 <img src="man/figures/logo.png" alt="XploR logo" height="150" />
 </p>
 
-**XploR** is an R package for robust, large-scale copy number and
-allelic imbalance analysis from whole exome sequencing (WES) data.  
-It provides tools for segmentation, purity/ploidy estimation, allelic
-imbalance analysis, ISCN annotation, interactive plotting, and more.
+**XploR** is an R package designed for robust, allelic imbalance and
+large-scale copy number analysis from whole exome sequencing (WES) data
+in clinical genomics. It features advanced noise reduction using a panel
+of normal samples for both coverage and allelic counts, comprehensive
+smoothing and segmentation algorithms, and accurate purity and ploidy
+estimation. XploR supports flexible rerun options based on chromosome
+region, tumor purity, or diploid coverage, and includes integrated ISCN
+annotation and visualization. These capabilities make XploR a powerful
+solution for clinical and research applications in genomic copy number
+analysis.
 
 ------------------------------------------------------------------------
 
@@ -26,11 +32,12 @@ imbalance analysis, ISCN annotation, interactive plotting, and more.
 
 ## Features
 
+- BAF and coverage denoise, smoothing, binning, and quality control
 - Exome-wide copy number segmentation and allelic imbalance detection
 - Purity and ploidy estimation with model selection
-- BAF and coverage smoothing, binning, and quality control
+- Rerun based on chromosome region, purity or diploid coverage
 - ISCN and gene annotation of CNV segments
-- Interactive and publication-ready visualization
+- Visualization
 
 ## Installation
 
@@ -46,6 +53,9 @@ devtools::install_github("sj-cmpb-se/XploR")
 
 All files needed for a test run in placed at inst/extdata folder.
 RunExamplePipeline() will use the files in inst/exdata for a test run.
+Panel of normal generation is not included in the test run. Details for
+build a panel of normals please refer to [Prepare reference
+files](#prepare-reference-files)
 
 ``` r
 library(XploR)
@@ -54,77 +64,69 @@ RunExamplePipeline( out_dir = "/path_to_output_dir" )
 
 ### Running this function is same with running the steps separately like:
 
-1.  Run segmentation based on Allelic imbalance information.
+#### 1. Run segmentation based on Allelic imbalance information. The example used “cbs” segmentation method.
 
 ``` r
-tryCatch({
-  RunAIsegmentation(
+RunAIsegmentation(
     seg = seg,
     cov = cov,
     ai = ai,
     gender = gender,
     out_dir = out_dir,
     prefix = prefix,
-    aibinsize = 500000,
-    mergeai = 0.15,
-    mergecov = 0.2,
-    minaisize = 1000000,
-    snpmin = 7,
-    minsnpcallaicutoff = 10,
-    mergecovminsize = 500000,
+    ai_pon = ai_pon,
     aitype = "dragen"
   )
-}
-, error = function(e) {
-  message("ERROR during segmentation: ", conditionMessage(e))
-  quit(save = "no", status = 1, runLast = FALSE) 
-})
 ```
 
-### Parameters for `RunAIsegmentation`
+##### Parameters for `RunAIsegmentation`
 
-| Parameter            | Type      | Description                                                       | Example Value     |
-|----------------------|-----------|-------------------------------------------------------------------|-------------------|
-| `seg`                | character | Path to the segment file from GATK tumor only CNV run.            | `"sample.seg"`    |
-| `cov`                | character | Path to the coverage file from GATK tumor only CNV run.           | `"sample.counts"` |
-| `ai`                 | character | Path to the allelic count file from DRAGEN/GATK or other sources. | `"sample.baf"`    |
-| `gender`             | character | Sample gender (`"male"` or `"female"`)                            | `"female"`        |
-| `out_dir`            | character | Output directory                                                  | `"results/"`      |
-| `prefix`             | character | Prefix for output files                                           | `"Sample1"`       |
-| `aibinsize`          | numeric   | Bin size for allelic imbalance, default is 500,000.               | `500000`          |
-| `mergeai`            | numeric   | AI segment merge threshold, default is 0.15.                      | `0.15`            |
-| `mergecov`           | numeric   | Coverage segment merge threshold, default is 0.2.                 | `0.2`             |
-| `minaisize`          | numeric   | Minimum reportable AI segment size, default is 1,000,000.         | `1000000`         |
-| `snpmin`             | integer   | Minimum SNPs per AI segment, default is 7 for WES.                | `7`               |
-| `minsnpcallaicutoff` | integer   | Minimum SNPs to call AI segment, default is 10 for WES.           | `10`              |
-| `mergecovminsize`    | numeric   | Minimum coverage segment size after merging, default is 500,000.  | `500000`          |
-| `aitype`             | character | Type of AI input (`"dragen"`, `"gatk"`, or `"other"`)             | `"dragen"`        |
+| Parameter            | Type      | Description                                                                                      | Example Value     |
+|----------------------|-----------|--------------------------------------------------------------------------------------------------|-------------------|
+| `seg`                | character | Path to the GATK segment file.                                                                   | `"sample.seg"`    |
+| `cov`                | character | Path to the GATK denoised coverage count file.                                                   | `"sample.counts"` |
+| `ai`                 | character | Path to the BAF file or allelic count file.                                                      | `"sample.baf"`    |
+| `ai_pon`             | character | Path to PON Rdata. AI panel of normals generated by `PONAIprocess`.                              | `"PON_AI.Rdata"`  |
+| `gender`             | character | Sample gender (`"female"` or `"male"`), passed to `ReadAI()`.                                    | `"female"`        |
+| `out_dir`            | character | Output directory path.                                                                           | `"results/"`      |
+| `prefix`             | character | Output file prefix.                                                                              | `"Sample1"`       |
+| `mergeai`            | numeric   | MAF difference threshold for merging segments under “merge” segmentation mode (default: 0.15).   | `0.15`            |
+| `mergecov`           | numeric   | CNV difference threshold for merging segments (default: 0.2).                                    | `0.2`             |
+| `snpmin`             | numeric   | Minimum SNPs for MAF segmentation under “merge” segmentation mode (default: 7).                  | `7`               |
+| `minsnpcov`          | numeric   | Minimum coverage of SNPs to be included (default: 20).                                           | `20`              |
+| `maxgap`             | numeric   | Maximum gap size inside a bin; if exceeded, start a new bin (default: 1,000,000).                | `1000000`         |
+| `snpnum`             | integer   | SNP number in each bin (default: 30).                                                            | `30`              |
+| `maxbinsize`         | numeric   | Maximum bin size (default: 5,000,000).                                                           | `5000000`         |
+| `minbinsize`         | numeric   | Minimum bin size (default: 500,000).                                                             | `500000`          |
+| `minsnpcallaicutoff` | numeric   | Minimum SNPs for reliable CNLOH/GAINLOH (default: 10).                                           | `10`              |
+| `mergecovminsize`    | numeric   | Minimum size for GATK segment merge (default: 500,000).                                          | `500000`          |
+| `segmethod`          | character | Segmentation method: `"merge"` for stepwise merging, `"cbs"` for CBS segmentation.               | `"cbs"`           |
+| `cbssmooth`          | character | If using CBS, `"yes"` to apply smoothing before segmentation, `"no"` to skip smoothing.          | `"yes"`           |
+| `aitype`             | character | Type of allelic imbalance data: `"gatk"`, `"other"`, or `"dragen"` (see below for requirements). | `"dragen"`        |
 
-2.  Run model likelihood calculation and selection.
+**Note on `aitype` column requirements:** - If `"gatk"` or `"other"`:
+input must include columns `CONTIG`, `POSITION`, `ALT_COUNT`,
+`REF_COUNT`, `REF_NUCLEOTIDE`, and `ALT_NUCLEOTIDE`. - If `"dragen"`:
+input must include columns `contig`, `start`, `stop`, `refAllele`,
+`allele1`, `allele2`, `allele1Count`, `allele2Count`, `allele1AF`, and
+`allele2AF`.
+
+#### 2. Run model likelihood calculation and selection.
 
 ``` r
-tryCatch({
-  RunModelLikelihood(
+RunModelLikelihood(
     seg = paste0(out_dir,"/",prefix,"_GATK_AI_segment.tsv"),
     out_dir = out_dir,
     prefix = prefix,
     gender = gender,
-    lambda = 1,
-    gamma = 1,
-    epsilon = 0.01,
     modelminprobes = 20,
     modelminAIsize = 5000000,
     minsf = 0.4,
     callcov = 0.3,
     thread = 6)
-
-}, error = function(e) {
-  message("ERROR during likelihood calculation: ", conditionMessage(e))
-  quit(save = "no", status = 1, runLast = FALSE) 
-})
 ```
 
-### Parameters for `RunModelLikelihood`
+##### Parameters for `RunModelLikelihood`
 
 | Parameter            | Type      | Description                                                                  | Example Value                           |
 |----------------------|-----------|------------------------------------------------------------------------------|-----------------------------------------|
@@ -132,9 +134,6 @@ tryCatch({
 | `out_dir`            | character | Output directory for results                                                 | `"results/"`                            |
 | `prefix`             | character | Prefix for output files                                                      | `"Sample1"`                             |
 | `gender`             | character | Sample gender (`"male"` or `"female"`)                                       | `"female"`                              |
-| `lambda`             | numeric   | Exponential decay parameter for the likelihood model                         | `1`                                     |
-| `gamma`              | numeric   | Weight for the prior in the likelihood calculation                           | `1`                                     |
-| `epsilon`            | numeric   | Small value to avoid log(0) and zero parameters in beta distribution         | `0.01`                                  |
 | `modelminprobes`     | integer   | Minimum number of probes/SNPs per segment to include in modeling             | `20`                                    |
 | `modelminAIsize`     | numeric   | Minimum segment size (bp) to include in modeling                             | `5000000`                               |
 | `minsf`              | numeric   | Minimum scale factor to consider in model selection                          | `0.4`                                   |
@@ -149,24 +148,19 @@ tryCatch({
 For a full description of all arguments and advanced options, see the
 function reference or `?RunModelLikelihood` in R.
 
-3.  Run annotation segments.
+#### 3. Run annotation segments.
 
 ``` r
-tryCatch({
-  AnnotateSegments(
+AnnotateSegments(
     input = paste0(out_dir,"/",prefix,"_final_calls.tsv"),
     out_dir = out_dir,
     prefix = prefix,
     cytoband = cytoband,
     whitelist_edge = whitelist_edge,
     gene = gene)
-}, error = function(e) {
-  message("ERROR during segment annotation: ", conditionMessage(e))
-  quit(save = "no", status = 1, runLast = FALSE) 
-})
 ```
 
-### Parameters for `AnnotateSegments`
+##### Parameters for `AnnotateSegments`
 
 | Parameter        | Type      | Description                                                                                  | Example Value                       |
 |------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------|
@@ -177,11 +171,10 @@ tryCatch({
 | `whitelist_edge` | character | Path to detectable edge for each chromosomes.See [Prepare input](#prepare-input) for detail. | `"data/whitelist.txt"`              |
 | `gene`           | character | Path to gene annotation file. See [Prepare input](#prepare-input) for detail.                | `"data/gene_anno.txt"`              |
 
-4.  Generating CNV plot
+#### 4. Generating CNV plot
 
 ``` r
-tryCatch({
-  RunPlotCNV(
+RunPlotCNV(
     seg = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
     cr =cr,
     ballele = ai,
@@ -193,13 +186,9 @@ tryCatch({
     prefix = prefix,
     aitype = "dragen"
   )
-  }, error = function(e) {
-    message("ERROR during generate CNV plot: ", conditionMessage(e))
-    quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
-})
 ```
 
-### Parameters for `RunPlotCNV`
+##### Parameters for `RunPlotCNV`
 
 | Parameter     | Type      | Description                                                                                        | Example Value                          |
 |---------------|-----------|----------------------------------------------------------------------------------------------------|----------------------------------------|
@@ -214,21 +203,16 @@ tryCatch({
 | `prefix`      | character | Sample ID or output prefix                                                                         | `"Sample1"`                            |
 | `aitype`      | character | Type of allelic imbalance data: `"gatk"`, `"dragen"`, or `"other"`.                                | `"dragen"`                             |
 
-5.  Generating AI segment quality file.
+#### 5. Generating AI segment quality file.
 
 ``` r
-tryCatch({
-  BafQC(
+BafQC(
     annofile = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
     out_dir = out_dir,
     prefix = prefix)
-},error = function(e) {
-  message("ERROR during generate quality control table: ", conditionMessage(e))
-  quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
-})
 ```
 
-### Parameters for `BafQC`
+##### Parameters for `BafQC`
 
 | Parameter  | Type      | Description                                                    | Example Value                          |
 |------------|-----------|----------------------------------------------------------------|----------------------------------------|
@@ -246,7 +230,7 @@ tryCatch({
 2.  The allelic count file also could generate by other software like
     DRAGEN or samtools.
 
-### Supporting allelic count file format
+##### Supporting allelic count file format
 
 | aitype parameter value | software              | minimum columns                                                        | File extention                      |
 |------------------------|-----------------------|------------------------------------------------------------------------|-------------------------------------|
@@ -254,59 +238,218 @@ tryCatch({
 | `gatk`                 | GATK                  | CONTIG, POSITION, ALT_COUNT, REF_COUNT, REF_NUCLEOTIDE, ALT_NUCLEOTIDE | `"sample.allelic_counts"`           |
 | `other`                | Other (e.g. samtools) | CONTIG, POSITION, ALT_COUNT, REF_COUNT, REF_NUCLEOTIDE, ALT_NUCLEOTIDE | `""`                                |
 
-## Prepare reference files
+## Prepare Reference Files
 
-1.  Panel of Normals (PON): A Panel of Normals is required and should be
-    generated using GATK. For detailed instructions, see the [GATK
-    website](https://gatk.broadinstitute.org/). Note: Male and female
-    PON files need to be generated separately.
+### Panel of normal reference
 
-2.  Gene annotation: Gene annotation can be obtained from various
-    sources (e.g., Ensembl, UCSC, Gencode, RefSeq). An example file is
-    included with the package:
+A Panel of Normals (PON) is required and should be generated using GATK,
+DRAGEN, or any other software capable of producing allelic count files.
+
+> **Note:** Male and female PON files need to be generated separately.
+
+#### A. Whitelist, Blacklist, and Detectable Boundary Files
+
+These files are generated from the PON HD5 file (from GATK), a cytoband
+file, and gender information. They are essential for downstream
+processing and include:
+
+- **Blacklist BED:** Regions to exclude
+- **Whitelist BED:** Regions to include
+- **Detectable Edge File:** Defines detectable boundaries
+
+These files are created based on the GATK Panel of Normals.  
+See the function documentation in R: `?PonProcess` or
+`help("PonProcess", package = "XploR")`.
+
+**Example usage:**
+
+``` r
+PonProcess(
+  pon_file = pon_hdh5_file,
+  blacklist_bed = output_blacklist_bed,
+  whitelist_bed = output_whitelist_bed,
+  cytoband = cytoband,
+  detectable_edge = output_detectable_edge,
+  gender = gender
+)
+```
+
+#### B.Panel of Normals Based on Allelic Count Files
+
+The ai_pon_file should be a text file listing the paths to normal
+allelic count files generated by GATK, DRAGEN, or other software.
+
+You can process these files to generate the PON reference for allelic
+imbalance using:
+
+``` r
+PONAIprocess(
+  ai_pon_file = ai_pon_file,
+  aitype = "GATK",
+  minsnpcov = 20,
+  output = "/Pathtoresults",
+  prefix = "PONAI",
+  maxgap = 2000000,
+  maxbinsize = 5000000,
+  minbinsize = 500000,
+  snpnum = 30,
+  gender = "female"
+)
+```
+
+##### Parameters for `PONAIprocess`
+
+| Parameter     | Type      | Description                                                                         | Example Value            |
+|---------------|-----------|-------------------------------------------------------------------------------------|--------------------------|
+| `ai_pon_file` | character | Path to a text file listing PoN AI file paths (one per line)                        | `"pon_ai_file_list.txt"` |
+| `aitype`      | character | Type of AI input file (`"gatk"`, `"dragen"`, or `"other"`), passed to `ReadPonAI()` | `"gatk"`                 |
+| `minsnpcov`   | integer   | Minimum SNP coverage to include a site in the AI calculation                        | `20`                     |
+| `maxgap`      | numeric   | Maximum allowed gap between SNPs within a bin (in base pairs)                       | `1000000`                |
+| `maxbinsize`  | numeric   | Maximum allowed bin size (in base pairs)                                            | `5000000`                |
+| `minbinsize`  | numeric   | Minimum allowed bin size (in base pairs)                                            | `500000`                 |
+| `snpnum`      | integer   | Target number of SNPs per bin                                                       | `30`                     |
+| `output`      | character | Output directory for the processed PoN AI Rdata file                                | `"results/"`             |
+| `prefix`      | character | Prefix for the output file                                                          | `"PON"`                  |
+
+#### Gene annotation reference:
+
+Gene annotation can be obtained from various sources (e.g., Ensembl,
+UCSC, Gencode, RefSeq). An example file is included with the package:
 
 ``` r
 gene <- system.file("extdata", "RefSeqCurated.genePred.gene_region.txt", package = "XploR")
 head(read.table(gene, header = TRUE, sep = "\t"))
 ```
 
-3.  Cytoband annotation: Cytoband annotation files are typically
-    downloaded from UCSC. An example file is included:
+#### Cytoband annotation reference:
+
+Cytoband annotation files are typically downloaded from UCSC. An example
+file is included:
 
 ``` r
 cytoband <- system.file("extdata", "hg19_cytoBand.dat", package = "XploR")
 head(read.table(cytoband, header = TRUE, sep = "\t"))
 ```
 
-4.  Whitelist, Blacklist, and Detectable Boundary Files: These files are
-    generated based on the GATK Panel of Normals. See the function
-    documentation in R: `?PonProcess` or
-    `help("PonProcess", package = "XploR")`. Example usage:
-
-``` r
-PonProcess(pon_file = pon_hdh5_file,
-           blacklist_bed = output_blacklist_bed,
-           whitelist_bed = output_whitelist_bed,
-           cytoband = cytoband,
-           detectable_edge = output_detectable_edge,
-           gender = gender
-          )
-```
-
 ## Altorithm
 
-### AI Segmentation Workflow
+### Binning Strategy for allelic count Data
 
-For each GATK segment, the workflow refines breakpoints using BAF/MAF
-data by dividing the segment into bins of user-defined size (aibinsize).
-Within each bin, Gaussian mixture modeling (GMM) is applied to identify
-clusters in the MAF distribution. Adjacent bins are merged if their MAF
-means are within a specified threshold (mergeai) or if quality criteria
-are not met, and segments with insufficient SNPs or small size are
-filtered out. Each resulting segment is then assigned a quality tag
-(“PASS” or “FAILED”) based on the GMM weight and SNP count.
+The `BinMaf` function implements a flexible binning strategy for minor
+allele frequency (MAF) data, supporting both tumor samples and panels of
+normal (PoN) samples. The binning can be performed using either a fixed
+number of SNPs per bin with additional criteria to handle genomic gaps
+and bin size limits. Within each bin, Gaussian mixture modeling (GMM) is
+applied to identify clusters in the MAF distribution.
+
+**Key features:**
+
+- **Flexible binning:**  
+  Bins are created for each chromosome by grouping consecutive SNPs
+  until one of the following conditions is met:
+  - The number of SNPs in the bin reaches a specified target (e.g., 30
+    SNPs per bin).
+  - The genomic span of the bin exceeds a maximum bin size (e.g.,
+    2,000,000 bp).
+  - The gap between consecutive SNPs exceeds a maximum allowed gap
+    (e.g., 1,000,000 bp).
+  - The bin size is at least the specified minimum size (e.g., 500,000
+    bp).
+
+**This strategy ensures that bins are of consistent size and SNP
+content, while avoiding the inclusion of widely separated SNPs in the
+same bin, and is robust for both tumor and normal samples.**
+
+### Segmentation of MAF track
+
+In addition to CBS (Circular Binary Segmentation), our pipeline supports
+a “merge” mode for segmentation based on minor allele frequency (MAF)
+values. While CBS is the default and recommended strategy, “merge” mode
+offers a step-wise, rule-based approach to combine adjacent MAF
+segments.
+
+**Step-wise Merging Strategy:**
+
+- The process begins with a minimal SNP counts, which is incrementally
+  increased until reaching the final SNP count defined by “snpmin”.
+- At each round, the following steps are performed:
+  1.  **Remove Small Segments:** Discard all segments smaller than the
+      current minimum SNP count.
+  2.  **Merge Adjacent Segments:** Evaluate and merge adjacent segments
+      if the difference in segment MAF values is less than or equal to
+      the `mergeai` parameter (user-specified MAF difference threshold).
+
+**Note:**  
+- CBS segmentation remains the default and is generally recommended for
+most workflows.  
+- The “merge” mode is useful for certain applications where a
+rule-based, stepwise merging of MAF segments is preferred.
+
+### MAF Bias Correction Using Panel of Normal (PoN) Allelic Counts
+
+To correct for systemetic MAF bias estimates, we use a panel of normal
+(PoN) allelic count files as a reference. For each segment in the tumor
+or sample of interest, we compare the segment’s MAF to the distribution
+of MAF values observed in the PoN for the same genomic region. This
+process ensures that technical or locus-specific biases in MAF are
+removed only when the tumor segment does not show significant deviation
+from the normal reference.
+
+**Correction process:** - For each segment, identify all overlapping PoN
+segments and extract their MAF values. - If the segment’s MAF is **not
+significantly different** from the PoN MAF distribution (assessed via a
+Wilcoxon test or a small absolute difference), apply a logit-based
+centering correction: - The segment MAF is transformed to the logit
+scale, centered by the PoN median MAF, and then inverse-logit
+transformed back and capped at 0.5. - If the segment’s MAF is
+**significantly different** from the PoN, the original segment MAF is
+retained (no correction is applied), thus preserving true biological
+signal. - This approach ensures that only technical or systematic biases
+are corrected, while real allelic imbalance events in the tumor are
+preserved.
+
+**This method uses the panel of normals as an adaptive reference,
+providing robust bias correction without shrinking true tumor signals.**
 
 ### Purity and diploid coverage scale factor estimation
+
+#### Estimate a **Beta–Binomial Over-Dispersion** Parameter $\theta$ from a Panel of Normals (PoN)
+
+To accurately model over-dispersion in minor allele frequency (MAF)
+data, we estimate a beta-binomial dispersion parameter ($\theta$) using
+a panel of normal (PoN) samples. This allows us to account for
+extra-binomial variation and improves the likelihood calculation for
+each segment.
+
+For each bin $b$ and depth stratum:
+
+- **Observed variance across normals:** $$
+  v_b = \mathrm{Var}_s(p_{sb})
+  $$
+- **Binomial expectation:** $$
+  m_b = \mathbb{E}_s\left[\frac{p_{0b}(1-p_{0b})}{D_{sb}}\right]
+      \approx p_{0b}(1-p_{0b}) \cdot \mathrm{mean}_s\left(\frac{1}{D_{sb}}\right)
+  $$
+- **Representative depth in that (bin, stratum):** $$
+  \tilde d_b = \mathrm{median}_s(D_{sb})
+  $$
+- **Moment estimator of $\theta$ per (bin, stratum):** $$
+  \widehat{\theta}_{b} = \max\left(\frac{v_b/m_b - 1}{\tilde d_b - 1},\ 0\right)
+  $$
+
+Within each **depth stratum**, we take a robust center (median) of
+$\widehat{\theta}_b$ to obtain $\theta$ for that stratum.
+
+where:
+
+- $p_{sb}$: MAFs of per sample $s$ per bin $b$
+- $p_{0b}$: Reference (PoN) mean MAF for bin $b$
+- $D_{sb}$: Median depth for sample $s$ in bin $b$
+- $v_b$: Observed variance of MAF across samples in bin $b$
+- $m_b$: Expected binomial variance for bin $b$
+- $\tilde d_b$: Representative (median) depth in bin $b$
+- $\widehat{\theta}_b$: Estimated over-dispersion for bin $b$
+- $\theta$: Final over-dispersion parameter for the depth stratum
 
 #### Prior assignment based on parsimony principle
 
@@ -369,10 +512,10 @@ where:
 
 #### Likelihood Calculation
 
-- **BAF Likelihood:**  
+- **MAF Likelihood:**  
   For each combination, the B allele frequency likelihood is computed
   using the beta distribution, parameterized by $\alpha$ and $\beta$,
-  derived from the expected BAF:
+  derived from the expected MAF:
 
 $$
 \mathrm{Beta}(\alpha, \beta)
@@ -384,36 +527,43 @@ where:
 
 - $\beta = K \times (1 - \mathrm{BAF}) + \epsilon$
 
-- $K$: Scaling factor controlling distribution precision
+- $K$: Beta-binomial precision parameter, estimated for each segment
+  based on local read depth and the over-dispersion parameter (see
+  below).
 
 - $\epsilon$: Small positive value for numerical stability
+
+- **Estimation of $K$:**
+
+For each segment, $K$ is calculated as:
+
+$$
+K = \frac{\text{depth}}{1 + (\text{depth} - 1) \cdot \theta} - 1
+$$
+
+where:
+
+- $\text{depth}$: Median SNP depth for the segment
+
+- $\theta$: Beta-binomial over-dispersion parameter, estimated from the
+  panel of normals (PoN) for the corresponding depth stratum
 
 - **Posterior Likelihood:**  
   The posterior likelihood for each combination incorporates both the
   BAF likelihood and the prior, weighted by a factor $\gamma$:
 
 $$
-\text{Posterior Likelihood} = \text{BAF Likelihood} \times (\text{Prior})^\gamma
+\text{Posterior Likelihood} = \text{MAF Likelihood} \times (\text{Prior})^\gamma
 $$
 
 where:
 
-- $\text{BAF Likelihood}$: Likelihood of the observed B-allele frequency
+- $\text{MAF Likelihood}$: Likelihood of the observed minor frequency
   under the current model  
 - $\text{Prior}$: Prior probability assigned to the allele combination
   based on biological plausibility  
 - $\gamma$: Weighting factor controlling the influence of the prior in
   the posterior calculation
-
-#### Purity and Diploid Coverage Scale Factor Estimation
-
-A grid of candidate tumor purity ($\rho$) and diploid coverage scale
-factor ($\mu$) values is generated. For each ($\mu$, $\rho$) pair, the
-model calculates the total log-likelihood across all segments,
-considering only biologically feasible configurations and ccf values.
-The best-fitting model is selected based on the highest total
-log-likelihood and the smallest distance between segment copy numbers
-and integer values, in accordance with the parsimony principle.
 
 #### Assigning Calls for Each Segment
 
@@ -428,7 +578,7 @@ prior knowledge.
   - Compute expected coverage for each model and the difference
     (`cov_diff`) from observed coverage.
 - **Selection of Top Likelihood Models:**
-  - For each segment, identify the top two models with the highest BAF
+  - For each segment, identify the top two models with the highest MAF
     likelihoods.
   - If a subclonal event is likely (e.g., the second-ranked model has
     ccf \> 0.3 and comparable likelihood), select it as a subclonal
@@ -436,13 +586,13 @@ prior knowledge.
   - If both major and minor copy numbers are equal, selection is based
     on `cov_diff`.
 - **Handling Models with `minor = 0`:**
-  - For segments with `minor = 0`, where BAF likelihood is unreliable,
+  - For segments with `minor = 0`, where MAF likelihood is unreliable,
     select the model with the smallest `cov_diff`.
   - Ensure consistency in selection for both `minor = 0` and `minor ≠ 0`
     cases.
 - **Post-Processing:**
   - Calculate and store the log-transformed likelihood value
-    (`log_BAF_likelihood`) for each selected model.
+    (`log_MAF_likelihood`) for each selected model.
 
 ## Output
 

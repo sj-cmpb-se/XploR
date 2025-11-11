@@ -4,7 +4,7 @@
 \alias{ReadAI}
 \title{Read and Standardize Allelic Imbalance Data}
 \usage{
-ReadAI(aitype, ballele)
+ReadAI(aitype, ballele, minsnpcov, gender)
 }
 \arguments{
 \item{aitype}{Character. Type of AI input file. Supported values are:
@@ -15,30 +15,27 @@ ReadAI(aitype, ballele)
 }}
 
 \item{ballele}{Character. Path to the input allelic count file.}
+
+\item{minsnpcov}{Numeric, minimum coverage of SNPs to included (default: 20).}
+
+\item{gender}{Character. Sample gender, either \code{"female"} or \code{"male"}. This value is passed to \code{ReadAI()}.}
 }
 \value{
-A data frame with columns \code{Chromosome}, \code{Pos}, and \code{maf}, containing only autosomal positions (\code{Chromosome} not X or Y), with minor allele frequency (\code{maf}) between 0 and 0.5.
+A data frame with columns \code{Chromosome}, \code{Pos}, \code{ref_count}, \code{alt_count} and \code{maf}, containing only autosomal positions (\code{Chromosome} not X or Y), with minor allele frequency (\code{maf}) between 0 and 0.5.
 }
 \description{
 Reads allelic imbalance (AI) data from different input formats and standardizes the output.
 }
-\details{
-For \code{aitype = "gatk"}, the function reads the file, filters for loci with at least 10 total counts, calculates the B-allele frequency (\code{baf}), and computes the minor allele frequency (\code{maf}).
-
-For \code{aitype = "dragen"}, the function extracts the first, second, and fourth columns, and renames them as \code{Chromosome}, \code{Pos}, and \code{baf}.
-
-For \code{aitype = "other"}, the function expects columns \code{Chromosome}, \code{Pos}, and \code{baf}.
-}
 \examples{
 \dontrun{
 # Read AI data from a count file
-maf_df <- ReadAI("gatk", "sample.allele_counts")
+maf_df <- ReadAI("gatk", "sample.allele_counts", 20, "female")
 
 # Read AI data from a DRAGEN file
-maf_df <- ReadAI("dragen", "sample_dragen.tumor.ballele.counts.gz")
+maf_df <- ReadAI("dragen", "sample_dragen.tumor.ballele.counts.gz",20, "female")
 
 # Read AI data from a BAF file
-maf_df <- ReadAI("other", "sample.tsv")
+maf_df <- ReadAI("other", "sample.tsv",20, "female")
 }
 
 }

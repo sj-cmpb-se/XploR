@@ -26,10 +26,12 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CcfLOH.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CheckGender.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/Checkmode.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/ChooseNbins.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CleanHomalt.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ClusterAdjacent.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ClusterModels.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CorrectBAF.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/CorrectBias.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CorrectGender.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CorrectMAF.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/CorrectPurity.html</loc></url>
@@ -38,11 +40,13 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateBAFbyGMM.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateBAFshift.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateCovSF.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateK.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateMAFbyGMM.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateMAFshift.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateMinPurity.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimatePurityCov.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateSFVariance.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateTheta.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/EstimateVariance.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ExtractCall.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/FindTier1Models.html</loc></url>
@@ -57,6 +61,7 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/MergeSegCheck.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/MergeSegRow.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ModelSource.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/PONAIprocess.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ParseParm.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/PlotCov.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/PlotCovDisCN.html</loc></url>
@@ -66,6 +71,7 @@
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/PlotModelcluster.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/PonProcess.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/ReadAI.html</loc></url>
+<url><loc>https://sj-cmpb-se.github.io/XploR/reference/ReadPonAI.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/RefineCalls.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/RefineCallsSecond.html</loc></url>
 <url><loc>https://sj-cmpb-se.github.io/XploR/reference/RefineTier1Models.html</loc></url>

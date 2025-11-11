@@ -313,18 +313,22 @@ CleanHomalt <- function(rounded_ai, call_seg){
 #' @export
 AIbinSmooth <- function(baf) {
   # Return a vector of same frequency if the length is higher than 30
-  counts <- data.frame(table(baf))
-  mode_value <- counts[order(counts$Freq,decreasing = T),]
-  colnames(mode_value) <- c("value","Freq" )
-  total_dots <- length(baf)
-  mode_value$prop <- mode_value$Freq/total_dots
-  if( total_dots > 30 ){
+  baf <- baf[!is.na(baf)]
+  if( length(baf) > 0){
+    counts <- data.frame(table(baf))
+    mode_value <- counts[order(counts$Freq,decreasing = T),]
+    colnames(mode_value) <- c("value","Freq" )
+    total_dots <- length(baf)
+    mode_value$prop <- mode_value$Freq/total_dots
+    if( total_dots > 30 ){
 
-    re <- rep(mode_value$value,round(mode_value$prop * 30))
+      re <- rep(mode_value$value,round(mode_value$prop * 30))
 
-  }else{re <- baf }
+    }else{re <- baf }
 
-  re <- as.numeric(as.character(re))
+    re <- as.numeric(as.character(re))
+  }else{re <- NA}
+
   return(re)
 }
 
@@ -354,9 +358,9 @@ SmoothAI <- function(df, ai_binsize , gender){
   # Smooth AI bins by ai_binsize, for each bin keep 30 datapoints.
   ai_bin_chr <- split(df, f = df$seqnames)
   ai_bin_chr <- Filter(function(x) nrow(x) > 0, ai_bin_chr )
-  sep_bin <- lapply(ai_bin_chr, function(chr_ai){
+  sep_bin <- lapply(c(1:length(ai_bin_chr)), function(aa){
 
-    chr_ai_smoothed <- chr_ai %>%
+    chr_ai_smoothed <- ai_bin_chr[[aa]] %>%
       dplyr::mutate(bin_norm_id = ceiling(POSITION/ai_binsize)*ai_binsize ) %>%
       dplyr::group_by( seqnames , bin_norm_id ) %>%
       dplyr::summarize(smoothed_ai = list( AIbinSmooth( norm_af ) ))   %>%

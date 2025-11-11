@@ -4,7 +4,14 @@
 \alias{RunCallikelihood}
 \title{Run Likelihood Calculation Across All Purity and Scale Factor Combinations}
 \usage{
-RunCallikelihood(purity_sf, data, sigma_C, lambda, gamma, epsilon)
+RunCallikelihood(
+  purity_sf,
+  data,
+  sigma_C,
+  lambda = 1,
+  gamma = 1,
+  epsilon = 0.01
+)
 }
 \arguments{
 \item{purity_sf}{Data frame or tibble. Grid of purity and scale factor values to evaluate; must include columns \code{mu} and \code{rho}.}
@@ -12,12 +19,6 @@ RunCallikelihood(purity_sf, data, sigma_C, lambda, gamma, epsilon)
 \item{data}{Data frame or tibble. Segment data (see \code{\link{Callikelihood}} for required columns).}
 
 \item{sigma_C}{Numeric. Parameter for segment likelihood (passed to \code{Callikelihood}).}
-
-\item{lambda}{Numeric. Exponential decay parameter for the prior.}
-
-\item{gamma}{Numeric. Weight for the prior in the likelihood calculation.}
-
-\item{epsilon}{Numeric. Small value to avoid log(0) and zero parameters in beta.}
 }
 \value{
 A data frame with all likelihoods for each segment and each (mu, rho) combination, with NA minor alleles removed and NA ccf values set to 1.

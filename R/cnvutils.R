@@ -79,6 +79,7 @@ CorrectPurity <- function(chromosome, cov_segmentmean, MAF_observe, gender, puri
 #' @param callcovcutoff Numeric. Threshold for CNF to call gain or loss (default: 0.3).
 #' @param callaicutoff Numeric. Threshold for MAF to call gain with loss of heterozygosity (GAINLOH) (default: 0.3).
 #' @param minsnpcallaicutoff Integer. Minimum number of SNP probes to call CNLOH (default: 10).
+#' @param gender Character. Gender information "male" or "female".
 #'
 #' @return Character. Copy number call: one of "GAIN", "LOSS", "REF", "GAINLOH", or "CNLOH".
 #'
@@ -92,7 +93,7 @@ CorrectPurity <- function(chromosome, cov_segmentmean, MAF_observe, gender, puri
 #' CallwoModel("1", CNF_correct = 2.8, MAF_correct = 0.1, MAF_gmm_G = 2, MAF_Probes = 15, MAF_gmm_weight = 0.5, gender = "female")
 #'
 #' @export
-CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, callcovcutoff = 0.3, callaicutoff = 0.3, minsnpcallaicutoff = 10 ) {
+CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, callcovcutoff = 0.3, callaicutoff = 0.3, minsnpcallaicutoff = 10, gender ) {
   if ( gender == "male" && chromosome %in% c("X", "Y")) {
     if (CNF_correct >= (1 + callcovcutoff)) {
       Call <- "GAIN"

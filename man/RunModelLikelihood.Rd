@@ -17,6 +17,7 @@ RunModelLikelihood(
   minsf = 0.4,
   callcov = 0.3,
   thread = 4,
+  XploR_path = NULL,
   ...
 )
 }
@@ -29,7 +30,9 @@ RunModelLikelihood(
 
 \item{gender}{Sample gender ("male" or "female").}
 
-\item{lambda, }{gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).}
+\item{modelminprobes, }{modelminAIsize, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).}
+
+\item{XploR_path, }{Path of XploR package, if don't want to install.}
 }
 \value{
 Invisibly returns the output file paths.

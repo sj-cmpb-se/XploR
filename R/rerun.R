@@ -74,7 +74,7 @@ Checkmode <- function(mode, purity, dicovsf, chromosome, start, end, call ){
 #' @export
 
 EstimateCovSF <- function( chromosome, start, end, seg ){
-
+  raw_mu <- as.numeric(seg$mu[1])
   diploid_cov <- 100
   tmp <- seg %>% dplyr::filter( Chromosome == chromosome )
   if( is.null(start)){
@@ -89,7 +89,8 @@ EstimateCovSF <- function( chromosome, start, end, seg ){
     filter( select_start_index ==1 & select_end_index == 1)
   total_size <- sum( covsf_tmp$Num_Probes )
   Segment_cov <- 2^( covsf_tmp$Segment_Mean) * diploid_cov
-  dicovsf <-  sum( Segment_cov * ( covsf_tmp$Num_Probes / total_size)) / diploid_cov
+  dicovsf <-  sum( Segment_cov * ( covsf_tmp$Num_Probes / total_size)) / diploid_cov # this is sf relative to current model, which is raw_mu but we need new size factor relative to raw GATK
+  dicovsf <- raw_mu * dicovsf
 
   return(dicovsf)
 }

@@ -15,21 +15,14 @@ RunExamplePipeline <- function(out_dir) {
   blacklist_bed <- system.file("extdata", "hg19_gatk_female_pon_blacklist.bed", package = "XploR")
   whitelist_edge <- system.file("extdata","hg19_detectable_edges.txt",package = "XploR")
   gene <- system.file("extdata", "RefSeqCurated.genePred.gene_region.txt", package = "XploR")
+  ai_pon <- system.file("extdata", "PON_AI.Rdata", package = "XploR")
   gender <- "female"
   prefix <- "example"
-# generate reference files, the edge table is same in male and female only Y chrom is different, so in the reference file i only kept male version
-#PonProcess(pon_file = pon_file,
-#           blacklist_bed = blacklist_bed,
-#           whitelist_bed = whitelist_bed,
-#           cytoband = cytoband,
-#           detectable_edge = detectable_edge,
-#           gender = gender
-#           )
 
 
 # Segmentation
 print("Run segmentation.......")
-tryCatch({
+segmentation <- tryCatch({
   RunAIsegmentation(
     seg = seg,
     cov = cov,
@@ -37,45 +30,46 @@ tryCatch({
     gender = gender,
     out_dir = out_dir,
     prefix = prefix,
-    aibinsize = 500000,
-    mergeai = 0.15,
-    mergecov = 0.2,
-    minaisize = 1000000,
-    snpmin = 7,
-    minsnpcallaicutoff = 10,
-    mergecovminsize = 500000,
+    ai_pon = ai_pon,
     aitype = "dragen"
   )
+  TRUE
 }
 , error = function(e) {
   message("ERROR during segmentation: ", conditionMessage(e))
   quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
 })
 
+if(segmentation){
+  print("Segmentation is DONE.")
+}
+
 ## Modeling
 print("Run model likelihood calculation and selection...............")
-tryCatch({
+modeling <- tryCatch({
   RunModelLikelihood(
     seg = paste0(out_dir,"/",prefix,"_GATK_AI_segment.tsv"),
     out_dir = out_dir,
     prefix = prefix,
     gender = gender,
-    lambda = 1,
-    gamma = 1,
-    epsilon = 0.01,
     modelminprobes = 20,
     modelminAIsize = 5000000,
     minsf = 0.4,
     callcov = 0.3,
     thread = 6)
+  TRUE
 
 }, error = function(e) {
   message("ERROR during likelihood calculation: ", conditionMessage(e))
   quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
 })
 
+if(modeling){
+  print("Estimate model is DONE.")
+}
+
 print("Run annotation segments................")
-tryCatch({
+anno <- tryCatch({
   AnnotateSegments(
     input = paste0(out_dir,"/",prefix,"_final_calls.tsv"),
     out_dir = out_dir,
@@ -83,16 +77,22 @@ tryCatch({
     cytoband = cytoband,
     whitelist_edge = whitelist_edge,
     gene = gene)
+  TRUE
 }, error = function(e) {
   message("ERROR during segment annotation: ", conditionMessage(e))
   quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
 })
 
+if (anno) {
+  print("CNV segment annotation DONE.")
+}
+
 print("Generating CNV plot.............")
-tryCatch({
+
+plot_result <- tryCatch({
   RunPlotCNV(
     seg = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
-    cr =cr,
+    cr = cr,
     ballele = ai,
     ai_binsize = 100000,
     cov_binsize = 100000,
@@ -102,28 +102,31 @@ tryCatch({
     prefix = prefix,
     aitype = "dragen"
   )
-  }, error = function(e) {
-    message("ERROR during generate CNV plot: ", conditionMessage(e))
-    quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
+  TRUE  # Return TRUE if successful
+}, error = function(e) {
+  message("ERROR during CNV plot generation: ", conditionMessage(e))
+  quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
 })
 
+if (plot_result) {
+  print("CNV plot generation DONE.")
+}
+
 print("Generating AI segment quality file............")
-tryCatch({
-  BafQC(
+bafqc <- tryCatch({
+  bafqc_result <- BafQC(
     annofile = paste0(out_dir,"/",prefix,"_CNV_annotation.tsv"),
     out_dir = out_dir,
     prefix = prefix)
+  TRUE
 },error = function(e) {
   message("ERROR during generate quality control table: ", conditionMessage(e))
   quit(save = "no", status = 1, runLast = FALSE) # Exits the workflow with error status
 })
 
-
-#SummarizeMapQC(
-#  input_dir = daragen_output,
-#  prefix = prefix,
-#  out_dir = out_dir
-#)
+if (bafqc) {
+  print("Segment QC is DONE.")
+}
 
 #RerunCNV(
 #  seg = paste0(out_dir,"/",prefix,"_GATK_AI_segment.tsv"),
@@ -137,8 +140,8 @@ tryCatch({
 #  out_file = out_file,
 #  callcov = 0.3
 #)
-
-
-message("Example pipeline run complete. Results are in: ", out_dir)
+if( segmentation && modeling && anno && plot_result && bafqc ){
+  print(paste("Example pipeline run complete. Results are in:", out_dir))
+}
 invisible(out_dir)
 }

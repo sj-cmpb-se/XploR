@@ -221,7 +221,9 @@ PlotModelcluster<- function( models, refined_calls, out_dir, prefix ){
     dplyr::mutate( id = paste(mu, rho, sep = ":")) %>%
     dplyr::filter( id %in% models$id) %>%
     dplyr::select(-mu,-rho) %>%
-    dplyr::mutate( pos_id = paste( Chromosome, Start, End , sep=":"))
+    dplyr::mutate( pos_id = paste( Chromosome, Start, End , sep=":")) %>%
+    dplyr::ungroup()
+
 
   # cluster calls
   calls_matrix <- calls %>%
@@ -230,17 +232,18 @@ PlotModelcluster<- function( models, refined_calls, out_dir, prefix ){
       names_from = pos_id,
       values_from = CN,
       values_fill = NA )
+
   row_ids <- calls_matrix$id
-  calls_matrix <- as.matrix(calls_matrix)
-  rownames(calls_matrix) <- row_ids
-  calls_matrix <- calls_matrix[,-1]
+  calls_matrix <- as.matrix(calls_matrix[,-1])
+
   row_order <- hclust(dist(calls_matrix))$order
-  ordered_ids <- rownames(calls_matrix)[row_order]
+  ordered_ids <- row_ids[row_order]
   calls$id <- factor(calls$id, levels = ordered_ids)
 
   max_cn <- max(calls$CN,na.rm = T)
   max_cn <- ifelse(max_cn >6,6,max_cn)
   calls <- calls %>% dplyr::mutate(CN = ifelse(CN > max_cn, max_cn,CN)) %>% dplyr::left_join(models,by = "id")
+
   p <- tryCatch({
     ggplot2::ggplot() +
       ggplot2::geom_segment(
@@ -286,10 +289,10 @@ PlotModelcluster<- function( models, refined_calls, out_dir, prefix ){
     message("An error occurred while trying to plot: ", conditionMessage(e))
     return(NULL)
   })
-
   if (!is.null(p)) {
     outFile <- paste0(out_dir, "/", prefix, "_Tier1_models.html")
     model_plot <- plotly::ggplotly(p, tooltip = "text")
     htmlwidgets::saveWidget(model_plot, file = outFile, selfcontained = TRUE)
   }
+
 }

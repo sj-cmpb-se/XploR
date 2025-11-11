@@ -37,7 +37,14 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">RunCallikelihood</span><span class="op">(</span><span class="va">purity_sf</span>, <span class="va">data</span>, <span class="va">sigma_C</span>, <span class="va">lambda</span>, <span class="va">gamma</span>, <span class="va">epsilon</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">RunCallikelihood</span><span class="op">(</span></span>
+<span>  <span class="va">purity_sf</span>,</span>
+<span>  <span class="va">data</span>,</span>
+<span>  <span class="va">sigma_C</span>,</span>
+<span>  lambda <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  gamma <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  epsilon <span class="op">=</span> <span class="fl">0.01</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -54,18 +61,6 @@
 
 <dt id="arg-sigma-c">sigma_C<a class="anchor" aria-label="anchor" href="#arg-sigma-c"></a></dt>
 <dd><p>Numeric. Parameter for segment likelihood (passed to <code>Callikelihood</code>).</p></dd>
-
-
-<dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
-<dd><p>Numeric. Exponential decay parameter for the prior.</p></dd>
-
-
-<dt id="arg-gamma">gamma<a class="anchor" aria-label="anchor" href="#arg-gamma"></a></dt>
-<dd><p>Numeric. Weight for the prior in the likelihood calculation.</p></dd>
-
-
-<dt id="arg-epsilon">epsilon<a class="anchor" aria-label="anchor" href="#arg-epsilon"></a></dt>
-<dd><p>Numeric. Small value to avoid log(0) and zero parameters in beta.</p></dd>
 
 </dl></div>
     <div class="section level2">

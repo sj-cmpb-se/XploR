@@ -6,7 +6,8 @@
 #' @param out_dir Output directory.
 #' @param prefix Output file prefix.
 #' @param gender Sample gender ("male" or "female").
-#' @param lambda, gamma, epsilon, modelminprobes, modelminAIsize, minsf, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).
+#' @param modelminprobes, modelminAIsize, callcov, thread, callcovcutoff, callaicutoff, minsnpcallaicutoff Numeric parameters for the workflow (see script RunCallikelihood for details).
+#' @param XploR_path, Path of XploR package, if don't want to install.
 #' @return Invisibly returns the output file paths.
 #' @importFrom data.table fread
 #' @importFrom dplyr filter mutate arrange rowwise ungroup select group_by summarise desc left_join
@@ -18,7 +19,7 @@
 RunModelLikelihood <- function(
     seg, out_dir, prefix, gender,
     lambda = 1, gamma = 1, epsilon = 0.01, modelminprobes = 20,
-    modelminAIsize = 5000000, minsf = 0.4, callcov = 0.3, thread = 4,
+    modelminAIsize = 5000000, minsf = 0.4, callcov = 0.3, thread = 4, XploR_path = NULL,
     ...
 ) {
 
@@ -27,12 +28,8 @@ RunModelLikelihood <- function(
   print(paste0("Output dir is: ", out_dir))
   print(paste0("Prefix is: ", prefix))
   print(paste0("Gender is: ", gender))
-  print(paste0("Lambda is: ", lambda))
-  print(paste0("gamma is: ", gamma))
-  print(paste0("epsilon is: ", epsilon))
   print(paste0("modelminprobes is: ", modelminprobes))
   print(paste0("modelminAIsize is: ", modelminAIsize))
-  print(paste0("minsf is: ", minsf ))
   print(paste0("callcov is: ", callcov ))
   print(paste0("thread is: ", thread ))
 
@@ -66,7 +63,7 @@ RunModelLikelihood <- function(
     Segcov = autosome$Segcov,
     MAF = autosome$MAF,
     Tag = autosome$Purity_estimate,
-    k = CategorizeK(K = autosome$MAF_Probes)
+    k = autosome$K
   )
 
   # 3. Model source
@@ -84,63 +81,79 @@ RunModelLikelihood <- function(
   # 6. Calculate likelihoods in parallel
   num_cores <- thread
   cl <- parallel::makeCluster(num_cores)
-  doParallel::registerDoParallel(cl)
+  on.exit(parallel::stopCluster(cl), add = TRUE)
+
+
+
+
   chunks <- split(purity_sf, rep(1:num_cores, each = ceiling(nrow(purity_sf) / num_cores)))
  # parallel::clusterExport(cl, c(
 #    "observeddata", "var_sf", "purity_sf", "chunks","lambda",
 #    "gamma", "epsilon", "modelminprobes", "modelminAIsize",
 #    "minsf", "callcov", "thread"
 #  ))
-  parallel::clusterEvalQ(cl, { library(XploR)})
-  results <- foreach(
-    chunk_df = chunks,
-    .combine = function(...) {
-      res_list <- list(...)
-      valid_res <- Filter(function(x) !is.null(x) && nrow(x) > 0, res_list)
-      if (length(valid_res) > 0) do.call(rbind, valid_res) else NULL
-    },
-    .maxcombine = length(chunks),
-    .multicombine = TRUE,
-    .errorhandling = "pass",
-    .packages = c("XploR"),
-    .export = c(
-      "observeddata", "var_sf", "purity_sf", "chunks","lambda",
-      "gamma", "epsilon", "modelminprobes", "modelminAIsize",
-      "minsf", "callcov", "thread"
-    )
-  ) %dopar% {
-    tryCatch({
-      result <- RunCallikelihood(
-        purity_sf = chunk_df,
-        data = observeddata,
-        sigma_C = var_sf,
-        lambda = lambda,
-        gamma = gamma,
-        epsilon = epsilon
-      )
-      message("Worker finished on PID: ", Sys.getpid())
-      return(result)
-    }, error = function(e) {
-      list(
-        error = TRUE,
-        pid = Sys.getpid(),
-        error_message = conditionMessage(e),
-        error_class = class(e),
-        error_call = deparse(conditionCall(e))
-      )
-    })
-  }
-  parallel::stopCluster(cl)
-  if (is.list(results) && any(sapply(results, function(x) is.list(x) && !is.null(x$error) && x$error))) {
-    print("Some workers failed:")
-    print(Filter(function(x) is.list(x) && !is.null(x$error) && x$error, results))
-  }
-  if( ! is.null(results) ){
-    print(paste0("Likelihood calculation DONE."))
-  }else{
-    stop("Likelihood calculation failed: 'results' is NULL. Check previous error messages for details.")
 
-  }
+  exports <- c(
+    "observeddata", "var_sf", "purity_sf", "chunks",
+    "modelminprobes", "modelminAIsize", "minsf", "callcov", "thread"
+  )
+    if( !is.null(XploR_path)){
+      print("XploR is not installed.")
+      print(paste0("Using the functions under:", XploR_path))
+      parallel::clusterExport(cl, varlist = c("XploR_path"), envir = environment())
+      parallel::clusterEvalQ(cl, { devtools::load_all(XploR_path)
+        NULL
+      })
+
+    }else{
+      parallel::clusterEvalQ(cl, { library(XploR) })
+    }
+
+  doParallel::registerDoParallel(cl)
+    results <- foreach(
+      chunk_df = chunks,
+      .combine = function(...) {
+        res_list <- list(...)
+        valid_res <- Filter(function(x) !is.null(x) && nrow(x) > 0, res_list)
+        if (length(valid_res) > 0) do.call(rbind, valid_res) else NULL
+      },
+      .maxcombine = length(chunks),
+      .multicombine = TRUE,
+      .errorhandling = "pass",
+      #.packages = c("XploR"),
+      .export = exports
+    ) %dopar% {
+      tryCatch({
+        result <- RunCallikelihood(
+          purity_sf = chunk_df,
+          data = observeddata,
+          sigma_C = var_sf
+        )
+        message("Worker finished on PID: ", Sys.getpid())
+        return(result)
+      }, error = function(e) {
+        list(
+          error = TRUE,
+          pid = Sys.getpid(),
+          error_message = conditionMessage(e),
+          error_class = class(e),
+          error_call = deparse(conditionCall(e))
+        )
+      })
+    }
+
+    if (is.list(results) && any(sapply(results, function(x) is.list(x) && !is.null(x$error) && x$error))) {
+      print("Some workers failed:")
+      print(Filter(function(x) is.list(x) && !is.null(x$error) && x$error, results))
+    }
+    if( ! is.null(results) ){
+      print("Likelihood calculation DONE.")
+    }else{
+      stop("Likelihood calculation failed: 'results' is NULL. Check previous error messages for details.")
+
+    }
+
+
   # 7. Rank and select calls
   results <- results %>%
     dplyr::mutate(ccf_MAF = CcfLOH(MAF = MAF, rho = rho, minor = minor, major = major))
@@ -174,17 +187,8 @@ RunModelLikelihood <- function(
               max_L_mu = return_models$Final_model$Final_mu,
               max_L_rho = return_models$Final_model$Final_rho)
 
-    PlotModelcluster(
-      models = models,
-      refined_calls = refined_calls,
-      out_dir = out_dir,
-      prefix = prefix
-
-    )
-
-
   } else if (model_source == "Coverage") {
-    return_models <- EstimatePurityCov(seg = seg,gender = gender)
+    return_models <- EstimatePurityCov(seg = seg, gender = gender)
     PlotCovDisCN(dis = return_models$dis_df,
                  prefix = prefix,
                  out_dir = out_dir,
@@ -215,12 +219,21 @@ RunModelLikelihood <- function(
     callcov = callcov,
     gender = gender
   )
+  if( model_source == "Coverage + MAF"){
+    PlotModelcluster(
+      models = return_models$models,
+      refined_calls = return_models$refined_call,
+      out_dir = out_dir,
+      prefix = prefix
+    )
+  }
   print(paste0("Reporting final calls at: ", paste0(out_dir,"/",paste0(prefix, "_final_calls.tsv"))))
   final_call$Model_source <- model_source
   final_call$rho <- return_models$Final_model$Final_rho
   final_call$mu <- return_models$Final_model$Final_mu
   write.table(final_call, file = file.path(out_dir, paste0(prefix, "_final_calls.tsv")), row.names = FALSE, quote = FALSE, sep = "\t")
   if (!is.null(return_models$dis_df)) {
+    print("Writing Models_dis.tsv")
     write.table(return_models$dis_df, file = file.path(out_dir, paste0(prefix, "_Models_dis.tsv")), row.names = FALSE, quote = FALSE, sep = "\t")
   }
   invisible(list(
@@ -229,3 +242,7 @@ RunModelLikelihood <- function(
     final_calls = file.path(out_dir, paste0(prefix, "_final_calls.tsv"))
   ))
 }
+
+
+
+

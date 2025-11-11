@@ -1,3 +1,10 @@
+# macOS
+.DS_Store
+._*
+__MACOSX/
+
+# R / RStudio
+.Rproj.user
 .Rproj.user
 .Rhistory
 .RData
