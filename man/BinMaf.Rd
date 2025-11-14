@@ -37,7 +37,7 @@ A tibble with one row per bin and columns:
 \item{End}{Maximum \code{End} value in the bin.}
 \item{nonzero_count}{Number of nonzero maf values in the bin.}
 \item{each_maf}{Semicolon-separated string of nonzero maf values in the bin.}
-\item{gmm_mean, gmm_weight, gmm_G}{Unnested maf GMM metrics.}
+\item{gmm_mean, gmm_weight, gmm_G}{Unnested maf or BAF metrics.}
 }
 \description{
 Bins input MAF data into fixed-size windows or fixed-snp-count window and calculates summary metrics (e.g., estimated MAF, nonzero counts) for each bin.
