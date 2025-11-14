@@ -40,9 +40,9 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">BinMaf</span><span class="op">(</span></span>
 <span>  <span class="va">data</span>,</span>
 <span>  <span class="va">datatype</span>,</span>
-<span>  maxgap <span class="op">=</span> <span class="fl">1e+06</span>,</span>
-<span>  snpnum <span class="op">=</span> <span class="fl">30</span>,</span>
-<span>  maxbinsize <span class="op">=</span> <span class="fl">5e+06</span>,</span>
+<span>  maxgap <span class="op">=</span> <span class="fl">2e+06</span>,</span>
+<span>  snpnum <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  maxbinsize <span class="op">=</span> <span class="fl">1e+06</span>,</span>
 <span>  minbinsize <span class="op">=</span> <span class="fl">5e+05</span>,</span>
 <span>  minsnpcov <span class="op">=</span> <span class="fl">20</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -61,15 +61,15 @@
 
 
 <dt id="arg-maxgap">maxgap<a class="anchor" aria-label="anchor" href="#arg-maxgap"></a></dt>
-<dd><p>Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)</p></dd>
+<dd><p>Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)</p></dd>
 
 
 <dt id="arg-snpnum">snpnum<a class="anchor" aria-label="anchor" href="#arg-snpnum"></a></dt>
-<dd><p>SNP number in each bin.( default: 30 )</p></dd>
+<dd><p>SNP number in each bin.( default: 20 )</p></dd>
 
 
 <dt id="arg-maxbinsize">maxbinsize<a class="anchor" aria-label="anchor" href="#arg-maxbinsize"></a></dt>
-<dd><p>Maximum bin size.( default: 5000000 )</p></dd>
+<dd><p>Maximum bin size.( default: 1000000 )</p></dd>
 
 
 <dt id="arg-minbinsize">minbinsize<a class="anchor" aria-label="anchor" href="#arg-minbinsize"></a></dt>
@@ -102,7 +102,7 @@
 <dd><p>Semicolon-separated string of nonzero maf values in the bin.</p></dd>
 
 <dt>gmm_mean, gmm_weight, gmm_G</dt>
-<dd><p>Unnested maf GMM metrics.</p></dd>
+<dd><p>Unnested maf or BAF metrics.</p></dd>
 
 </dl></div>
 
