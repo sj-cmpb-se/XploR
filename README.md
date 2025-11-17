@@ -3,16 +3,26 @@
 <img src="man/figures/logo.png" alt="XploR logo" height="150" />
 </p>
 
-**XploR** is an R package designed for robust, allelic imbalance and
-large-scale copy number analysis from whole exome sequencing (WES) data
-in clinical genomics. It features advanced noise reduction using a panel
-of normal samples for both coverage and allelic counts, comprehensive
-smoothing and segmentation algorithms, and accurate purity and ploidy
-estimation. XploR supports flexible rerun options based on chromosome
-region, tumor purity, or diploid coverage, and includes integrated ISCN
-annotation and visualization. These capabilities make XploR a powerful
-solution for clinical and research applications in genomic copy number
-analysis.
+**XploR** is an R package specifically developed for large-scale (≥5 Mb)
+copy number analysis in clinical genomics testing using whole exome
+sequencing (WES) data. It provides accurate copy number calling, as well
+as robust estimation of tumor purity and ploidy. XploR supports flexible
+rerun options based on chromosome region, tumor purity, or diploid
+coverage, and includes integrated ISCN annotation and visualization.
+These capabilities make XploR a powerful solution for clinical and
+research applications in genomic copy number analysis.
+
+------------------------------------------------------------------------
+
+## 🚧 Project Status
+
+**Note:** *XploR is actively under development. Some features may evolve
+or be refined.  
+We greatly appreciate bug reports, feature suggestions, and user
+feedback.*  
+Please open an issue if you encounter any problems.
+
+------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
@@ -36,7 +46,7 @@ analysis.
 - Exome-wide copy number segmentation and allelic imbalance detection
 - Purity and ploidy estimation with model selection
 - Rerun based on chromosome region, purity or diploid coverage
-- ISCN and gene annotation of CNV segments
+- Cytoband and gene annotation of CNV segments
 - Visualization
 
 ## Installation
@@ -331,7 +341,7 @@ cytoband <- system.file("extdata", "hg19_cytoBand.dat", package = "XploR")
 head(read.table(cytoband, header = TRUE, sep = "\t"))
 ```
 
-## Altorithm
+## Algorithm
 
 ### Binning Strategy for allelic count Data
 
@@ -347,7 +357,7 @@ applied to identify clusters in the MAF distribution.
 - **Flexible binning:**  
   Bins are created for each chromosome by grouping consecutive SNPs
   until one of the following conditions is met:
-  - The number of SNPs in the bin reaches a specified target (e.g., 30
+  - The number of SNPs in the bin reaches a specified target (e.g., 20
     SNPs per bin).
   - The genomic span of the bin exceeds a maximum bin size (e.g.,
     2,000,000 bp).
@@ -387,29 +397,22 @@ rule-based, stepwise merging of MAF segments is preferred.
 
 ### MAF Bias Correction Using Panel of Normal (PoN) Allelic Counts
 
-To correct for systemetic MAF bias estimates, we use a panel of normal
-(PoN) allelic count files as a reference. For each segment in the tumor
-or sample of interest, we compare the segment’s MAF to the distribution
-of MAF values observed in the PoN for the same genomic region. This
-process ensures that technical or locus-specific biases in MAF are
-removed only when the tumor segment does not show significant deviation
-from the normal reference.
+To address systematic MAF bias, XploR incorporates a locus-specific
+reference built from a panel of normal (PoN) allelic count files. For
+each tumor segment, the per-SNP BAF values within the segment are
+extracted, and the segment is overlapped with the PoN to obtain the
+corresponding distribution of normal MAFs. The combined information is
+then used to evaluate whether the segment behaves like a balanced
+diploid region or reflects true allelic imbalance.
 
-**Correction process:** - For each segment, identify all overlapping PoN
-segments and extract their MAF values. - If the segment’s MAF is **not
-significantly different** from the PoN MAF distribution (assessed via a
-Wilcoxon test or a small absolute difference), apply a logit-based
-centering correction: - The segment MAF is transformed to the logit
-scale, centered by the PoN median MAF, and then inverse-logit
-transformed back and capped at 0.5. - If the segment’s MAF is
-**significantly different** from the PoN, the original segment MAF is
-retained (no correction is applied), thus preserving true biological
-signal. - This approach ensures that only technical or systematic biases
-are corrected, while real allelic imbalance events in the tumor are
-preserved.
-
-**This method uses the panel of normals as an adaptive reference,
-providing robust bias correction without shrinking true tumor signals.**
+The tumor BAF distribution is assessed using a mixture-model and
+density-based framework, which distinguishes single-peak, near-0.5
+distributions from segments showing clear deviation or multiple peaks.
+Only segments classified as balanced undergo correction: the segment
+mean MAF is transformed onto the logit scale, centered using the median
+MAF from the PoN at that locus, and transformed back, with values capped
+at 0.5. Segments demonstrating allelic imbalance retain their original
+MAF so that true biological signal is preserved.
 
 ### Purity and diploid coverage scale factor estimation
 
@@ -423,19 +426,28 @@ each segment.
 
 For each bin $b$ and depth stratum:
 
-- **Observed variance across normals:** $$
+- **Observed variance across normals:**
+
+$$
   v_b = \mathrm{Var}_s(p_{sb})
-  $$
-- **Binomial expectation:** $$
+$$ - **Binomial expectation:**
+
+$$
   m_b = \mathbb{E}_s\left[\frac{p_{0b}(1-p_{0b})}{D_{sb}}\right]
       \approx p_{0b}(1-p_{0b}) \cdot \mathrm{mean}_s\left(\frac{1}{D_{sb}}\right)
-  $$
-- **Representative depth in that (bin, stratum):** $$
+$$
+
+- **Representative depth in that (bin, stratum):**
+
+$$
   \tilde d_b = \mathrm{median}_s(D_{sb})
-  $$
-- **Moment estimator of $\theta$ per (bin, stratum):** $$
+$$
+
+- **Moment estimator of $\theta$ per (bin, stratum):**
+
+$$
   \widehat{\theta}_{b} = \max\left(\frac{v_b/m_b - 1}{\tilde d_b - 1},\ 0\right)
-  $$
+$$
 
 Within each **depth stratum**, we take a robust center (median) of
 $\widehat{\theta}_b$ to obtain $\theta$ for that stratum.
@@ -618,8 +630,13 @@ sample_GATK_AI_segment.tsv ( Generared by `?RunAIsegmentation` function)
 | MAF_gmm_G        | integer   | Number of GMM clusters in MAF distribution                                              | `2`           |
 | MAF_gmm_weight   | numeric   | Mixture weight of the main GMM cluster                                                  | `0.85`        |
 | size             | integer   | Segment size in base pairs                                                              | `111111`      |
+| balance_tag      | character | Balance test result ( `balanced` or `imblalanced` )                                     | `balanced`    |
 | BreakpointSource | character | Source of breakpoint (`GATK` or `Postprocess`)                                          | `GATK`        |
 | FILTER           | character | Quality tag for the segment (`PASS` or `FAILED`)                                        | `PASS`        |
+| depth            | numeric   | Median read depth of the segment                                                        | `80`          |
+| depth_bin        | numeric   | Read depth group for assigning theta                                                    | `1`           |
+| theta            | numeric   | Beta–Binomial Over-Dispersion estimated based on depth                                  | `0`           |
+| K                | numeric   | Beta-binomial precision parameter estimated based on depth and theta                    | `80`          |
 
 #### Raw likelihood results under each configuration
 
@@ -709,6 +726,7 @@ sample_final_calls.tsv (Generated by `?RunModelLikelihood()` function)
 | MAF_Probes       | integer   | Number of probes used for MAF calculation                                               | `1110`           |
 | MAF_gmm_G        | integer   | Number of GMM clusters in MAF distribution                                              | `5`              |
 | MAF_gmm_weight   | numeric   | Mixture weight of the main GMM cluster                                                  | `0.667871528`    |
+| balance_tag      | character | Balance test result ( `balanced` or `imblalanced` )                                     | `balanced`       |
 | BreakpointSource | character | Source of breakpoint (`GATK` or `Postprocess`)                                          | `GATK`           |
 | FILTER           | character | Quality tag for the segment (`PASS` or `FAILED`)                                        | `PASS`           |
 | maf_ll           | numeric   | Log-likelihood for the observed MAF                                                     | `2.625299941`    |
@@ -823,6 +841,69 @@ plot, a turquoise line is drawn at the median level to show the
 imbalance.
 
 ## Model selection and rerun
+
+XploR allows users to rerun copy number variant (CNV) calling with
+custom purity and scale factor (size factor) ranges, or by specifying a
+diploid region for normalization. This function supports both “model”
+and “region” rerun modes and outputs refined CNV calls. The diploid
+coverage region can be specified using three parameters: chromosome,
+start, and end. If only chromosome is provided, the entire chromosome is
+used. If chromosome and start are provided, the region from start to the
+end of the chromosome is considered. If chromosome and end are provided,
+the region from the start of the chromosome to end is used. If all three
+parameters are specified, the defined region between start and end on
+the selected chromosome is used.
+
+``` r
+# Rerun using specific purity and scale factor ranges
+RerunCNV(
+  seg = "results/Sample1_GATK_AI_segment.tsv",
+  input = "results/Sample1_top_likelihood_calls.tsv",
+  models = "results/Sample1_Models_likelihood.tsv",
+  call = "results/Sample1_final_call.tsv",
+  gender = "female",
+  dicovsf = "0.95:1.05",
+  purity = "0.6:0.8",
+  mode = "model",
+  out_file = "results/Sample1_final_call_refined.tsv"
+)
+
+# Rerun using a user-defined diploid region
+RerunCNV(
+  seg = "results/Sample1_GATK_AI_segment.tsv",
+  input = "results/Sample1_top_likelihood_calls.tsv",
+  models = "results/Sample1_Models_likelihood.tsv",
+  call = "results/Sample1_final_call.tsv",
+  gender = "male",
+  chromosome = "3",
+  start = 1000000,
+  end = 50000000,
+  mode = "region",
+  out_file = "results/Sample1_final_call_refined.tsv"
+)
+```
+
+##### Parameters for `RerunCNV`
+
+| Parameter    | Type      | Description                                                                                                     | Example Value                                |
+|--------------|-----------|-----------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| `seg`        | character | Path to AI segment file generated by `RunAIsegmentation`.                                                       | `"results/Sample1_GATK_AI_segment.tsv"`      |
+| `input`      | character | Path to top likelihood row file generated by `RunModelLikelihood`.                                              | `"results/Sample1_top_likelihood_calls.tsv"` |
+| `models`     | character | Path to model likelihood file generated by `RunModelLikelihood`.                                                | `"results/Sample1_Models_likelihood.tsv"`    |
+| `call`       | character | Path to final call file generated by `RunModelLikelihood`.                                                      | `"results/Sample1_final_call.tsv"`           |
+| `gender`     | character | Sample gender, either `"male"` or `"female"`.                                                                   | `"female"`                                   |
+| `dicovsf`    | character | Desired scale factor range for normalization (must be in `"min:max"` format). **Required if `mode = "model"` ** | `"0.95:1.05"`                                |
+| `purity`     | character | Desired purity range for model selection (must be in `"min:max"` format). **Required if `mode = "model"` **     | `"0.6:0.8"`                                  |
+| `callcov`    | numeric   | Subclonal event calling cutoff (no models, coverage-based). **Default is `0.3`.**                               | `0.3`                                        |
+| `chromosome` | character | Chromosome for user-defined diploid region (**required if `mode = "region"`**).                                 | `"3"`                                        |
+| `start`      | integer   | Start position for diploid region (optional; used in `"region"` mode).                                          | `1000000`                                    |
+| `end`        | integer   | End position for diploid region (optional; used in `"region"` mode).                                            | `50000000`                                   |
+| `mode`       | character | Rerun mode: either `"model"` (custom purity/scale factor) or `"region"` (user-defined diploid region).          | `"model"`                                    |
+| `out_file`   | character | Output file path for refined CNV calls.                                                                         | `"results/Sample1_final_call_refined.tsv"`   |
+
+**Note:**  
+After rerunning, the resulting file can be used in downstream steps—such
+as plotting and annotation—just like files generated prior to rerun.
 
 ## Full function and parameter list
 
