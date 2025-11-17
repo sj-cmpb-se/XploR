@@ -47,13 +47,12 @@
 <span>  <span class="va">ai_pon</span>,</span>
 <span>  mergeai <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  mergecov <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  snpmin <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  snpmin <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  minsnpcov <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>  minsnpcallaicutoff <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  mergecovminsize <span class="op">=</span> <span class="fl">5e+05</span>,</span>
 <span>  maxgap <span class="op">=</span> <span class="fl">2e+06</span>,</span>
-<span>  snpnum <span class="op">=</span> <span class="fl">30</span>,</span>
-<span>  maxbinsize <span class="op">=</span> <span class="fl">5e+06</span>,</span>
+<span>  snpnum <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  maxbinsize <span class="op">=</span> <span class="fl">1e+06</span>,</span>
 <span>  minbinsize <span class="op">=</span> <span class="fl">5e+05</span>,</span>
 <span>  aitype <span class="op">=</span> <span class="st">"gatk"</span>,</span>
 <span>  segmethod <span class="op">=</span> <span class="st">"cbs"</span>,</span>
@@ -102,15 +101,11 @@
 
 
 <dt id="arg-snpmin">snpmin<a class="anchor" aria-label="anchor" href="#arg-snpmin"></a></dt>
-<dd><p>Numeric, minimum SNPs for MAF segmentation (default: 7).</p></dd>
+<dd><p>Numeric, minimum SNPs for MAF segmentation (default: 4).</p></dd>
 
 
 <dt id="arg-minsnpcov">minsnpcov<a class="anchor" aria-label="anchor" href="#arg-minsnpcov"></a></dt>
 <dd><p>Numeric, minimum coverage of SNPs to included (default: 20).</p></dd>
-
-
-<dt id="arg-minsnpcallaicutoff">minsnpcallaicutoff<a class="anchor" aria-label="anchor" href="#arg-minsnpcallaicutoff"></a></dt>
-<dd><p>Numeric, minimum SNPs for reliable CNLOH/GAINLOH (default: 10).</p></dd>
 
 
 <dt id="arg-mergecovminsize">mergecovminsize<a class="anchor" aria-label="anchor" href="#arg-mergecovminsize"></a></dt>
@@ -118,15 +113,15 @@
 
 
 <dt id="arg-maxgap">maxgap<a class="anchor" aria-label="anchor" href="#arg-maxgap"></a></dt>
-<dd><p>Maximum gap size inside a bin. If exceed then start another bin.( default: 1000000)</p></dd>
+<dd><p>Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)</p></dd>
 
 
 <dt id="arg-snpnum">snpnum<a class="anchor" aria-label="anchor" href="#arg-snpnum"></a></dt>
-<dd><p>SNP number in each bin.( default: 30 )</p></dd>
+<dd><p>SNP number in each bin.( default: 20 )</p></dd>
 
 
 <dt id="arg-maxbinsize">maxbinsize<a class="anchor" aria-label="anchor" href="#arg-maxbinsize"></a></dt>
-<dd><p>Maximum bin size.( default: 5000000 )</p></dd>
+<dd><p>Maximum bin size.( default: 1000000 )</p></dd>
 
 
 <dt id="arg-minbinsize">minbinsize<a class="anchor" aria-label="anchor" href="#arg-minbinsize"></a></dt>

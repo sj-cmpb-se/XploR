@@ -53,8 +53,17 @@
 <div class="row">
   <main id="main" class="col-md-9"><p align="center">
 <img src="reference/figures/logo.png" alt="XploR logo" height="150"></p>
-<p><strong>XploR</strong> is an R package designed for robust, allelic imbalance and large-scale copy number analysis from whole exome sequencing (WES) data in clinical genomics. It features advanced noise reduction using a panel of normal samples for both coverage and allelic counts, comprehensive smoothing and segmentation algorithms, and accurate purity and ploidy estimation. XploR supports flexible rerun options based on chromosome region, tumor purity, or diploid coverage, and includes integrated ISCN annotation and visualization. These capabilities make XploR a powerful solution for clinical and research applications in genomic copy number analysis.</p>
+<p><strong>XploR</strong> is an R package specifically developed for large-scale (≥5 Mb) copy number analysis in clinical genomics testing using whole exome sequencing (WES) data. It provides accurate copy number calling, as well as robust estimation of tumor purity and ploidy. XploR supports flexible rerun options based on chromosome region, tumor purity, or diploid coverage, and includes integrated ISCN annotation and visualization. These capabilities make XploR a powerful solution for clinical and research applications in genomic copy number analysis.</p>
 <hr>
+<div class="section level2">
+<h2 id="id_-project-status">🚧 Project Status<a class="anchor" aria-label="anchor" href="#id_-project-status"></a>
+</h2>
+<p><strong>Note:</strong> <em>XploR is actively under development. Some features may evolve or be refined.<br>
+We greatly appreciate bug reports, feature suggestions, and user feedback.</em><br>
+Please open an issue if you encounter any problems.</p>
+<hr>
+<hr>
+</div>
 <div class="section level2">
 <h2 id="contents">Contents<a class="anchor" aria-label="anchor" href="#contents"></a>
 </h2>
@@ -79,7 +88,7 @@
 <li>Exome-wide copy number segmentation and allelic imbalance detection</li>
 <li>Purity and ploidy estimation with model selection</li>
 <li>Rerun based on chromosome region, purity or diploid coverage</li>
-<li>ISCN and gene annotation of CNV segments</li>
+<li>Cytoband and gene annotation of CNV segments</li>
 <li>Visualization</li>
 </ul>
 </div>
@@ -781,7 +790,7 @@ See the function documentation in R: <code><a href="reference/PonProcess.html">?
 </div>
 </div>
 <div class="section level2">
-<h2 id="altorithm">Altorithm<a class="anchor" aria-label="anchor" href="#altorithm"></a>
+<h2 id="algorithm">Algorithm<a class="anchor" aria-label="anchor" href="#algorithm"></a>
 </h2>
 <div class="section level3">
 <h3 id="binning-strategy-for-allelic-count-data">Binning Strategy for allelic count Data<a class="anchor" aria-label="anchor" href="#binning-strategy-for-allelic-count-data"></a>
@@ -793,7 +802,7 @@ See the function documentation in R: <code><a href="reference/PonProcess.html">?
 <strong>Flexible binning:</strong><br>
 Bins are created for each chromosome by grouping consecutive SNPs until one of the following conditions is met:
 <ul>
-<li>The number of SNPs in the bin reaches a specified target (e.g., 30 SNPs per bin).</li>
+<li>The number of SNPs in the bin reaches a specified target (e.g., 20 SNPs per bin).</li>
 <li>The genomic span of the bin exceeds a maximum bin size (e.g., 2,000,000 bp).</li>
 <li>The gap between consecutive SNPs exceeds a maximum allowed gap (e.g., 1,000,000 bp).</li>
 <li>The bin size is at least the specified minimum size (e.g., 500,000 bp).</li>
@@ -825,9 +834,8 @@ Bins are created for each chromosome by grouping consecutive SNPs until one of t
 <div class="section level3">
 <h3 id="maf-bias-correction-using-panel-of-normal-pon-allelic-counts">MAF Bias Correction Using Panel of Normal (PoN) Allelic Counts<a class="anchor" aria-label="anchor" href="#maf-bias-correction-using-panel-of-normal-pon-allelic-counts"></a>
 </h3>
-<p>To correct for systemetic MAF bias estimates, we use a panel of normal (PoN) allelic count files as a reference. For each segment in the tumor or sample of interest, we compare the segment’s MAF to the distribution of MAF values observed in the PoN for the same genomic region. This process ensures that technical or locus-specific biases in MAF are removed only when the tumor segment does not show significant deviation from the normal reference.</p>
-<p><strong>Correction process:</strong> - For each segment, identify all overlapping PoN segments and extract their MAF values. - If the segment’s MAF is <strong>not significantly different</strong> from the PoN MAF distribution (assessed via a Wilcoxon test or a small absolute difference), apply a logit-based centering correction: - The segment MAF is transformed to the logit scale, centered by the PoN median MAF, and then inverse-logit transformed back and capped at 0.5. - If the segment’s MAF is <strong>significantly different</strong> from the PoN, the original segment MAF is retained (no correction is applied), thus preserving true biological signal. - This approach ensures that only technical or systematic biases are corrected, while real allelic imbalance events in the tumor are preserved.</p>
-<p><strong>This method uses the panel of normals as an adaptive reference, providing robust bias correction without shrinking true tumor signals.</strong></p>
+<p>To address systematic MAF bias, XploR incorporates a locus-specific reference built from a panel of normal (PoN) allelic count files. For each tumor segment, the per-SNP BAF values within the segment are extracted, and the segment is overlapped with the PoN to obtain the corresponding distribution of normal MAFs. The combined information is then used to evaluate whether the segment behaves like a balanced diploid region or reflects true allelic imbalance.</p>
+<p>The tumor BAF distribution is assessed using a mixture-model and density-based framework, which distinguishes single-peak, near-0.5 distributions from segments showing clear deviation or multiple peaks. Only segments classified as balanced undergo correction: the segment mean MAF is transformed onto the logit scale, centered using the median MAF from the PoN at that locus, and transformed back, with values capped at 0.5. Segments demonstrating allelic imbalance retain their original MAF so that true biological signal is preserved.</p>
 </div>
 <div class="section level3">
 <h3 id="purity-and-diploid-coverage-scale-factor-estimation">Purity and diploid coverage scale factor estimation<a class="anchor" aria-label="anchor" href="#purity-and-diploid-coverage-scale-factor-estimation"></a>
@@ -838,28 +846,27 @@ Bins are created for each chromosome by grouping consecutive SNPs until one of t
 <p>To accurately model over-dispersion in minor allele frequency (MAF) data, we estimate a beta-binomial dispersion parameter (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>) using a panel of normal (PoN) samples. This allows us to account for extra-binomial variation and improves the likelihood calculation for each segment.</p>
 <p>For each bin <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math> and depth stratum:</p>
 <ul>
-<li>
-<strong>Observed variance across normals:</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>p</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
-v_b = \mathrm{Var}_s(p_{sb})
-</annotation></semantics></math>
-</li>
-<li>
-<strong>Binomial expectation:</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>b</mi></msub><mo>=</mo><msub><mi>𝔼</mi><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">[</mo><mfrac><mrow><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">]</mo></mrow><mo>≈</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mn>1</mn><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
-m_b = \mathbb{E}_s\left[\frac{p_{0b}(1-p_{0b})}{D_{sb}}\right]
-    \approx p_{0b}(1-p_{0b}) \cdot \mathrm{mean}_s\left(\frac{1}{D_{sb}}\right)
-</annotation></semantics></math>
-</li>
-<li>
-<strong>Representative depth in that (bin, stratum):</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
-\tilde d_b = \mathrm{median}_s(D_{sb})
-</annotation></semantics></math>
-</li>
-<li>
-<strong>Moment estimator of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> per (bin, stratum):</strong> <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><mo>=</mo><mo>max</mo><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><msub><mi>v</mi><mi>b</mi></msub><mi>/</mi><msub><mi>m</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></mfrac><mo>,</mo><mspace width="0.222em"></mspace><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
-\widehat{\theta}_{b} = \max\left(\frac{v_b/m_b - 1}{\tilde d_b - 1},\ 0\right)
-</annotation></semantics></math>
-</li>
+<li><strong>Observed variance across normals:</strong></li>
 </ul>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>p</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+  v_b = \mathrm{Var}_s(p_{sb})
+</annotation></semantics></math> - <strong>Binomial expectation:</strong></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>b</mi></msub><mo>=</mo><msub><mi>𝔼</mi><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">[</mo><mfrac><mrow><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">]</mo></mrow><mo>≈</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mn>0</mn><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mn>1</mn><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+  m_b = \mathbb{E}_s\left[\frac{p_{0b}(1-p_{0b})}{D_{sb}}\right]
+      \approx p_{0b}(1-p_{0b}) \cdot \mathrm{mean}_s\left(\frac{1}{D_{sb}}\right)
+</annotation></semantics></math></p>
+<ul>
+<li><strong>Representative depth in that (bin, stratum):</strong></li>
+</ul>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>=</mo><msub><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow><mi>s</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>D</mi><mrow><mi>s</mi><mi>b</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+  \tilde d_b = \mathrm{median}_s(D_{sb})
+</annotation></semantics></math></p>
+<ul>
+<li><strong>Moment estimator of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> per (bin, stratum):</strong></li>
+</ul>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><mo>=</mo><mo>max</mo><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><msub><mi>v</mi><mi>b</mi></msub><mi>/</mi><msub><mi>m</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow><mrow><msub><mover><mi>d</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></mfrac><mo>,</mo><mspace width="0.222em"></mspace><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+  \widehat{\theta}_{b} = \max\left(\frac{v_b/m_b - 1}{\tilde d_b - 1},\ 0\right)
+</annotation></semantics></math></p>
 <p>Within each <strong>depth stratum</strong>, we take a robust center (median) of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>b</mi></msub><annotation encoding="application/x-tex">\widehat{\theta}_b</annotation></semantics></math> to obtain <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math> for that stratum.</p>
 <p>where:</p>
 <ul>
@@ -1134,16 +1141,46 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <td><code>111111</code></td>
 </tr>
 <tr class="odd">
+<td>balance_tag</td>
+<td>character</td>
+<td>Balance test result ( <code>balanced</code> or <code>imblalanced</code> )</td>
+<td><code>balanced</code></td>
+</tr>
+<tr class="even">
 <td>BreakpointSource</td>
 <td>character</td>
 <td>Source of breakpoint (<code>GATK</code> or <code>Postprocess</code>)</td>
 <td><code>GATK</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>FILTER</td>
 <td>character</td>
 <td>Quality tag for the segment (<code>PASS</code> or <code>FAILED</code>)</td>
 <td><code>PASS</code></td>
+</tr>
+<tr class="even">
+<td>depth</td>
+<td>numeric</td>
+<td>Median read depth of the segment</td>
+<td><code>80</code></td>
+</tr>
+<tr class="odd">
+<td>depth_bin</td>
+<td>numeric</td>
+<td>Read depth group for assigning theta</td>
+<td><code>1</code></td>
+</tr>
+<tr class="even">
+<td>theta</td>
+<td>numeric</td>
+<td>Beta–Binomial Over-Dispersion estimated based on depth</td>
+<td><code>0</code></td>
+</tr>
+<tr class="odd">
+<td>K</td>
+<td>numeric</td>
+<td>Beta-binomial precision parameter estimated based on depth and theta</td>
+<td><code>80</code></td>
 </tr>
 </tbody>
 </table>
@@ -1569,84 +1606,90 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <td><code>0.667871528</code></td>
 </tr>
 <tr class="even">
+<td>balance_tag</td>
+<td>character</td>
+<td>Balance test result ( <code>balanced</code> or <code>imblalanced</code> )</td>
+<td><code>balanced</code></td>
+</tr>
+<tr class="odd">
 <td>BreakpointSource</td>
 <td>character</td>
 <td>Source of breakpoint (<code>GATK</code> or <code>Postprocess</code>)</td>
 <td><code>GATK</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>FILTER</td>
 <td>character</td>
 <td>Quality tag for the segment (<code>PASS</code> or <code>FAILED</code>)</td>
 <td><code>PASS</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>maf_ll</td>
 <td>numeric</td>
 <td>Log-likelihood for the observed MAF</td>
 <td><code>2.625299941</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>MAF_likelihood</td>
 <td>numeric</td>
 <td>Posterior likelihood for this configuration</td>
 <td><code>8.891628731</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>mu</td>
 <td>numeric</td>
 <td>Diploid coverage scale factor</td>
 <td><code>0.9</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>rho</td>
 <td>numeric</td>
 <td>Tumor purity (fraction between 0 and 1)</td>
 <td><code>0.938</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>index</td>
 <td>character</td>
 <td>Segment index or identifier</td>
 <td><code>1</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>gatk_SM_raw</td>
 <td>numeric</td>
 <td>Raw segment mean from GATK</td>
 <td><code>-0.094372</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>gatk_count</td>
 <td>integer</td>
 <td>Number of counts in GATK segment</td>
 <td><code>361</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>gatk_baselinecov</td>
 <td>numeric</td>
 <td>The GATK baseline is an intermediate value calculated using gatk_SM_raw and gatk_count.</td>
 <td><code>385.4038109</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>gatk_gender</td>
 <td>character</td>
 <td>Gender as reported by GATK</td>
 <td><code>female</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>pipeline_gender</td>
 <td>character</td>
 <td>Gender as used in pipeline</td>
 <td><code>female</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>CN_mix</td>
 <td>character</td>
 <td>Indicator for copy number mixture (<code>No</code> or <code>CN_Mix</code>)</td>
 <td><code>No</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Model_source</td>
 <td>character</td>
 <td>Source of model selection (<code>Coverage</code>, <code>Coverage + MAF</code>, <code>Diploid</code> )</td>
@@ -1853,6 +1896,138 @@ The posterior likelihood for each combination incorporates both the BAF likeliho
 <div class="section level2">
 <h2 id="model-selection-and-rerun">Model selection and rerun<a class="anchor" aria-label="anchor" href="#model-selection-and-rerun"></a>
 </h2>
+<p>XploR allows users to rerun copy number variant (CNV) calling with custom purity and scale factor (size factor) ranges, or by specifying a diploid region for normalization. This function supports both “model” and “region” rerun modes and outputs refined CNV calls. The diploid coverage region can be specified using three parameters: chromosome, start, and end. If only chromosome is provided, the entire chromosome is used. If chromosome and start are provided, the region from start to the end of the chromosome is considered. If chromosome and end are provided, the region from the start of the chromosome to end is used. If all three parameters are specified, the defined region between start and end on the selected chromosome is used.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Rerun using specific purity and scale factor ranges</span></span>
+<span><span class="fu"><a href="reference/RerunCNV.html">RerunCNV</a></span><span class="op">(</span></span>
+<span>  seg <span class="op">=</span> <span class="st">"results/Sample1_GATK_AI_segment.tsv"</span>,</span>
+<span>  input <span class="op">=</span> <span class="st">"results/Sample1_top_likelihood_calls.tsv"</span>,</span>
+<span>  models <span class="op">=</span> <span class="st">"results/Sample1_Models_likelihood.tsv"</span>,</span>
+<span>  call <span class="op">=</span> <span class="st">"results/Sample1_final_call.tsv"</span>,</span>
+<span>  gender <span class="op">=</span> <span class="st">"female"</span>,</span>
+<span>  dicovsf <span class="op">=</span> <span class="st">"0.95:1.05"</span>,</span>
+<span>  purity <span class="op">=</span> <span class="st">"0.6:0.8"</span>,</span>
+<span>  mode <span class="op">=</span> <span class="st">"model"</span>,</span>
+<span>  out_file <span class="op">=</span> <span class="st">"results/Sample1_final_call_refined.tsv"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Rerun using a user-defined diploid region</span></span>
+<span><span class="fu"><a href="reference/RerunCNV.html">RerunCNV</a></span><span class="op">(</span></span>
+<span>  seg <span class="op">=</span> <span class="st">"results/Sample1_GATK_AI_segment.tsv"</span>,</span>
+<span>  input <span class="op">=</span> <span class="st">"results/Sample1_top_likelihood_calls.tsv"</span>,</span>
+<span>  models <span class="op">=</span> <span class="st">"results/Sample1_Models_likelihood.tsv"</span>,</span>
+<span>  call <span class="op">=</span> <span class="st">"results/Sample1_final_call.tsv"</span>,</span>
+<span>  gender <span class="op">=</span> <span class="st">"male"</span>,</span>
+<span>  chromosome <span class="op">=</span> <span class="st">"3"</span>,</span>
+<span>  start <span class="op">=</span> <span class="fl">1000000</span>,</span>
+<span>  end <span class="op">=</span> <span class="fl">50000000</span>,</span>
+<span>  mode <span class="op">=</span> <span class="st">"region"</span>,</span>
+<span>  out_file <span class="op">=</span> <span class="st">"results/Sample1_final_call_refined.tsv"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="section level5">
+<h5 id="parameters-for-reruncnv">Parameters for <code>RerunCNV</code>
+<a class="anchor" aria-label="anchor" href="#parameters-for-reruncnv"></a>
+</h5>
+<table class="table">
+<colgroup>
+<col width="7%">
+<col width="5%">
+<col width="61%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>seg</code></td>
+<td>character</td>
+<td>Path to AI segment file generated by <code>RunAIsegmentation</code>.</td>
+<td><code>"results/Sample1_GATK_AI_segment.tsv"</code></td>
+</tr>
+<tr class="even">
+<td><code>input</code></td>
+<td>character</td>
+<td>Path to top likelihood row file generated by <code>RunModelLikelihood</code>.</td>
+<td><code>"results/Sample1_top_likelihood_calls.tsv"</code></td>
+</tr>
+<tr class="odd">
+<td><code>models</code></td>
+<td>character</td>
+<td>Path to model likelihood file generated by <code>RunModelLikelihood</code>.</td>
+<td><code>"results/Sample1_Models_likelihood.tsv"</code></td>
+</tr>
+<tr class="even">
+<td><code>call</code></td>
+<td>character</td>
+<td>Path to final call file generated by <code>RunModelLikelihood</code>.</td>
+<td><code>"results/Sample1_final_call.tsv"</code></td>
+</tr>
+<tr class="odd">
+<td><code>gender</code></td>
+<td>character</td>
+<td>Sample gender, either <code>"male"</code> or <code>"female"</code>.</td>
+<td><code>"female"</code></td>
+</tr>
+<tr class="even">
+<td><code>dicovsf</code></td>
+<td>character</td>
+<td>Desired scale factor range for normalization (must be in <code>"min:max"</code> format). <strong>Required if <code>mode = "model"</code> </strong>
+</td>
+<td><code>"0.95:1.05"</code></td>
+</tr>
+<tr class="odd">
+<td><code>purity</code></td>
+<td>character</td>
+<td>Desired purity range for model selection (must be in <code>"min:max"</code> format). <strong>Required if <code>mode = "model"</code> </strong>
+</td>
+<td><code>"0.6:0.8"</code></td>
+</tr>
+<tr class="even">
+<td><code>callcov</code></td>
+<td>numeric</td>
+<td>Subclonal event calling cutoff (no models, coverage-based). <strong>Default is <code>0.3</code>.</strong>
+</td>
+<td><code>0.3</code></td>
+</tr>
+<tr class="odd">
+<td><code>chromosome</code></td>
+<td>character</td>
+<td>Chromosome for user-defined diploid region (<strong>required if <code>mode = "region"</code></strong>).</td>
+<td><code>"3"</code></td>
+</tr>
+<tr class="even">
+<td><code>start</code></td>
+<td>integer</td>
+<td>Start position for diploid region (optional; used in <code>"region"</code> mode).</td>
+<td><code>1000000</code></td>
+</tr>
+<tr class="odd">
+<td><code>end</code></td>
+<td>integer</td>
+<td>End position for diploid region (optional; used in <code>"region"</code> mode).</td>
+<td><code>50000000</code></td>
+</tr>
+<tr class="even">
+<td><code>mode</code></td>
+<td>character</td>
+<td>Rerun mode: either <code>"model"</code> (custom purity/scale factor) or <code>"region"</code> (user-defined diploid region).</td>
+<td><code>"model"</code></td>
+</tr>
+<tr class="odd">
+<td><code>out_file</code></td>
+<td>character</td>
+<td>Output file path for refined CNV calls.</td>
+<td><code>"results/Sample1_final_call_refined.tsv"</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong><br>
+After rerunning, the resulting file can be used in downstream steps—such as plotting and annotation—just like files generated prior to rerun.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="full-function-and-parameter-list">Full function and parameter list<a class="anchor" aria-label="anchor" href="#full-function-and-parameter-list"></a>
