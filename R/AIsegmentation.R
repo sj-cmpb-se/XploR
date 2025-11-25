@@ -519,7 +519,7 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
     dplyr::mutate( BAF = alt_count/(alt_count + ref_count))
   n_maf <- nrow(tmp_maf)
   if( is.null(n_maf) ){ n_maf <- 0}
-  if(n_maf > 0 ){
+  if( n_maf > snpmin ){
     binned_data <- BinMaf(data = tmp_maf,
                           datatype = "tumor",
                           maxgap = maxgap,
@@ -625,8 +625,11 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
 
     }
 
-  }
+
   tmp_seg<- CorrectBias( tmp_seg, pon_ref, tmp_maf)
+    }else{ tmp_seg$gmm_mean_corr <- NA
+          tmp_seg$balance_tag <- NA
+  }
   if(nrow(tmp_seg) > 1){
     tmp_seg$BreakpointSource <- "Postprocess"}else{tmp_seg$BreakpointSource <- "GATK"}
 }else{
