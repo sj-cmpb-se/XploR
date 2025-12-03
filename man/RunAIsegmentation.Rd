@@ -33,7 +33,7 @@ RunAIsegmentation(
 
 \item{ai}{Path to the BAF file or allelic count file.}
 
-\item{gender}{Character, "male" or "female".}
+\item{gender}{Character, "male" or "female"( if not available, set gender = "unknown" and run Runcheckgender function ahead to assign gender automatically) .}
 
 \item{out_dir}{Output directory path.}
 

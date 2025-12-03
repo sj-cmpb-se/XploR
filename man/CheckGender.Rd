@@ -11,7 +11,7 @@ CheckGender(cov, seg, gender)
 
 \item{seg}{Segmentation data frame}
 
-\item{gender}{Gender from clinical information (character, "male" or "female")}
+\item{gender}{Gender from clinical information (character, "male", "female" or "unknown")}
 }
 \value{
 Modified segmentation seg data frame with gender information
