@@ -1326,7 +1326,11 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
       cn_expect <- setdiff( c(floor(cnf_correct), ceiling(cnf_correct)), cn_total ) %>%
         unlist() %>%
         as.numeric()
-      cn_expect <- ifelse(length(cn_expect) >1 & cnf_correct >= (1+callcov) | cnf_correct <= (2-callcov) , cn_expect[which(cn_expect != 2)], cn_expect )
+      if( length(cn_expect) >1 ){
+        if( 2 %in% cn_expect){
+          cn_expect <- ifelse( cnf_correct >= (1+callcov) | cnf_correct <= (2-callcov) , cn_expect[which(cn_expect != 2)], cn_expect ) }
+        if( length(cn_expect) > 1 ){ cn_expect <- cn_expect[which.min(abs( cn_expect - cnf_correct))] }
+        }
       chrom <- bad[i,"Chromosome"] %>% as.character()
       tmp_index <- as.character( bad[i,"index"] )
       tmp <- results %>%
