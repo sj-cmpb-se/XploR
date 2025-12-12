@@ -43,11 +43,46 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
   return(sm)
 }
 
+
+#' Run automatic gender detection
+#'
+#' Detects sample gender based on coverage and segmentation data, and returns the predicted gender.
+#' If gender information is missing or set to "unknown", the function will infer gender automatically.
+#'
+#' @param cov Data frame. Coverage data.
+#' @param seg Character. Path to segmentation data file.
+#' @param gender Character. Provided gender information; use "unknown" to trigger automatic detection.
+#'
+#' @return Character. Predicted gender ("male" or "female").
+#'
+#' @importFrom dplyr filter mutate
+#' @importFrom data.table fread
+#' @export
+Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
+
+  seg_df <- data.table::fread(seg) %>%
+    dplyr::mutate(size = End - Start)
+
+  # Step 1: Gender check
+  gender = tolower(gender)
+  # Read coverage file
+  lines <- readLines(cov)
+  filtered_lines <- grep("^\\s*@", lines, invert = TRUE, value = TRUE)
+  cov_df <- data.table::fread(text = filtered_lines)
+  seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender)
+  gender <- as.character(seg_df$pipeline_gender[1])
+  outFile <- file.path(out_dir, paste0(prefix, "_gender.txt"))
+  write.table(gender,file=outFile,quote = F,row.names = F)
+  return(gender)
+}
+
+
+
 #' Check and Adjust Gender in GATK Segmentation Data
 #'
 #' @param cov Coverage data frame
 #' @param seg Segmentation data frame
-#' @param gender Gender from clinical information (character, "male" or "female")
+#' @param gender Gender from clinical information (character, "male", "female" or "unknown")
 #' @return Modified segmentation seg data frame with gender information
 #' @importFrom dplyr filter rowwise mutate
 #' @importFrom stats median
@@ -87,15 +122,17 @@ CheckGender <- function( cov, seg, gender ){
   }else{gatkgender <- "female"}
 
   seg$gatk_gender <- gatkgender
-  seg$pipeline_gender <- gender
   seg$Segment_Mean_raw <- seg$Segment_Mean
 
-
-  if(gatkgender == gender){
-
+  if( gender == "unknown"){
+    message("Automatic gender assginded as : ", gatkgender)
+    seg$pipeline_gender <- gatkgender
+  }else if (gender != "unknown" && gatkgender == gender){
     message("GATK gender is correct!")
-  }else{
+    seg$pipeline_gender <- gender
+  }else if (gender != "unknown" && gatkgender != gender ){
     message("GATK gender is wrong, fixing the X chromosome from the seg file.")
+    seg$pipeline_gender <- gender
     seg <- seg %>%
       dplyr::rowwise() %>%
       dplyr::mutate(Segment_Mean = ifelse( gatk_gender != gender & Chromosome == "X",
