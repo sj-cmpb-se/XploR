@@ -506,6 +506,7 @@ SearchBreakpoint <- function(seg_row, maf, pon_ref, gender,
     gatk_baselinecov = seg_row$Baseline_cov,
     gatk_gender = seg_row$gatk_gender,
     pipeline_gender = seg_row$pipeline_gender,
+    cov_mad = seg_row$MAD,
     MAF = NA,
     MAF_Probes = 0,
     MAF_gmm_G = NA,
@@ -554,6 +555,7 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
           gatk_baselinecov = seg_row$Baseline_cov,
           gatk_gender = seg_row$gatk_gender,
           pipeline_gender = seg_row$pipeline_gender,
+          cov_mad = seg_row$MAD,
           MAF = merge_ai$gmm_mean,
           MAF_Probes = merge_ai$nonzero_count,
           MAF_gmm_G = merge_ai$gmm_G,
@@ -613,6 +615,7 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
                 gatk_baselinecov = seg_row$Baseline_cov,
                 gatk_gender = seg_row$gatk_gender,
                 pipeline_gender = seg_row$pipeline_gender,
+                cov_mad = seg_row$MAD,
                 MAF = gmm_mean,
                 MAF_Probes = nonzero_count,
                 MAF_gmm_G = gmm_G,
@@ -620,7 +623,7 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
         ) %>%
         dplyr::select( -gmm_mean, -nonzero_count, -gmm_G, -gmm_weight, -merge_index, -each_maf) %>%
         dplyr::relocate( Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw,
-                  gatk_count, gatk_baselinecov, gatk_gender, pipeline_gender,
+                  gatk_count, gatk_baselinecov, gatk_gender, pipeline_gender, cov_mad,
                   MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size )
 
     }
@@ -641,36 +644,85 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
 }
 
 
-#' Assign Quality Tag to a Segment Based on maf GMM Metrics
+#' Assign Quality Tag to a Segment Based on maf GMM Metrics and coverage variance
 #'
 #' Assigns a quality tag ("PASS" or "FAILED") to a segment based on the maf GMM weight and probe count thresholds.
 #'
-#'A segment is marked as "PASS" if the maf GMM weight is at least 0.35 and the probe count is at least twice the minimum SNP count (\code{snpmin}). Otherwise, it is marked as "FAILED".
+#'A segment is marked as "PASS" if the maf GMM weight is at least 0.5, the probe count is at least twice the minimum SNP count (\code{snpmin}), coverage MAD is less than 2.
+#'Otherwise marked as "FAILED". If the maf GMM weight is 0.5 to 0.8, the balance tag is balanced, but the MAF is < 0.48, it is also FAILED.
 #' @param Chromosome Character.
+#' @param MAF Numeric. Estimated MAF value.
 #' @param MAF_gmm_weight Numeric. The mixture weight of the most prominent maf GMM cluster.
 #' @param MAF_Probes Integer. The number of nonzero maf probes in the segment.
 #' @param MAF_gmm_G Integer. Number of maf GMM clusters.
 #' @param snpmin Integer. The minimum nonzero SNP count.
-#'
+#' @param balance_tag Character. Balanced test result of BAF of the segment.
+#' @param sampletype Character. ffpe or ff.
+#' @param cov_mad Numeric. MAD of coverage.
 #' @return Character. "PASS" if the segment passes quality checks, "FAILED" otherwise.
 #'
 #' @examples
-#' AddQualTag(Chromosome = "1", MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
-#' AddQualTag(Chromosome = "X", MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
+#' AddQualTag(Chromosome = "1", MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7, balance_tag = "balanced", cov_mad = 1, sampletype="ffpe")
+#' AddQualTag(Chromosome = "X", MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7, balance_tag = "balanced", cov_mad = 1, sampletype="ff")
 #'
 #' @export
-AddQualTag <- function(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin){
+AddQualTag <- function(Chromosome, MAF, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin, balance_tag, cov_mad, sampletype){
+
+  ## MAF quality tag
+  balance_tag <- tolower(trimws(as.character(balance_tag)))
+  sampletype <- tolower(trimws(as.character(sampletype)))
+  MAF <- as.numeric(MAF)
 
   if(!is.na(MAF_gmm_G)){
     if( MAF_Probes >= 2*snpmin ){
-      if( MAF_gmm_weight >= 0.4){Qualtag <- "PASS" }
-      else{ Qualtag <- "FAILED" }
+      if( MAF_gmm_weight >= 0.3 ){
+        if(MAF_gmm_weight >= 0.7){
+          maf_tag <- "PASS"
+        }else{
+            if( balance_tag == "balanced" ){
+              if( MAF < 0.48 ){ maf_tag <- "FAILED"
+              }else{
+                maf_tag <- "PASS"
+               }
+            }else{
+                if(MAF == 0.5){
+                  maf_tag <- "FAILED"
+                }else{
+                    maf_tag <- "PASS"
+                }
+            }
+          }
+      }else{ maf_tag <- "FAILED"}
+    }else{ maf_tag <- "FAILED" }
+  }else{ maf_tag <- "FAILED"}
+
+  ## coverage quality tag
+  if(sampletype == "ff"){
+    if(cov_mad < 1.5){ cov_tag <- "PASS"}else{
+      cov_tag <- "FAILED"
+    }
+    }
+
+high_gc_chrom <- c("9","16","17","21","22", "19","Y")
+  if(sampletype == "ffpe"){
+    if( ! Chromosome %in% high_gc_chrom ){
+      if( cov_mad <= 3){ cov_tag <- "PASS" }else{ cov_tag <- "FAILED" }
+      }else if( Chromosome %in% c("9","16","17","21","22") ){
+        if( cov_mad <= 4 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
+      }else if( Chromosome %in% c("19","Y") ) {
+        if( cov_mad <= 6 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
+      }
+    }
 
 
-    }else{Qualtag <- "FAILED"}
-  }else{Qualtag <- "FAILED"}
+  if( maf_tag == "PASS" && cov_tag == "PASS" ) {
+  Qualtag <- "PASS"
+}else{
+    Qualtag <- "FAILED" }
+
+
  if(Chromosome %in% c("X","Y")){
-   Qualtag <- "Exclude"
+   Qualtag <- "EXCLUDE"
  }
   return(Qualtag)
 }
@@ -828,7 +880,7 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     type = "any", nomatch = 0
   ) %>%
     dplyr::group_by( Chromosome, Sample, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw, gatk_count, gatk_baselinecov, gatk_gender,
-              pipeline_gender, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
+              pipeline_gender, cov_mad, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
     dplyr::summarise( pon_mafs = paste( pon_mafs, collapse = ","))
 
 

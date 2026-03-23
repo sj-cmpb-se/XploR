@@ -318,7 +318,7 @@ ModelSource <- function( seg_df, modelminprobes  ) {
   max_cov <- max(abs(seg_df$Segment_Mean), na.rm = T)
 
 
-  if( min_MAF > 0.4 ){
+  if( min_MAF > 0.43 ){
     if( max_cov >= 0.2 ){
       model_source <- "Coverage"
     }else{
@@ -1236,7 +1236,7 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
   chrom_levels <- c(c(1:22,"X","Y"))
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight","balance_tag", "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",  "index",
                 "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
@@ -1266,9 +1266,7 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
     dplyr::select( all_of( col_name )  ) %>%
     dplyr::mutate( Chromosome = factor(Chromosome,levels = chrom_levels)) %>%
     dplyr::arrange( Chromosome, Start ) %>%
-    dplyr::mutate( ccf = ifelse( CN == 2 & ccf < 0.1 , 1, ccf )) %>%
-    dplyr::mutate( FILTER = ifelse( Chromosome == "Y", "FAILED", FILTER))
-
+    dplyr::mutate( ccf = ifelse( CN == 2 & ccf < 0.1 , 1, ccf ))
   return(final_call)
 }
 
@@ -1299,7 +1297,7 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
   # refine individual call that not matching cov profile and AI profile
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_maf", "expected_cov", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight","balance_tag",
                 "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",
