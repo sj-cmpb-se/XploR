@@ -119,9 +119,10 @@ CcfLOH <- function(minor, major, rho, MAF  ){
   # ccf from AI information
   # if MAF_ex is 0.5 then ccf is 0
   # if MAF is 0.5 then ccf is 0
-  MAF_ex <- minor/(minor + major)
+  #MAF_ex <- minor/(minor + major)
 
-  ccf <- (MAF - 0.5 )/( ( MAF_ex - 0.5) * rho )
+  #ccf <- (MAF - 0.5 )/( ( MAF_ex - 0.5) * rho )
+  ccf <- (2*MAF - 1)/(rho*( ( minor -1) - MAF*( minor + major - 2 )))
   ccf <- ifelse(is.infinite(ccf), ifelse(ccf > 0, 1, 0), ccf)
   ccf <- ifelse( is.na(ccf), 0 , ccf)
   return(ccf)
@@ -419,7 +420,10 @@ CalSegmentLikelihood <- function(C_i, B_i,  mu, rho, sigma_C, k, lambda, gamma, 
         if( ccf < 0.1 & m + n == 2 & n ==0){
           ccf <- 1
         }
-        maf <- (1 - rho) * 0.5 + rho * ( ccf*( n / (m + n) ) + (1-ccf) * 0.5 )
+        minor <- (1-rho) * 1 + rho*( ccf*n + (1-ccf)*1)
+        total <- (1-rho) * 2 + rho*( ccf*(m+n) + (1-ccf) * 2)
+        #maf <- (1 - rho) * 0.5 + rho * ( ccf*( n / (m + n) ) + (1-ccf) * 0.5 )
+        maf <- minor/total
         alpha <- k * maf + epsilon
         beta <- k * (1 - maf) + epsilon
         maf_ll <- lgamma(alpha + beta) - lgamma(alpha) - lgamma(beta) +
