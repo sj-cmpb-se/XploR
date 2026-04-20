@@ -1147,10 +1147,20 @@ SelectFinalModel <- function( results, top_likelihood_rows, groupinfo, prefix, g
   PlotModelDot( models = models , out_dir = out_dir ,prefix = prefix, tier1_index = tier1_index)
 
   ## remove models with lowever purity determined by EstimateMinPurity function
+  ## If left model size is smaller then 3 then choose 3 with highest possible purity
+
   refined_models$Tier1 <- "Tier1_Models"
-  tier1_dis_fil <- refined_models %>%
-    dplyr::filter( rho >= min_purity) %>%
+  refined_models <- refined_models %>%
     dplyr::filter( mu >= minsf )
+
+  tier1_dis_fil <- refined_models %>%
+    dplyr::filter( rho >= min_purity )
+
+  if( nrow(tier1_dis_fil) <= 3){
+    tier1_dis_fil <- refined_models %>%
+      dplyr::arrange( desc(rho) ) %>%
+      dplyr::slice(c(1:3))
+  }
 
   Final_model <- ClusterModels(models_dis = tier1_dis_fil )
 
