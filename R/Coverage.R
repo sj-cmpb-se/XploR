@@ -15,6 +15,71 @@ CalMedian <- function( chrom, start, end, cov){
   return(median(tmp$COUNT,na.rm = T))
 }
 
+#' Calculate Robust Coverage Variability (MAD) for a Genomic Segment
+#'
+#' Computes a library-size–invariant measure of coverage variability within a
+#' genomic segment using the median absolute deviation (MAD) of
+#' log2-transformed bin counts relative to the segment median.
+#'
+#' Specifically, for each bin \eqn{i} in the segment, the value
+#' \eqn{\log_2((count_i + pc)/(median(count) + pc))} is computed, and the MAD
+#' (scaled to be comparable to standard deviation) is returned.
+#'
+#' @param chrom Chromosome name corresponding to \code{cov$CONTIG}.
+#' @param start Segment start position (1-based, inclusive).
+#' @param end Segment end position (1-based, inclusive).
+#' @param cov Data frame or tibble of per-bin coverage with columns
+#'   \code{CONTIG}, \code{START}, \code{END}, and \code{COUNT}.
+#'
+#' @return A single numeric value giving the robust MAD of normalized coverage
+#'   within the specified genomic segment. Returns \code{NA} if no bins fall
+#'   within the region.
+#'
+#' @details
+#' This metric is robust to outliers and does not require knowledge of library
+#' size, making it suitable for comparing coverage noisiness across samples in
+#' CNV analysis.
+#'
+#' @seealso \code{\link[stats]{mad}}, \code{\link[stats]{median}}
+#'
+#' @importFrom dplyr filter
+#'
+#' @examples
+#' cov <- data.frame(
+#'   CONTIG = c("chr1", "chr1", "chr1"),
+#'   START  = c(1, 1001, 2001),
+#'   END    = c(1000, 2000, 3000),
+#'   COUNT  = c(100, 95, 110)
+#' )
+#'
+#' CalMAD("chr1", 1, 3000, cov)
+#'
+#' @export
+CalMAD <- function( chrom, start, end, cov){
+
+  # Robust MAD scaled to SD
+  mad_sd <- function(x) {
+    mad(x, center = median(x, na.rm = TRUE), constant = 1.4826, na.rm = TRUE)
+  }
+
+  # counts = numeric vector of bin counts for ONE segment
+  segment_mad_log2_ratio <- function(counts, pseudocount = 0.5) {
+    center <- median(counts, na.rm = TRUE)
+    x <- log2((counts + pseudocount) / (center + pseudocount))
+    mad_sd(x)
+  }
+
+  tmp <- cov %>%
+    dplyr::filter( CONTIG == chrom & START >= start & END <= end )
+
+  variance <- segment_mad_log2_ratio(counts = tmp$COUNT)
+
+  return(variance)
+
+}
+
+
+
 
 #' Calculate Baseline Coverage
 #'
@@ -95,7 +160,8 @@ CheckGender <- function( cov, seg, gender ){
     dplyr::mutate( Count = CalMedian( chrom = Chromosome, start = Start, end = End, cov = cov )) %>%
     #filter( Num_Probes >= 500 | Chromosome %in% c("X","Y")) %>%
     dplyr::rowwise() %>%
-    dplyr::mutate( Baseline_cov = CalbaselineCov( chrom = Chromosome, cr = Segment_Mean, count = Count ))
+    dplyr::mutate( Baseline_cov = CalbaselineCov( chrom = Chromosome, cr = Segment_Mean, count = Count )) %>%
+    dplyr::mutate( MAD = CalMAD( chrom = Chromosome, start = Start, end = End, cov = cov ))
 
   autobasecov <- seg %>%
     dplyr::filter( ! Chromosome %in% c("X","Y") ) %>%
@@ -208,6 +274,7 @@ MergeSegRow <- function(df, mergecov) {
           size = next_row$End - cur_row$Start,
           Count = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Count, next_row$Count),
           Baseline_cov = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Baseline_cov, next_row$Baseline_cov),
+          MAD = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$MAD, next_row$MAD),
           gatk_gender = cur_row$gatk_gender,
           pipeline_gender = cur_row$pipeline_gender,
           Segment_Mean_raw = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Segment_Mean_raw, next_row$Segment_Mean_raw)

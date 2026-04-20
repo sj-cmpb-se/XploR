@@ -18,6 +18,7 @@ RunExamplePipeline <- function(out_dir) {
   ai_pon <- system.file("extdata", "PON_AI.Rdata", package = "XploR")
   gender <- "female"
   prefix <- "example"
+  sampletype <- "ff"
 
 
 # Segmentation
@@ -31,7 +32,8 @@ segmentation <- tryCatch({
     out_dir = out_dir,
     prefix = prefix,
     ai_pon = ai_pon,
-    aitype = "dragen"
+    aitype = "dragen",
+    sampletype = 'ff'
   )
   TRUE
 }

@@ -122,7 +122,8 @@ Please open an issue if you encounter any problems.</p>
 <span>    out_dir <span class="op">=</span> <span class="va">out_dir</span>,</span>
 <span>    prefix <span class="op">=</span> <span class="va">prefix</span>,</span>
 <span>    ai_pon <span class="op">=</span> <span class="va">ai_pon</span>,</span>
-<span>    aitype <span class="op">=</span> <span class="st">"dragen"</span></span>
+<span>    aitype <span class="op">=</span> <span class="st">"dragen"</span>,</span>
+<span>    sampletype <span class="op">=</span> <span class="st">"ff"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <div class="section level5">
 <h5 id="parameters-for-runaisegmentation">Parameters for <code>RunAIsegmentation</code>
@@ -130,10 +131,10 @@ Please open an issue if you encounter any problems.</p>
 </h5>
 <table class="table">
 <colgroup>
-<col width="14%">
-<col width="7%">
-<col width="65%">
-<col width="12%">
+<col width="10%">
+<col width="5%">
+<col width="74%">
+<col width="9%">
 </colgroup>
 <thead><tr class="header">
 <th>Parameter</th>
@@ -261,6 +262,12 @@ Please open an issue if you encounter any problems.</p>
 <td>character</td>
 <td>Type of allelic imbalance data: <code>"gatk"</code>, <code>"other"</code>, or <code>"dragen"</code> (see below for requirements).</td>
 <td><code>"dragen"</code></td>
+</tr>
+<tr class="odd">
+<td><code>sampletype</code></td>
+<td>character</td>
+<td>Sample type for QC thresholds: <code>"ff"</code> (Fresh Frozen) or <code>"ffpe"</code> (Formalin-Fixed Paraffin-Embedded). <code>"ff"</code> uses stricter cutoffs and is the default.</td>
+<td><code>"ff"</code></td>
 </tr>
 </tbody>
 </table>

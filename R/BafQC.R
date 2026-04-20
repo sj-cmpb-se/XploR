@@ -14,7 +14,12 @@
 #' @export
 BafQC <- function(annofile, out_dir, prefix) {
   data <- data.table::fread(annofile)
-  select_col <- c("chrom", "loc.start", "loc.end", "FILTER")
+  model_source <- as.character(data$Model_source[1])
+  purity <- data$rho[1]
+  scale_factor <- data$mu[1]
+  gatk_gender <- data$gatk_gender[1]
+  pipeline_gender <- data$pipeline_gender[1]
+  select_col <- c("chrom", "loc.start", "loc.end","cov_mad", "FILTER")
   data <- data %>% dplyr::select(dplyr::all_of(select_col))
   data$length <- data$loc.end - data$loc.start
 
@@ -43,7 +48,6 @@ BafQC <- function(annofile, out_dir, prefix) {
       Total_segment_count = sum(count),
       Total_segment_size = sum(size)
     ) %>%
-    dplyr::filter(FILTER == "PASS") %>%
     dplyr::filter(chrom %in% as.character(1:22)) %>%
     dplyr::select(
       chrom, FILTER, Total_segment_count, count, PASS_Seg_Percent,
@@ -54,16 +58,51 @@ BafQC <- function(annofile, out_dir, prefix) {
       PASS_Seg_Size = size
     )
 
+  summary_pass <- summary %>%
+    filter(FILTER == "PASS")
+
+  ## chromosomes without any passed segments
+  chrom_no_pass <- setdiff(c(1:22), unique(summary_pass$chrom))
+  summary_fail <- summary %>%
+    filter(FILTER == "FAILED" & chrom %in% chrom_no_pass) %>%
+    mutate( FILTER = "PASS",
+            PASS_Seg_Count = 0,
+            PASS_Seg_Percent = 0,
+            PASS_Seg_Size = 0,
+            PASS_Seg_Size_Percent = 0 )
+
+  summary <- rbind(summary_pass , summary_fail)
+
   chrom_levels <- c(seq(1,22),"X","Y")
   summary$chrom <- factor(summary$chrom,levels = chrom_levels)
   summary <- summary %>%
     dplyr::arrange( chrom)
 
+  sample_qc <- data.frame(
+    Median_chr_seg_num = median(summary$Total_segment_count,na.rm=T),
+    Median_chr_cov_MAD = median(data$cov_mad, na.rm =T),
+    Fail_chr_count = nrow( summary %>% filter(PASS_Seg_Size_Percent < 0.9) ),
+    Model_Source = model_source,
+    Purity = purity,
+    DiploidCov_scale = scale_factor,
+    GATK_gender = gatk_gender,
+    Final_gender = pipeline_gender
+  )
+
+  sample_qc <- sample_qc %>%
+    dplyr::mutate( QC_suggestion = ifelse( Median_chr_seg_num > 9 || Median_chr_cov_MAD > 2 || Fail_chr_count > 2, "Fail","PASS"))
+
   outfile_chr <- paste0(out_dir,"/", prefix,"_PASS_STAT_chr.txt")
+  outfile_sample <- paste0(out_dir,"/", prefix,"_sample_qc.txt")
 
   if (nrow(summary) == 0) {
     summary <- data.frame(PASS_Status = "No segment pass the QC!")
   }
   utils::write.table(summary, file = outfile_chr, sep = "\t", quote = FALSE, row.names = FALSE)
+  utils::write.table(sample_qc, file = outfile_sample, sep = "\t", quote = FALSE, row.names = FALSE)
   invisible(summary)
 }
+
+
+
+

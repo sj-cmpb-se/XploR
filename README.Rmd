@@ -75,7 +75,8 @@ RunAIsegmentation(
     out_dir = out_dir,
     prefix = prefix,
     ai_pon = ai_pon,
-    aitype = "dragen"
+    aitype = "dragen",
+    sampletype = "ff"
   )
 
 ```
@@ -104,6 +105,7 @@ RunAIsegmentation(
 | `segmethod`           | character | Segmentation method: `"merge"` for stepwise merging, `"cbs"` for CBS segmentation.               | `"cbs"`                           |
 | `cbssmooth`           | character | If using CBS, `"yes"` to apply smoothing before segmentation, `"no"` to skip smoothing.          | `"yes"`                           |
 | `aitype`              | character | Type of allelic imbalance data: `"gatk"`, `"other"`, or `"dragen"` (see below for requirements). | `"dragen"`                        |
+| `sampletype` | character | Sample type for QC thresholds: `"ff"` (Fresh Frozen) or `"ffpe"` (Formalin-Fixed Paraffin-Embedded). `"ff"` uses stricter cutoffs and is the default. | `"ff"` |
 
 **Note on `aitype` column requirements:**
 - If `"gatk"` or `"other"`: input must include columns `CONTIG`, `POSITION`, `ALT_COUNT`, `REF_COUNT`, `REF_NUCLEOTIDE`, and `ALT_NUCLEOTIDE`.

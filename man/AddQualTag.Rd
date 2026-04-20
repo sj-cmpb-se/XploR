@@ -2,12 +2,24 @@
 % Please edit documentation in R/AIsegmentation.R
 \name{AddQualTag}
 \alias{AddQualTag}
-\title{Assign Quality Tag to a Segment Based on maf GMM Metrics}
+\title{Assign Quality Tag to a Segment Based on maf GMM Metrics and coverage variance}
 \usage{
-AddQualTag(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin)
+AddQualTag(
+  Chromosome,
+  MAF,
+  MAF_gmm_weight,
+  MAF_Probes,
+  MAF_gmm_G,
+  snpmin,
+  balance_tag,
+  cov_mad,
+  sampletype
+)
 }
 \arguments{
 \item{Chromosome}{Character.}
+
+\item{MAF}{Numeric. Estimated MAF value.}
 
 \item{MAF_gmm_weight}{Numeric. The mixture weight of the most prominent maf GMM cluster.}
 
@@ -16,6 +28,12 @@ AddQualTag(Chromosome, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, snpmin)
 \item{MAF_gmm_G}{Integer. Number of maf GMM clusters.}
 
 \item{snpmin}{Integer. The minimum nonzero SNP count.}
+
+\item{balance_tag}{Character. Balanced test result of BAF of the segment.}
+
+\item{cov_mad}{Numeric. MAD of coverage.}
+
+\item{sampletype}{Character. ffpe or ff.}
 }
 \value{
 Character. "PASS" if the segment passes quality checks, "FAILED" otherwise.
@@ -24,10 +42,11 @@ Character. "PASS" if the segment passes quality checks, "FAILED" otherwise.
 Assigns a quality tag ("PASS" or "FAILED") to a segment based on the maf GMM weight and probe count thresholds.
 }
 \details{
-A segment is marked as "PASS" if the maf GMM weight is at least 0.35 and the probe count is at least twice the minimum SNP count (\code{snpmin}). Otherwise, it is marked as "FAILED".
+A segment is marked as "PASS" if the maf GMM weight is at least 0.5, the probe count is at least twice the minimum SNP count (\code{snpmin}), coverage MAD is less than 2.
+Otherwise marked as "FAILED". If the maf GMM weight is 0.5 to 0.8, the balance tag is balanced, but the MAF is < 0.48, it is also FAILED.
 }
 \examples{
-AddQualTag(Chromosome = "1", MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7)
-AddQualTag(Chromosome = "X", MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7)
+AddQualTag(Chromosome = "1", MAF_gmm_weight = 0.4, MAF_Probes = 20, MAF_gmm_G = 2, snpmin = 7, balance_tag = "balanced", cov_mad = 1, sampletype="ffpe")
+AddQualTag(Chromosome = "X", MAF_gmm_weight = 0.2, MAF_Probes = 10, MAF_gmm_G = 1, snpmin = 7, balance_tag = "balanced", cov_mad = 1, sampletype="ff")
 
 }
