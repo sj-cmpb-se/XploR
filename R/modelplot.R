@@ -6,7 +6,7 @@
 #' @param purity Numeric. The selected purity value to highlight.
 #' @param min_dis Numeric. The minimum distance to integer copy number to highlight.
 #' @param prefix Character. Output file prefix.
-#' @param out_dir Character. Output directory for saving the plot.
+#' @param out_dir Character. Output directory to save the file.
 #'
 #' @return Invisibly returns the ggplot object (or \code{FALSE} if plotting failed). The plot is saved as a PNG file in the output directory.
 #'
@@ -36,10 +36,10 @@ PlotCovDisCN <- function(dis, purity, min_dis, prefix, out_dir ){
     outFile <- paste0( prefix, "_CNV_Coverage_purity_estimate.png")
 
     ggplot2::ggsave(filename = outFile,
-           plot = displot,
-           device = "png",
-           path = out_dir,
-           width = 8,height = 8,dpi = 600, bg = 'white' )
+                    plot = displot,
+                    device = "png",
+                    path = out_dir,
+                    width = 8,height = 8,dpi = 600, bg = 'white' )
     print(paste0("Plotting is DONE. The plot is saved at: ", out_dir,"/", outFile))
 
   }}
@@ -62,7 +62,7 @@ PlotCovDisCN <- function(dis, purity, min_dis, prefix, out_dir ){
 #' # PlotModelDot(models, prefix = "Sample1", out_dir = "results/", tier1_index = 10)
 #'
 #' @export
-PlotModelDot<- function(models, prefix, out_dir, tier1_index) {
+PlotModelDot<- function(models, out_dir, prefix, tier1_index) {
   a <- tryCatch({
     modeldot <- ggplot2::ggplot(models, aes(y = total_log_likelihood, x = 1:nrow(models))) +
       ggplot2::geom_point(size = 2, color = "blue", alpha = 0.5 ) +
@@ -111,7 +111,7 @@ PlotModelDot<- function(models, prefix, out_dir, tier1_index) {
 #' # PlotModel(data, opt, max_L_mu = 1, max_L_rho = 0.7)
 #'
 #' @export
-PlotModel <- function( data, prefix, out_dir, max_L_mu, max_L_rho ){
+PlotModel <- function( data, out_dir, prefix, max_L_mu, max_L_rho ){
   data$total_log_likelihood <- data$total_log_likelihood_before_refine
 
   p <- tryCatch({

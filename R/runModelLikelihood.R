@@ -182,8 +182,8 @@ RunModelLikelihood <- function(
     )
 
     PlotModel(data = return_models$models,
-              prefix = prefix,
               out_dir = out_dir,
+              prefix = prefix,
               max_L_mu = return_models$Final_model$Final_mu,
               max_L_rho = return_models$Final_model$Final_rho)
 
