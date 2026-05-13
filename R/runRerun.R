@@ -18,7 +18,8 @@
 #' @param start Integer. Start position for diploid region. Optional.
 #' @param end Integer. End position for diploid region. Optional.
 #' @param mode Character. Rerun mode: either \code{"model"} or \code{"region"}.
-#' @param out_file Character. Output file path for the final calls.
+#' @param out_dir Character. Output file path for the final calls.
+#' @param prefix Character. Prefix for the output.
 #'
 #' @return Invisibly returns the final call data frame.
 #'
@@ -41,7 +42,8 @@
 #'   dicovsf = "0.95:1.05",
 #'   purity = "0.6:0.8",
 #'   mode = "model",
-#'   out_file = "sample_final_call_refined.tsv"
+#'   out_dir = "output_path",
+#'   prefix = "sample"
 #' )
 #'
 #' # Rerun using a user-defined diploid region
@@ -55,7 +57,8 @@
 #'   start = 1e6,
 #'   end = 5e7,
 #'   mode = "region",
-#'   out_file = "sample_final_call_refined.tsv"
+#'   out_dir = "output_path",
+#'   prefix = "sample"
 #' )
 #' }
 #'
@@ -65,7 +68,7 @@ RerunCNV <- function(
     dicovsf = NULL, purity = NULL,
     chromosome = NULL, start = NULL, end = NULL,
     mode = NULL,
-    out_file
+    out_dir, prefix
 ) {
   # Read data
   top_likelihood_rows <- data.table::fread(input)
@@ -118,7 +121,7 @@ RerunCNV <- function(
   purity <- updated_parameters$purity
   mode <- updated_parameters$mode
   # Main: parse parameters and rerun
-  final_model <- ParseParm(purity = purity, dicovsf = dicovsf, models = models_df)
+  final_model <- ParseParm(purity = purity, dicovsf = dicovsf, models = models_df, top_rows = top_likelihood_rows )
 
   # Extract final call
   raw_call <- ExtractCall(
@@ -147,7 +150,24 @@ RerunCNV <- function(
   )
   final_call$Model_source <- "User_defined"
 
+  if( 'mu' %in% colnames(models_df)){
+    PlotModel(data = models_df,
+              out_dir = out_dir,
+              prefix = prefix,
+              max_L_mu = final_model$final_sf,
+              max_L_rho = final_model$final_purity)
+  }else{
+    min_dis <- models_df %>%
+      dplyr::arrange(abs(rho - final_model$final_purity) )
+    min_dis <- as.numeric(min_dis$dis_integer_CN[1])
+
+    PlotCovDisCN(dis = models_df, purity = final_model$final_purity, min_dis= min_dis, out_dir = out_dir, prefix = prefix)
+
+  }
+
+
   # Write results
+  out_file <- paste0(out_dir,"/",prefix,"_final_calls.tsv")
   utils::write.table(final_call, file = out_file, row.names = FALSE, quote = FALSE, sep = "\t")
   invisible(final_call)
 }
