@@ -126,28 +126,34 @@ ParseParm <- function( purity, dicovsf, models, top_rows ){
   if( !is.null( purity )){
     if( grepl(":", purity ) ){
       range <- strsplit(x = purity, split = ":") %>% unlist() %>% as.numeric()
-      purity <- models[which(models$rho >= range[1] & models$rho <= range[2]),"rho"]
+      purity <- models[which(models$rho >= (range[1] - 0.01) & models$rho <= (range[2] + 0.01) ),"rho"]
     }else{
-      purity <- models %>% mutate( diff = abs( purity - rho ) ) %>%
+      purity <- as.numeric(purity)
+      purity <- models %>%
+        dplyr::mutate(rho = as.numeric(rho)) %>%
+        dplyr::mutate( diff = abs( purity - rho ) ) %>%
         dplyr::arrange(diff)
-      purity <- purity[1,"rho"]
-    } }else{ purity <- unique(models$rho) }
+      purity <- purity[1,"rho"] %>% as.numeric()
+    } }else{ purity <- as.numeric(unique(models$rho)) }
 
   if( !is.null(dicovsf)){
     if( 'mu' %in% colnames(models) ){
       if( grepl(":", dicovsf ) ){
         range <- strsplit(x = dicovsf, split = ":") %>% unlist() %>% as.numeric()
-        dicovsf <- models[which(models$mu >= range[1] & models$mu <= range[2]),"mu"]
+        dicovsf <- models[which(models$mu >= (range[1] - 0.02) & models$mu <= (range[2] + 0.02)),"mu"]
       }else{
-        dicovsf <- models %>% dplyr::mutate( diff = abs( dicovsf - mu ) ) %>% dplyr::arrange(diff)
-        dicovsf <- dicovsf[1,"mu"]
+        dicovsf <- as.numeric(dicovsf)
+        dicovsf <- models %>%
+          dplyr::mutate( mu = as.numeric(mu)) %>%
+          dplyr::mutate( diff = abs( dicovsf - mu ) ) %>% dplyr::arrange(diff)
+        dicovsf <- as.numeric(dicovsf[1,"mu"])
       }
     }else{
 
       if( grepl(":", dicovsf)){
         range <- strsplit(x = dicovsf, split = ":") %>% unlist() %>% as.numeric()
-        dicovsf <- top_rows[which(top_rows$mu >= range[1] & top_rows$mu <= range[2]),"mu"]
-      }else{dicovsf <- dicovsf[1]}
+        dicovsf <- top_rows[which(top_rows$mu >= ( range[1] - 0.02 ) & top_rows$mu <= (range[2] + 0.02)),"mu"]
+      }else{dicovsf <- as.numeric(dicovsf[1])}
   }
   }else{ dicovsf <- 1}
 
