@@ -155,7 +155,11 @@ ParseParm <- function( purity, dicovsf, models, top_rows ){
         dicovsf <- top_rows[which(top_rows$mu >= ( range[1] - 0.02 ) & top_rows$mu <= (range[2] + 0.02)),"mu"]
       }else{dicovsf <- as.numeric(dicovsf[1])}
   }
-  }else{ dicovsf <- 1}
+  }else{
+    if( 'mu' %in% colnames(models)) { dicovsf <- as.numeric(unique(models$mu))
+    }else{
+      dicovsf <- as.numeric(unique(top_rows$mu))}
+    }
 
 if( 'mu' %in% colnames(models)){
   final_model <- models %>%
