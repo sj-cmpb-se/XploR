@@ -518,8 +518,9 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
           panel.background = ggplot2::element_blank(),
           plot.margin =  q_margin
     )
-  call_seg <- call_seg %>%
-    dplyr::mutate( ccf_final = ifelse(is.na(ccf_final),1,ccf_final))
+  #call_seg <- call_seg
+  #%>%
+  #  dplyr::mutate( ccf_final = ifelse(is.na(ccf_final),1,ccf_final))
   clonality <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = c(0,1),color="black",linewidth=0.5, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0.8,color="grey40",linewidth=0.5, linetype = "dashed") +
