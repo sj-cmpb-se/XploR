@@ -1402,7 +1402,8 @@ RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov
     dplyr::mutate( ccf = ifelse( ccf > 1, 1 , ccf)) %>%
     dplyr::mutate( ccf_MAF = ifelse( ccf_MAF > 1, 1, ccf_MAF )) %>%
     dplyr::mutate( CN_mix = ifelse( CN %% 2 != 0 & abs(ccf - ccf_MAF) >= 0.3 & ccf_MAF != 0  , "CN_Mix", "No")) %>%
-    dplyr::mutate( ccf_final = ifelse( minor == 0 , ccf_MAF, ccf ) )
+    dplyr::mutate( ccf_final = ifelse( minor == 0 , ccf_MAF, ccf ) ) %>%
+    dplyr::mutate( ccf_final = ifelse( Call == "REF", NA, ccf_final ) )
 
   colnames(df)[7] <- "ccf_COV"
 
