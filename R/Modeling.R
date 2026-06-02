@@ -965,6 +965,8 @@ ClusterModels <- function( models_dis ){
 
   ## Group models based on total likelihood, diploid distance to integer and nondiploid distance to integer when there is
   ## andy nondiploid regions
+
+
   models_dis <- models_dis %>%
     dplyr::arrange( desc(total_log_likelihood)  )%>%
     dplyr::mutate( total_likelihood_cluster = Groupvalues(total_log_likelihood)) %>%
@@ -1010,8 +1012,10 @@ ClusterModels <- function( models_dis ){
     dplyr::arrange( total_likelihood_cluster,
              diploid_distance_cluster ,
              nondiploid_distance_cluster,
-             abs( ploidy - 2),
-             desc(total_log_likelihood), desc( rho ) )
+             round(abs( ploidy - 2),digits=1) ,
+             desc( round(total_log_likelihood, digits = 2 ) ),
+             round(diploid_distance_to_integer,digits = 4),
+             desc( rho ) )
 
   final_diploid_distance_cluster <- models_dis[1,"diploid_distance_cluster"] %>% as.numeric()
   final_nondiploid_distance_cluster <- models_dis[1,"nondiploid_distance_cluster"] %>% as.numeric()
@@ -1028,8 +1032,10 @@ ClusterModels <- function( models_dis ){
       dplyr::arrange( total_likelihood_cluster_update,
                diploid_distance_cluster ,
                nondiploid_distance_cluster,
-               abs( ploidy - 2),
-               desc(total_log_likelihood), desc( rho ) ) %>%
+               round(abs( ploidy - 2),digits=1) ,
+               desc( round(total_log_likelihood, digits = 2 ) ),
+               round(diploid_distance_to_integer,digits = 4),
+               desc( rho ) ) %>%
       dplyr::select( -total_likelihood_cluster_update)
   }
 
