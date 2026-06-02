@@ -10,6 +10,7 @@
 #' @param input Character. Path to the top likelihood row file (e.g., \code{*_top_likelihood_calls.tsv}).
 #' @param models Character. Path to the model likelihood file (e.g., \code{*_Models_likelihood.tsv}).
 #' @param call Character. Path to the final call file.
+#' @param raw Character. Path to the raw likelihood result file.
 #' @param gender Character. Sample gender, either \code{"male"} or \code{"female"}.
 #' @param dicovsf Numeric or character. Desired scale factor or range (e.g., \code{0.9}, \code{"0.9:1.1"}). Optional.
 #' @param purity Numeric or character. Desired purity or range (e.g., \code{0.5}, \code{"0.5:0.7"}). Optional.
@@ -38,6 +39,7 @@
 #'   input = "sample_top_likelihood_calls.tsv",
 #'   models = "sample_Models_likelihood.tsv",
 #'   call = "sample_final_call.tsv",
+#'   raw = "sample_likelihood_raw.tsv",
 #'   gender = "female",
 #'   dicovsf = "0.95:1.05",
 #'   purity = "0.6:0.8",
@@ -64,7 +66,7 @@
 #'
 #' @export
 RerunCNV <- function(
-    seg, input, models, call, gender, callcov = 0.3,
+    seg, input, models, call, gender, raw, callcov = 0.3,
     dicovsf = NULL, purity = NULL,
     chromosome = NULL, start = NULL, end = NULL,
     mode = NULL,
@@ -116,7 +118,13 @@ RerunCNV <- function(
 
 
   # Check parameters
-  updated_parameters <- Checkmode(mode = mode, purity = purity, dicovsf = dicovsf, chromosome = chromosome, call = call_df, start = start, end = end)
+  updated_parameters <- Checkmode(mode = mode,
+                                  purity = purity,
+                                  dicovsf = dicovsf,
+                                  chromosome = chromosome,
+                                  call = call_df,
+                                  start = start,
+                                  end = end)
   dicovsf <- updated_parameters$dicovsf
   purity <- updated_parameters$purity
   mode <- updated_parameters$mode
@@ -138,11 +146,11 @@ RerunCNV <- function(
     max_L_rho = final_model$final_purity,
     gender = gender
   )
-
+  raw <- data.table::fread(raw)
   # Refine mismatched coverage/AI profiles
   final_call <- RefineCallsSecond(
     df = refined_call,
-    results = call_df,
+    results = raw,
     final_mu = final_model$final_sf,
     final_rho = final_model$final_purity,
     gender = gender,
