@@ -923,15 +923,16 @@ RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_m
 #' @export
 Groupvalues <- function(x) {
   # Load required package
+  n <- length(x)
+  if( any(is.na(x)) ){ group_id <- rep(1,n)}else{
+    # Detect change points in the mean
+    cpt <- cpt.mean(x, method = "PELT", penalty = "MBIC" )
+    change_points <- cpts(cpt)
 
-  # Detect change points in the mean
-  cpt <- cpt.mean(x, method = "PELT", penalty = "MBIC" )
-  change_points <- cpts(cpt)
-
-  # Assign group IDs
-  group_id <- rep(1:(length(change_points) + 1),
-                  times = diff(c(0, change_points, length(x))))
-
+    # Assign group IDs
+    group_id <- rep(1:(length(change_points) + 1),
+                    times = diff(c(0, change_points, length(x))))
+  }
   return(group_id)
 }
 
