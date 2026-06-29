@@ -95,7 +95,7 @@ RunAIsegmentation <- function(
     merge_seg <- merge_seg %>%
       dplyr::ungroup() %>%
       dplyr::filter(size >= minsize | Chromosome %in% c("X", "Y"))
-    merge_seg <- CallMerge(data = merge_seg, AIorSeg = "Seg", snpmin = snpmin, mergeai = mergeai, mergecov = mergecov)
+    merge_seg <- CallMerge(data = merge_seg, AIorSeg = "Seg", snpmin = snpmin, mergeai = mergeai, mergecov = 0.15)
   }
   merge_seg <- subset(merge_seg, select = -Call)
   merge_seg <- merge_seg %>% dplyr::mutate(BreakpointSource = "GATK")

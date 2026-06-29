@@ -673,28 +673,57 @@ AddQualTag <- function(Chromosome, MAF, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, s
   sampletype <- tolower(trimws(as.character(sampletype)))
   MAF <- as.numeric(MAF)
 
-  if(!is.na(MAF_gmm_G)){
-    if( MAF_Probes >= 2*snpmin ){
-      if( MAF_gmm_weight >= 0.3 ){
-        if(MAF_gmm_weight >= 0.7){
+  maf_tag <- "FAILED"
+
+  if (
+    !is.na(MAF_gmm_G) &&
+    !is.na(MAF_Probes) &&
+    !is.na(snpmin) &&
+    !is.na(MAF_gmm_weight) &&
+    !is.na(balance_tag) &&
+    !is.na(MAF)
+  ) {
+
+    if (MAF_Probes >= 2 * snpmin && MAF_gmm_weight >= 0.3) {
+
+      if (balance_tag == "balanced") {
+
+        if (MAF >= 0.48) {
           maf_tag <- "PASS"
-        }else{
-            if( balance_tag == "balanced" ){
-              if( MAF < 0.48 ){ maf_tag <- "FAILED"
-              }else{
-                maf_tag <- "PASS"
-               }
+        }
+
+      } else {
+
+        if ( abs(MAF - 0.5) > 0.00001 ) {
+          maf_tag <- "PASS"
+        }
+      }
+    }
+  }
+
+
+  if(FALSE){
+    if(!is.na(MAF_gmm_G)){
+      if( MAF_Probes >= 2*snpmin ){
+        if( MAF_gmm_weight >= 0.3 ){
+          if( balance_tag == "balanced" ){
+            if( MAF < 0.48 ){ maf_tag <- "FAILED"
             }else{
-                if(MAF == 0.5){
-                  maf_tag <- "FAILED"
-                }else{
-                    maf_tag <- "PASS"
-                }
+              maf_tag <- "PASS"
+            }
+          }else{
+            if(MAF == 0.5){
+              maf_tag <- "FAILED"
+            }else{
+              maf_tag <- "PASS"
             }
           }
-      }else{ maf_tag <- "FAILED"}
-    }else{ maf_tag <- "FAILED" }
-  }else{ maf_tag <- "FAILED"}
+        }else{ maf_tag <- "FAILED"}
+      }else{ maf_tag <- "FAILED" }
+    }else{ maf_tag <- "FAILED"}
+  }
+
+
 
   ## coverage quality tag
   if(sampletype == "ff"){
@@ -844,9 +873,9 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     gmm_mean_corr <- NA
 
     if( !is.na(gmm_mean) ){
-      if(gmm_mean >= 0.4 && gmm_mean < 0.45 ){
+      if(gmm_mean >= 0.38 && gmm_mean < 0.45 ){
         balanced <- test_balance_KDE( each_BAFs )
-        }else if( gmm_mean < 0.4 ){
+        }else if( gmm_mean < 0.38 ){
           balanced <- FALSE
         }else if(gmm_mean >= 0.45){
           balanced <- TRUE
