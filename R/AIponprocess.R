@@ -26,7 +26,10 @@ ReadPonAI <- function( ai_pon_file, aitype, minsnpcov, gender ){
   })
 
   aipondt <- do.call(rbind, aipondt)
-
+  aipondt <- aipondt %>%
+    dplyr::filter( (ref_count + alt_count) >= minsnpcov ) %>%
+    dplyr::mutate(baf = alt_count /(alt_count + ref_count) ) %>%
+    dplyr::relocate(baf, .after = maf)
   return(aipondt)
 
 }
@@ -172,6 +175,7 @@ PONAIprocess <- function( ai_pon_file, aitype, minsnpcov = 20, output,
       pon_mean_snp_median_baf = median(psb_snp_median_baf, na.rm = TRUE),
       pon_mean_snp_median_maf = median(psb_snp_median_maf, na.rm = TRUE),
       pon_mafs = paste( psb_snp_mafs , collapse = ","),
+      pon_bafs = paste( psb_snp_bafs , collapse = ","),
       pon_depth_median  = median(psb_snp_median_depth, na.rm = TRUE),
       n_normals     = sum(is.finite(psb_snp_baf)),
       .groups = "drop"

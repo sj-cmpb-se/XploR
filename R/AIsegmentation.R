@@ -448,6 +448,7 @@ BinMaf <- function(data, datatype,
         psb_snp_median_baf = median( alt_count/(alt_count + ref_count)),
         psb_snp_median_maf = median( maf, na.rm = TRUE),
         psb_snp_mafs = paste( maf, collapse = ","),
+        psb_snp_bafs = paste( baf, collapse = ","),
         .groups = "drop"
       )
   }
@@ -485,7 +486,7 @@ BinMaf <- function(data, datatype,
 #' @importFrom tidyr unnest_wider
 #' @importFrom DNAcopy CNA smooth.CNA segment
 #' @export
-SearchBreakpoint <- function(seg_row, maf, pon_ref, gender,
+SearchBreakpoint <- function(seg_row, maf, pon_ref, gender, out_dir, prefix,
                              mergeai = 0.15,
                              snpmin = 3,
                              maxgap = 1000000, snpnum = 20,
@@ -629,7 +630,7 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
     }
 
 
-  tmp_seg<- CorrectBias( tmp_seg, pon_ref, tmp_maf)
+  tmp_seg<- CorrectBias( tmp_seg, pon_ref, tmp_maf, out_dir, prefix )
     }else{ tmp_seg$gmm_mean_corr <- NA
           tmp_seg$balance_tag <- NA
   }
@@ -756,6 +757,194 @@ high_gc_chrom <- c("9","16","17","21","22", "19","Y")
   return(Qualtag)
 }
 
+#' Plot Tumor and Normal BAF Density
+#'
+#' Generates tumor and normal BAF density plots for each segment with at least
+#' 10 valid BAF values in both samples. Tumor BAF is shown in red and normal
+#' BAF in blue, with gray BAF guide lines.
+#'
+#' @param seg_corr Data frame containing segment coordinates and BAF values.
+#' @param out_dir Character. Output directory.
+#' @param prefix Character. Sample ID used in output filenames.
+#'
+#' @return NULL. PNG files are saved to \code{BAF_screenshots}.
+#'
+#' @export
+PlotBAF <- function( seg_corr, out_dir, prefix ){
+
+  baf_out_dir <- file.path(out_dir, "BAF_screenshots")
+
+  if (!dir.exists(baf_out_dir)) {
+    dir.create(
+      baf_out_dir,
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
+  }
+
+
+  for ( x in c(1:nrow(seg_corr)) ) {
+    chr <- as.character(seg_corr$Chromosome[x])
+    seg_start <- as.numeric(seg_corr$Start[x])
+    seg_end <- as.numeric(seg_corr$End[x])
+    tumor_baf <- as.numeric(unlist(strsplit(seg_corr$each_BAFs[x], ";")))
+    normal_baf <- as.numeric(unlist(strsplit(seg_corr$pon_bafs[x], ",")))
+    # Tumor BAF
+    tumor_baf <- tumor_baf[
+      is.finite(tumor_baf) &
+        !is.na(tumor_baf) &
+        tumor_baf >= 0 &
+        tumor_baf <= 1
+    ]
+
+    # Normal BAF
+    normal_baf <- normal_baf[
+      is.finite(normal_baf) &
+        !is.na(normal_baf) &
+        normal_baf >= 0 &
+        normal_baf <= 1
+    ]
+
+    n_tumor_baf <- length(tumor_baf)
+    n_normal_baf <- length(normal_baf)
+
+    target_normal_n <- if (n_tumor_baf < 500) {
+      500
+    } else {
+      n_tumor_baf
+    }
+
+    if (n_normal_baf > target_normal_n) {
+      normal_baf <- sample(
+        normal_baf,
+        size = target_normal_n,
+        replace = FALSE
+      )
+    }
+
+    n_normal_baf <- length(normal_baf)
+
+
+    if(n_tumor_baf >= 10 & n_normal_baf >= 10){
+      out_file <- file.path(
+        baf_out_dir,
+        paste0(
+          prefix, "_",
+          chr, "_",
+          format(seg_start, scientific = FALSE, trim = TRUE), "_",
+          format(seg_end, scientific = FALSE, trim = TRUE),
+          "_BAF_distribution.png"
+        ))
+      baf_guides <- seq(0.1, 1.0, by = 0.1)
+      baf_guides <- baf_guides[baf_guides != 0.5]
+
+      # ------------------------------------------------------------
+      # Combine tumor and normal BAF
+      # ------------------------------------------------------------
+
+      baf_df <- data.frame(
+        BAF = c(tumor_baf, normal_baf),
+        Sample = c(
+          rep("Tumor", length(tumor_baf)),
+          rep("Normal", length(normal_baf))
+        )
+      )
+
+      # ------------------------------------------------------------
+      # Guide lines
+      # ------------------------------------------------------------
+
+      # Dashed guide lines:
+      # 0.1, 0.2, 0.3, 0.4, 0.6, ..., 1.0
+      # 0.5 is excluded because it will be a solid gray line
+      baf_guides <- seq(0.1, 1.0, by = 0.1)
+      baf_guides <- baf_guides[abs(baf_guides - 0.5) > 1e-8]
+
+      # ------------------------------------------------------------
+      # Density plot
+      # ------------------------------------------------------------
+
+      p <- ggplot2::ggplot(
+        baf_df,
+        aes(
+          x = BAF,
+          color = Sample
+        )
+      ) +
+
+        # Dashed gray guide lines
+        ggplot2::geom_vline(
+          xintercept = baf_guides,
+          linetype = "dashed",
+          linewidth = 0.4,
+          color = "gray70"
+        ) +
+
+        # BAF = 0.5 solid gray line
+        ggplot2::geom_vline(
+          xintercept = 0.5,
+          linetype = "solid",
+          linewidth = 0.7,
+          color = "gray50"
+        ) +
+
+        # Tumor and normal density curves
+        ggplot2::geom_density(
+          linewidth = 1.2,
+          adjust = 1,
+          na.rm = TRUE
+        ) +
+
+        # Tumor = red; Normal = blue
+        ggplot2::scale_color_manual(
+          values = c(
+            "Tumor" = "red",
+            "Normal" = "blue"
+          )
+        ) +
+
+        ggplot2::scale_x_continuous(
+          limits = c(0, 1),
+          breaks = seq(0, 1, by = 0.1),
+          expand = c(0, 0)
+        ) +
+
+        ggplot2::labs(
+          title = paste0("Tumor n=", n_tumor_baf, "    ", "Normal n=", n_normal_baf ),
+          x = "BAF",
+          y = "Density",
+          color = NULL
+        ) +
+
+        ggplot2::theme_classic(base_size = 12) +
+        ggplot2::theme(
+          legend.position = "top",
+          plot.title = ggplot2::element_text(
+            size = 10,
+            hjust = 0.5
+          )
+        )
+
+      # ------------------------------------------------------------
+      # Save PNG
+      # ------------------------------------------------------------
+
+      ggplot2::ggsave(
+        filename = out_file,
+        plot = p,
+        device = "png",
+        width = 5,
+        height = 4,
+        units = "in",
+        dpi = 120
+      )
+
+    }
+    }
+
+  }
+
+
 #' Correct MAF Bias in Segments Using Panel of Normal Reference
 #'
 #' Adjusts the minor allele frequency (MAF) values in each segment for systematic bias using a panel of normal (PoN) reference. For each segment, compares the segment MAF to the PoN MAF distribution, and applies a logit-based correction if the segment MAF is not significantly different from the PoN. If the segment MAF is significantly different, retains the original value.
@@ -772,7 +961,7 @@ high_gc_chrom <- c("9","16","17","21","22", "19","Y")
 #' @importFrom data.table setDT setkey foverlaps
 #' @importFrom dplyr group_by summarise mutate select relocate filter
 #' @export
-CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
+CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
   logit  <- function(p) qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
   ilogit <- function(x) plogis(x)
   extract_BAF <- function( tmp_maf, Start, End){
@@ -865,7 +1054,7 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
     }
     return(balance)
   }
-  correct <- function( pon_mafs, each_BAFs, gmm_mean){
+  correct <- function( pon_mafs, each_BAFs, gmm_mean, out_dir, prefix ){
     gmm_mean <- gmm_mean[1]
     pon_mafs <- as.numeric(unlist(strsplit(pon_mafs, ",")))
     each_BAFs <- as.numeric(unlist(strsplit(each_BAFs, ";")))
@@ -910,16 +1099,22 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf ){
   ) %>%
     dplyr::group_by( Chromosome, Sample, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw, gatk_count, gatk_baselinecov, gatk_gender,
               pipeline_gender, cov_mad, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
-    dplyr::summarise( pon_mafs = paste( pon_mafs, collapse = ","))
+    dplyr::summarise( pon_mafs = paste( pon_mafs, collapse = ","),
+                      pon_bafs = paste( pon_bafs, collapse = ","))
 
 
   if( nrow(seg_corr) > 0){
     seg_corr <- seg_corr %>%
       dplyr::rowwise() %>%
-      dplyr::mutate( each_BAFs = extract_BAF( tmp_maf, Start, End)) %>%
+      dplyr::mutate( each_BAFs = extract_BAF( tmp_maf, Start, End))
+    ## Plot BAF distribution
+
+    PlotBAF( seg_corr, out_dir, prefix )
+    ##
+    seg_corr <- seg_corr %>%
       dplyr::mutate( gmm_mean_corr = list(correct(pon_mafs, each_BAFs, gmm_mean=MAF))) %>%
       tidyr::unnest_wider( gmm_mean_corr) %>%
-      dplyr::select( -pon_mafs, -each_BAFs)
+      dplyr::select( -pon_mafs, -each_BAFs, -pon_bafs)
   }
 
   return(seg_corr)
