@@ -110,7 +110,7 @@ RunAIsegmentation <- function(
                      segmethod = segmethod, cbssmooth = cbssmooth,
                      pon_ref = pon_ref,maf = maf, mergeai = mergeai, snpmin = snpmin,
                      snpnum =  snpnum, maxgap = maxgap, maxbinsize = maxbinsize,
-                     minbinsize = minbinsize, minsnpcov = minsnpcov, gender = gender)
+                     minbinsize = minbinsize, minsnpcov = minsnpcov, gender = gender, out_dir = out_dir, prefix = prefix)
   })
   combined_result <- do.call(rbind, combindAIseg)
 
