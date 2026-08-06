@@ -10,8 +10,7 @@
 #' @param sampletype Character, "ff" or "ffpe".
 #' @param out_dir Output directory path.
 #' @param prefix Output file prefix.
-#' @param mergeai Numeric, MAF difference threshold for merging segments (default: 0.15).
-#' @param mergecov Numeric, CNV difference threshold for merging segments (default: 0.2).
+#' @param mergecov Numeric, CNV difference threshold for merging segments (default: 0.1).
 #' @param snpmin Numeric, minimum SNPs for MAF segmentation (default: 4).
 #' @param minsnpcov Numeric, minimum coverage of SNPs to included (default: 20).
 #' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)
@@ -19,7 +18,6 @@
 #' @param maxbinsize Maximum bin size.( default: 1000000 )
 #' @param minbinsize Minimum bin size.( default: 500000 )
 #' @param mergecovminsize Numeric, minimum size for GATK segment merge (default: 500000).
-#' @param segmethod Character. Segmentation method to use: if \code{"merge"}, perform stepwise merging; if \code{"cbs"}, perform CBS (circular binary segmentation).
 #' @param cbssmooth Character. If using the \code{"cbs"} segmentation method, set to \code{"yes"} to apply smoothing before segmentation, or \code{"no"} to skip smoothing.
 #' @param aitype Character. Type of allelic imbalance data: \code{"gatk"} or \code{"other"} or \code{"dragen"}
 #'   If \code{"GATK"}, the input must include columns \code{CONTIG}, \code{POSITION}, \code{ALT_COUNT}, \code{REF_COUNT}, \code{REF_NUCLEOTIDE}, and \code{ALT_NUCLEOTIDE}.
@@ -33,8 +31,7 @@
 #' @export
 RunAIsegmentation <- function(
     seg, cov, ai, gender, out_dir, prefix, ai_pon, sampletype,
-    mergeai = 0.15,
-    mergecov = 0.2,
+    mergecov = 0.1,
     snpmin = 4,
     minsnpcov = 20,
     mergecovminsize = 500000,
@@ -43,7 +40,6 @@ RunAIsegmentation <- function(
     maxbinsize = 1000000,
     minbinsize = 500000,
     aitype="gatk",
-    segmethod = "cbs",
     cbssmooth = "no"
 
 
@@ -57,14 +53,12 @@ RunAIsegmentation <- function(
   print(paste0("Sample type is: ", sampletype ))
   print(paste0("mergecov is: ", mergecov))
   print(paste0("mergecovminsize is: ", mergecovminsize))
-  print(paste0("mergeai is: ", mergeai))
   print(paste0("snpmin is: ", snpmin))
   print(paste0("minsnpcov is: ", minsnpcov))
   print(paste0("maxgap is: ", maxgap))
   print(paste0("snpnum is: ", snpnum))
   print(paste0("maxbinsize is: ", maxbinsize))
   print(paste0("minbinsize is: ",  minbinsize))
-  print(paste0("segmethod is: ", segmethod))
   print(paste0("cbssmooth is: ", cbssmooth))
 
 
@@ -95,7 +89,7 @@ RunAIsegmentation <- function(
     merge_seg <- merge_seg %>%
       dplyr::ungroup() %>%
       dplyr::filter(size >= minsize | Chromosome %in% c("X", "Y"))
-    merge_seg <- CallMerge(data = merge_seg, AIorSeg = "Seg", snpmin = snpmin, mergeai = mergeai, mergecov = 0.15)
+    merge_seg <- CallMerge(data = merge_seg, mergecov = 0.15)
   }
   merge_seg <- subset(merge_seg, select = -Call)
   merge_seg <- merge_seg %>% dplyr::mutate(BreakpointSource = "GATK")
@@ -108,7 +102,7 @@ RunAIsegmentation <- function(
   combindAIseg <- lapply(seq_len(nrow(merge_seg)), function(x) {
     SearchBreakpoint(seg_row = merge_seg[x, ],
                      segmethod = segmethod, cbssmooth = cbssmooth,
-                     pon_ref = pon_ref,maf = maf, mergeai = mergeai, snpmin = snpmin,
+                     pon_ref = pon_ref,maf = maf, snpmin = snpmin,
                      snpnum =  snpnum, maxgap = maxgap, maxbinsize = maxbinsize,
                      minbinsize = minbinsize, minsnpcov = minsnpcov, gender = gender, out_dir = out_dir, prefix = prefix)
   })

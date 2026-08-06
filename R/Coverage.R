@@ -227,7 +227,7 @@ CheckGender <- function( cov, seg, gender ){
 #' @export
 MergeSegCheck <- function(cur_row,next_row, mergecov){
   # check merge conditions
-  # ai segment diff <= mergeai
+
 
   if(abs( as.numeric(cur_row$Segment_Mean) - as.numeric(next_row$Segment_Mean)) <= mergecov &
      cur_row$Call == next_row$Call ){

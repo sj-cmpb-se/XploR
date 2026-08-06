@@ -63,32 +63,6 @@ ReadAI <- function(aitype, ballele, minsnpcov, gender){
 }
 
 
-#' Check Whether Two AI Segments Should Be Merged
-#'
-#' This function determines whether two adjacent AI (allelic imbalance) segments should be merged,
-#' based on the difference in their GMM means and quality thresholds.
-#'
-#' @param cur_row A data frame row (as a list or tibble row) representing the current segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).
-#' @param next_row A data frame row (as a list or tibble row) representing the next segment. Must include relevant columns (e.g., \code{gmm_mean}, \code{gmm_weight}, \code{nonzero_count}).
-#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
-#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
-#'
-#' @return Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.
-#'
-#' @export
-
-MergeAICheck <- function(cur_row,next_row, mergeai, snpmin){
-  # Merge if
-  # ai segment diff <= mergeai or one of the ai segment quality is fail
-  if(abs( as.numeric(cur_row$gmm_mean) - as.numeric(next_row$gmm_mean)) <= mergeai ){
-    re <- TRUE
-  }else if( !is.na(cur_row$gmm_weight) & !is.na(next_row$gmm_weight)){
-    if(min(cur_row$gmm_weight , next_row$gmm_weight ) <= 0.2||
-       min(cur_row$nonzero_count, next_row$nonzero_count) < 2*snpmin ){ re <- TRUE }else{re <- FALSE}
-  } else{ re <- FALSE}
-  return(re)
-}
-
 
 #' Cluster Adjacent Values Based on a Threshold
 #'
@@ -134,8 +108,462 @@ ClusterAdjacent <- function(values, weights, threshold = 0.01) {
        weights = as.numeric(cluster_weights))
 }
 
+#' Estimate Tumor MAF from BAF Using Normal Controls
+#'
+#' Estimates tumor minor allele frequency (MAF) from raw B-allele frequency
+#' (BAF) values using one- and two-component Gaussian models. Region-matched
+#' normal BAF values are used to define an empirical BIC cutoff for technical
+#' variation.
+#'
+#' Tumor and normal BAF values are matched to the same number of observations.
+#' A two-peak tumor model is accepted only when its BIC gain exceeds the normal
+#' cutoff and the fitted peaks meet minimum weight, separation, and center
+#' requirements. Otherwise, the region is classified as balanced with MAF = 0.5.
+#'
+#' @param tumor_baf_values Numeric vector of tumor BAF values.
+#' @param normal_baf_values Numeric vector of region-matched normal BAF values.
+#' @param baf_lower Lower BAF bound used for fitting. Default 0.20.
+#' @param baf_upper Upper BAF bound used for fitting. Default 0.80.
+#' @param min_n Minimum number of usable BAF values. Default 50.
+#' @param n_resample Number of matched subsampling iterations. Default 100.
+#' @param normal_bic_quantile Quantile of normal BIC gain used as cutoff.
+#'   Default 1 (maximum).
+#' @param bic_margin Additional BIC gain required above the normal cutoff.
+#' @param min_component_weight Minimum weight of each two-peak component.
+#' @param min_separation_sd Minimum peak separation in units of fitted SD.
+#' @param center_lower Lower allowed midpoint of the two peaks.
+#' @param center_upper Upper allowed midpoint of the two peaks.
+#' @param seed Random seed for reproducible subsampling.
+#'
+#' @return Named numeric vector containing:
+#'   \item{baf_maf}{Final estimated MAF.}
+#'   \item{baf_G}{Selected number of peaks, 1 or 2.}
+#'   \item{baf_peak1, baf_peak2}{Estimated BAF peak locations.}
+#'   \item{baf_weight1, baf_weight2}{Estimated component weights.}
+#'   \item{baf_center}{Midpoint of the fitted peaks.}
+#'   \item{baf_d}{Distance from the midpoint to each peak.}
+#'   \item{baf_sigma}{Common fitted component SD.}
+#'   \item{baf_separation_sd}{Peak separation divided by fitted SD.}
+#'   \item{baf_bic_gain}{Median tumor BIC gain from matched subsampling.}
+#'   \item{baf_bic_gain_full}{BIC gain using all tumor BAF values.}
+#'   \item{normal_bic_cutoff}{Empirical normal BIC cutoff.}
+#'   \item{normal_bic_median}{Median normal BIC gain.}
+#'   \item{baf_bic_excess}{Tumor BIC gain minus normal cutoff.}
+#'   \item{baf_n_tumor, baf_n_normal, baf_n_match}{Numbers of BAF values used.}
+#'
+#' @details
+#' The two-component model constrains peaks to \code{center - d} and
+#' \code{center + d}. MAF is estimated as \code{0.5 - d}. Normal controls
+#' provide a region-specific empirical baseline for apparent bimodality.
+#'
+#' @importFrom stats dnorm mean median optim plogis qlogis quantile sample sd var
+#' @export
+
+EstimateMAFfromBAF <- function(
+    tumor_bafs,
+    normal_bafs,
+    baf_lower = 0.20,
+    baf_upper = 0.80,
+    min_n = 10L,
+    n_resample = 100L,
+    normal_bic_quantile = 1,
+    bic_margin = 0,
+    min_component_weight = 0.25,
+    min_separation_sd = 2,
+    center_lower = 0.42,
+    center_upper = 0.58,
+    seed = 1L
+) {
+
+  # ============================================================
+  # Prepare BAF values
+  # ============================================================
+
+  tumor_baf <- as.numeric(tumor_bafs)
+  normal_baf <- as.numeric(normal_bafs)
+
+  tumor_baf <- tumor_baf[ is.finite(tumor_baf) &  tumor_baf > baf_lower & tumor_baf < baf_upper ]
+  normal_baf <- normal_baf[ is.finite(normal_baf) & normal_baf > baf_lower & normal_baf < baf_upper]
+
+  n_tumor <- length(tumor_baf)
+  n_normal <- length(normal_baf)
+
+  n_match <- min( n_tumor, n_normal )
 
 
+  # ============================================================
+  # Empty result
+  # ============================================================
+
+  empty_result <- c(
+    "baf_maf" = NA_real_,
+    "baf_G" = NA_real_,
+    "baf_peak1" = NA_real_,
+    "baf_peak2" = NA_real_,
+    "baf_weight1" = NA_real_,
+    "baf_weight2" = NA_real_,
+    "baf_center" = NA_real_,
+    "baf_d" = NA_real_,
+    "baf_sigma" = NA_real_,
+    "baf_separation_sd" = NA_real_,
+    "baf_bic_gain" = NA_real_,
+    "baf_bic_gain_full" = NA_real_,
+    "normal_bic_cutoff" = NA_real_,
+    "normal_bic_median" = NA_real_,
+    "baf_bic_excess" = NA_real_,
+    "baf_n_tumor" = n_tumor,
+    "baf_n_normal" = n_normal,
+    "baf_n_match" = n_match
+  )
+
+
+  if ( n_tumor < min_n || n_normal < min_n ||n_match < min_n) {
+    return(empty_result)
+  }
+
+
+  # ============================================================
+  # Internal function:
+  # fit one-peak and constrained two-peak models
+  # ============================================================
+
+  fit_baf_models <- function(baf) {
+
+    baf <- as.numeric(baf)
+    baf <- baf[is.finite(baf)]
+
+    n_baf <- length(baf)
+
+    if (
+      n_baf < min_n ||
+      !is.finite(stats::sd(baf)) ||
+      stats::sd(baf) < 1e-6
+    ) {
+      return(NULL)
+    }
+
+
+    # ----------------------------------------------------------
+    # H0: one Gaussian peak
+    # ----------------------------------------------------------
+
+    mu0 <- mean(baf)
+    # MLE estimate of sigma
+    sigma0 <- sqrt( mean((baf - mu0)^2))
+    sigma0 <- max(sigma0, 0.005)
+
+    logLik_one <- sum( stats::dnorm( baf, mean = mu0, sd = sigma0, log = TRUE))
+
+    # Two parameters:
+    # mean + sigma
+    bic_one <- -2 * logLik_one + 2 * log(n_baf)
+
+
+    # ----------------------------------------------------------
+    # H1: constrained two-component Gaussian mixture
+    #
+    # Peak 1 = center - d
+    # Peak 2 = center + d
+    #
+    # Both peaks share sigma.
+    # Weights can differ.
+    # ----------------------------------------------------------
+
+    negative_log_likelihood <- function(par) {
+
+      center <- par[1]
+      d <- par[2]
+      sigma <- exp(par[3])
+
+      weight1 <- stats::plogis( par[4] )
+      weight2 <- 1 - weight1
+
+      peak1 <- center - d
+      peak2 <- center + d
+      log_density1 <- log(weight1) + stats::dnorm( baf, mean = peak1, sd = sigma, log = TRUE)
+      log_density2 <- log(weight2) + stats::dnorm( baf, mean = peak2,sd = sigma,log = TRUE)
+
+      # Stable log-sum-exp
+      max_log_density <- pmax( log_density1,log_density2)
+      log_mixture_density <-  max_log_density + log( exp(log_density1 - max_log_density) + exp(log_density2 - max_log_density) )
+
+      negative_log_likelihood_value <- -sum(log_mixture_density)
+
+      if (!is.finite(negative_log_likelihood_value)) {
+        return(1e100)
+      }
+
+      return(negative_log_likelihood_value)
+    }
+
+
+    # ----------------------------------------------------------
+    # Multiple starting values
+    # ----------------------------------------------------------
+
+    starting_center <- stats::median(baf)
+    starting_center <- min(max(starting_center, 0.45),0.55)
+    d_starts <- c( 0.01,0.02,0.03,0.04,0.05,0.07, 0.10 )
+    weight_starts <- c(0.35, 0.50,0.65)
+    fits <- list()
+    counter <- 1L
+
+    for (starting_d in d_starts) {
+      for (starting_weight in weight_starts) {
+        starting_sigma <- sqrt( max( stats::var(baf) - starting_d^2, 0.01^2 ) )
+        starting_sigma <- min( max( starting_sigma, 0.005), 0.20 )
+        fit <- tryCatch(
+          stats::optim( par = c(
+            starting_center,
+            starting_d,
+            log(starting_sigma),
+            stats::qlogis( starting_weight )
+          ),
+          fn = negative_log_likelihood,
+          method ="L-BFGS-B",
+          lower = c( 0.45, 0.001, log(0.005), stats::qlogis(0.05)),
+          upper = c( 0.55, 0.15, log(0.20), stats::qlogis(0.95)),
+          control = list( maxit = 1000 )),
+          error = function(e) { message( "optim error: ",conditionMessage(e))
+            NULL }
+        )
+
+
+        if ( !is.null(fit) && fit$convergence == 0 && is.finite(fit$value) ) {
+          fits[[counter]] <- fit
+          counter <- counter + 1L
+        }}
+    }
+
+    if (length(fits) == 0) { return(NULL) }
+
+
+    # ----------------------------------------------------------
+    # Select best two-component solution
+    # ----------------------------------------------------------
+
+    fit_values <- vapply(fits, function(x) { x$value },numeric(1))
+    best_fit <- fits[[which.min(fit_values)]]
+
+    # ----------------------------------------------------------
+    # Extract parameters
+    # ----------------------------------------------------------
+
+    center <- best_fit$par[1]
+    d <- best_fit$par[2]
+    sigma <- exp(best_fit$par[3] )
+    weight1 <- stats::plogis(best_fit$par[4])
+    weight2 <- 1 - weight1
+    peak1 <- center - d
+    peak2 <- center + d
+    separation_sd <- (peak2 - peak1) /sigma
+
+
+    # ----------------------------------------------------------
+    # BIC for two-component model
+    #
+    # Four parameters:
+    # center + d + sigma + weight
+    # ----------------------------------------------------------
+
+    logLik_two <- -best_fit$value
+    bic_two <- -2 * logLik_two + 4 * log(n_baf)
+    # Positive value favors two components
+    bic_gain <- bic_one - bic_two
+
+
+    return(
+      list(
+        mu0 = mu0,
+        sigma0 = sigma0,
+        bic_one = bic_one,
+        bic_two = bic_two,
+        bic_gain = bic_gain,
+        peak1 = peak1,
+        peak2 = peak2,
+        weight1 = weight1,
+        weight2 = weight2,
+        center = center,
+        d = d,
+        sigma = sigma,
+        separation_sd = separation_sd,
+        n = n_baf
+      )
+    )
+  }
+
+
+  # ============================================================
+  # Fit tumor BAF
+  # ============================================================
+
+  tumor_full_fit <- fit_baf_models( baf = tumor_baf)
+  if (is.null(tumor_full_fit)) {
+    return(empty_result)
+  }
+  tumor_bic_gain_full <- tumor_full_fit$bic_gain
+
+
+  # ============================================================
+  # Match tumor and normal SNP counts for BIC comparison.
+  #
+  # BIC depends on sample size, so tumor and normal must contain
+  # the same number of BAF observations.
+  # ============================================================
+
+  n_resample <- max(1L,as.integer(n_resample))
+
+
+  # Use fixed seed so clinical results are reproducible.
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  tumor_bic_values <- rep(NA_real_, n_resample )
+  normal_bic_values <- rep(NA_real_,n_resample )
+  for (i in seq_len(n_resample)) {
+    # Tumor matched sample
+
+    if (n_tumor == n_match) {
+      tumor_sample <- tumor_baf
+    } else {
+      tumor_sample <- sample( tumor_baf, size = n_match, replace = FALSE)
+    }
+
+    # Normal matched sample
+    if (n_normal == n_match) {
+      normal_sample <- normal_baf
+    } else { normal_sample <- sample( normal_baf, size = n_match, replace = FALSE ) }
+
+    tumor_fit_i <- fit_baf_models(tumor_sample)
+    normal_fit_i <-fit_baf_models(normal_sample)
+
+    if (!is.null(tumor_fit_i)) { tumor_bic_values[i] <- tumor_fit_i$bic_gain }
+    if (!is.null(normal_fit_i)) { normal_bic_values[i] <- normal_fit_i$bic_gain }
+  }
+
+
+  # ============================================================
+  # Remove failed resamples
+  # ============================================================
+
+  tumor_bic_values <- tumor_bic_values[ is.finite( tumor_bic_values )]
+  normal_bic_values <- normal_bic_values[is.finite(normal_bic_values)]
+
+  if ( length(tumor_bic_values) == 0 || length(normal_bic_values) == 0) {
+    return(empty_result)
+  }
+
+  # ============================================================
+  # Tumor BIC used for comparison
+  #
+  # Median across matched resamples makes the tumor estimate
+  # less dependent on a particular random sample.
+  # ============================================================
+
+  tumor_bic_gain <- stats::median( tumor_bic_values, na.rm = TRUE)
+
+  # ============================================================
+  # Empirical normal BIC cutoff
+  #
+  # normal_bic_quantile = 1:
+  # use the maximum normal BIC gain.
+  # ============================================================
+
+  normal_bic_cutoff <- as.numeric(
+    stats::quantile(
+      normal_bic_values,
+      probs = normal_bic_quantile,
+      na.rm = TRUE,
+      names = FALSE
+    )
+  )
+  normal_bic_median <-
+    stats::median(
+      normal_bic_values,
+      na.rm = TRUE
+    )
+  bic_excess <- tumor_bic_gain -  normal_bic_cutoff
+  # ============================================================
+  # Other tumor peak-shape criteria
+  # ============================================================
+
+  min_weight <- min( tumor_full_fit$weight1, tumor_full_fit$weight2)
+
+  # ============================================================
+  # Final two-peak decision
+  #
+  # The tumor must:
+  # 1. Have greater two-peak BIC evidence than the normal empirical cutoff.
+  # 2. Have two substantial components. min peak weight should be over 0.25.
+  # 3. Have sufficiently separated peaks. sepatration_ad should be 2 fold of peak variance ??
+  # 4. Have peaks centered around the expected heterozygous BAF region. (excluded)
+  # 5. Have one peak below and one peak above 0.5.
+  # ============================================================
+
+  two_peak_supported <- is.finite(tumor_bic_gain) &&
+    is.finite(normal_bic_cutoff) &&
+    tumor_bic_gain >  normal_bic_cutoff + bic_margin &&
+    min_weight >= min_component_weight &&
+    tumor_full_fit$separation_sd >= min_separation_sd &&
+    tumor_full_fit$peak1 < 0.5 &&
+    tumor_full_fit$peak2 > 0.5
+
+
+
+  if (!two_peak_supported) {
+
+    return(
+      c(
+        "baf_maf" = 0.5,
+        "baf_G" = 1,
+        "baf_peak1" = tumor_full_fit$mu0,
+        "baf_peak2" = NA_real_,
+        "baf_weight1" = 1,
+        "baf_weight2" = 0,
+        "baf_center" = tumor_full_fit$mu0,
+        "baf_d" = 0,
+        "baf_sigma" = tumor_full_fit$sigma0,
+        "baf_separation_sd" = 0,
+        "baf_bic_gain" = tumor_bic_gain,
+        "baf_bic_gain_full" = tumor_bic_gain_full,
+        "normal_bic_cutoff" = normal_bic_cutoff,
+        "normal_bic_median" =normal_bic_median,
+        "baf_bic_excess" = bic_excess,
+        "baf_n_tumor" =n_tumor,
+        "baf_n_normal" = n_normal,
+        "baf_n_match" = n_match
+      )
+    )
+  }else{
+    baf_maf <- 0.5 - tumor_full_fit$d
+    baf_maf <- max( 0,min( baf_maf,0.5 ))
+
+    return(
+      c(
+        "baf_maf" = baf_maf,
+        "baf_G" = 2,
+        "baf_peak1" = tumor_full_fit$peak1,
+        "baf_peak2" = tumor_full_fit$peak2,
+        "baf_weight1" = tumor_full_fit$weight1,
+        "baf_weight2" = tumor_full_fit$weight2,
+        "baf_center" = tumor_full_fit$center,
+        "baf_d" = tumor_full_fit$d,
+        "baf_sigma" = tumor_full_fit$sigma,
+        "baf_separation_sd" = tumor_full_fit$separation_sd,
+        "baf_bic_gain" = tumor_bic_gain,
+        "baf_bic_gain_full" = tumor_bic_gain_full,
+        "normal_bic_cutoff" = normal_bic_cutoff,
+        "normal_bic_median" = normal_bic_median,
+        "baf_bic_excess" = bic_excess,
+        "baf_n_tumor" = n_tumor,
+        "baf_n_normal" = n_normal,
+        "baf_n_match" =n_match
+      )
+    )
+
+  }
+
+}
 #' Estimate MAF Cluster Mean and Weight Using Gaussian Mixture Modeling
 #'
 #' Fits a Gaussian mixture model (GMM) to Minor allele frequency (MAF) values and returns the most prominent cluster's mean and weight.
@@ -154,11 +582,12 @@ ClusterAdjacent <- function(values, weights, threshold = 0.01) {
 #' @import mclust
 #' @importFrom mclust Mclust mclustBIC
 #' @export
-EstimateMAFbyGMM <- function(maf_values){
+EstimateMAFbyGMM <- function( maf_values ){
   logit  <- function(p) qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
   ilogit <- function(x) plogis(x)
   n_mafs <- length(maf_values)
   sd <- sd( maf_values, na.rm = T )
+
   if( n_mafs >= 3 && sd >= 1e-6 ){
     maf_values_trans <- logit(maf_values * 2)
     gmm_model <- mclust::Mclust(maf_values_trans, G = 1:5)
@@ -168,7 +597,6 @@ EstimateMAFbyGMM <- function(maf_values){
       re <- ClusterAdjacent(values = means, weights = weights, threshold = 0.01)
       means <- re$means
       weights <- re$weights
-      #variances <- gmm_model$parameters$variance$sigmasq
       num_components <- length(re$means)
     }else{
       num_components <- gmm_model$G
@@ -176,130 +604,52 @@ EstimateMAFbyGMM <- function(maf_values){
 
     ## cluster the means if the difference is small
 
-
     sorted_indices <- order(-weights)
     gmm_mean <- means[sorted_indices][1] %>% as.numeric()
-    #gmm_mean <- ifelse( gmm_mean > 0.48, 0.5, gmm_mean )
     gmm_mean <- min( gmm_mean, 0.5 )
-    # gmm_variance <- variances[sorted_indices][1]
     gmm_weight <- weights[sorted_indices][1]
+
 
     Estimated_maf <- c(
       "gmm_mean" = gmm_mean,
-      #"gmm_variance" = gmm_variance,
       "gmm_weight" = gmm_weight,
-      "gmm_G" = num_components
-    )}else{
-      gmm_mean <- mean(maf_values,na.rm = T)
-      #gmm_mean <- ifelse( gmm_mean > 0.48, 0.5, gmm_mean )
-      gmm_mean <- min( gmm_mean, 0.5 )
-      Estimated_maf <- c(
-        "gmm_mean" =  gmm_mean,
-        #"gmm_variance" = sd,
-        "gmm_weight" = 1,
-        "gmm_G" = 0)
-
-    }
+      "gmm_G" = num_components)
+  }
+  else{
+    gmm_mean <- mean(maf_values,na.rm = T)
+    gmm_mean <- min( gmm_mean, 0.5 )
+    Estimated_maf <- c(
+      "gmm_mean" =  gmm_mean,
+      "gmm_weight" = 1,
+      "gmm_G" = 0)
+  }
 
   return(Estimated_maf)
 
 }
 
 
-#' Merge Adjacent AI Segments Based on Similarity Criteria
-#'
-#' Iteratively merges adjacent rows in a data frame of AI segments if they meet criteria defined by \code{MergeAICheck}.
-#' For merged segments, MAF values are re-estimated and segment information is updated.
-#'
-#' @param df A data frame or tibble of AI segments, with columns such as Chromosome, bin, Start, End, snp_count, each_maf, etc.
-#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
-#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
-#' @param tmp_maf A data frame or tibble containing maf values and genomic coordinates (must include Chromosome, Start, End, maf).
-#'
-#' @return A data frame or tibble with merged AI segments, updated maf estimates, and segment information.
-#'
-#' @details
-#' This function uses \code{\link{MergeAICheck}} to determine if two adjacent segments should be merged.
-#' For merged segments, maf values are re-estimated using \code{\link{EstimateMAFbyGMM}}.
-#'
-#' @importFrom dplyr filter arrange
-#' @importFrom tibble tibble
-#' @importFrom tidyr unnest_wider
-#' @export
-MergeAIRow <- function(df, mergeai, snpmin, tmp_maf  ) {
 
-  if(nrow(df) > 1 ){
-    i <- 1
-    while ( i < ( nrow(df) ) ) {
-      cur_row <- df[i,]
-      next_row <- df[ i+1,]
-
-      if (  MergeAICheck(cur_row = cur_row, next_row = next_row, mergeai = mergeai, snpmin = snpmin) ) {
-        #print( paste0("i is :", i ))
-        #print(paste0("Cur_row is :", cur_row))
-        #print(paste0("Next_row is:", next_row))
-        #cur_row_mafs = str_split(cur_row$each_maf, pattern = ";", simplify = TRUE) %>% as.numeric() %>% na.omit()
-        #next_row_mafs = str_split(next_row$each_maf, pattern = ";", simplify = TRUE ) %>% as.numeric() %>% na.omit()
-        cur_next_mafs <- tmp_maf %>%
-          dplyr::filter( Chromosome == cur_row$Chromosome) %>%
-          dplyr::filter( Pos >= cur_row$Start & Pos <= next_row$End)
-
-        new_df <- tibble::tibble(
-          Chromosome = cur_row$Chromosome,
-          bin = paste(c(cur_row$bin, next_row$bin),collapse = ";"),
-          Start = cur_row$Start,
-          End = next_row$End,
-          size = End - Start,
-          snp_count = cur_row$snp_count + next_row$snp_count,
-          #Estimated_maf= list(EstimateMAFbyGMM(maf_values = c(cur_row_mafs, next_row_mafs))) ,
-          Estimated_maf = list(EstimateMAFbyGMM(maf_values = cur_next_mafs$maf )),
-          nonzero_count = cur_row$nonzero_count + next_row$nonzero_count,
-          each_maf = paste( cur_next_mafs$maf , collapse = ";")
-        ) %>%
-          tidyr::unnest_wider(col = Estimated_maf)
-        df <- rbind(new_df, df[-c(i,i+1),])
-        df <- df %>% arrange(by=Chromosome,Start,na.last = T)
-        i <- 1
-      }else{
-        i <- i+1}
-    }
-  }
-  return(df)
-}
-
-
-#' Merge Segments or AI Rows by Chromosome
+#' Merge Segments by defined rules
 #'
-#' This function splits the input data by chromosome and merges segments or AI rows within each chromosome using either \code{\link{MergeAIRow}} or \code{\link{MergeSegRow}}.
+#' This function splits the input data by chromosome and merges segments by defined rules \code{\link{MergeSegRow}}.
 #'
 #' @param data A data frame or tibble containing segment or AI information. Must include a \code{Chromosome} column.
-#' @param AIorSeg Character string, either \code{"AI"} to merge AI rows or \code{"Seg"} to merge segments.
-#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging.
-#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment.
-#' @param tmp_maf A data frame for use with \code{MergeAIRow}. Not used if \code{AIorSeg == "Seg"}.
 #' @param merge_cov Numeric. Threshold for the difference in segment mean (gmm_mean) between adjacent segments to allow merging.
 #'
 #' @return A data frame or tibble with merged segments or AI rows for each chromosome.
 #'
 #' @details
-#' Uses \code{\link{MergeAIRow}} if \code{AIorSeg == "AI"}, otherwise \code{\link{MergeSegRow}}.
+#' Uses \code{\link{MergeSegRow}}.
 #'
 #' @importFrom dplyr arrange
 #' @export
-CallMerge <- function(data, AIorSeg, tmp_maf, snpmin, mergeai, mergecov){
+CallMerge <- function(data, mergecov){
 
-  if(AIorSeg == "AI"){
-    data<- data %>%
-      dplyr::arrange(by=Chromosome, Start, na.last = T)
-    bychr <- split(data,f=data$Chromosome)
-    bychr <- lapply(bychr,function(x) MergeAIRow(df = x, tmp_maf = tmp_maf, snpmin = snpmin, mergeai = mergeai))
-    }
-  if(AIorSeg == "Seg"){
-    data<- data %>%
-      dplyr::arrange(by=Chromosome, Start, na.last = T)
-    bychr <- split(data,f=data$Chromosome)
-    bychr <- lapply(bychr,function(x) MergeSegRow(df = x, mergecov = mergecov ))
-  }
+  data<- data %>%
+    dplyr::arrange(by=Chromosome, Start, na.last = T)
+  bychr <- split(data,f=data$Chromosome)
+  bychr <- lapply(bychr,function(x) MergeSegRow(df = x, mergecov = mergecov ))
   processed_df <- do.call(rbind,bychr)
   return(processed_df)
 }
@@ -345,7 +695,7 @@ BinMaf <- function(data, datatype,
     choosesample <- data_tmp %>%
       dplyr::group_by(sampleID) %>%
       dplyr::summarise( snp_count = dplyr::n(),
-                 median_cov = median( alt_count + ref_count, na.rm = T)) %>%
+                        median_cov = median( alt_count + ref_count, na.rm = T)) %>%
       dplyr::arrange( -median_cov, -snp_count)
 
     data_tmp <- data_tmp %>%
@@ -356,84 +706,86 @@ BinMaf <- function(data, datatype,
 
   ## Generate AI bin boundary files based on SNP counts
   boundary <- data_tmp %>%
-      dplyr::group_by(Chromosome) %>%
-      dplyr::arrange(Pos, .by_group = TRUE) %>%
-      dplyr::mutate(
-        gap = dplyr::lead(Pos) - Pos,
-        gap = ifelse(is.na(gap), 0, gap)
-      ) %>%
-      dplyr::group_modify(~ {
-        df <- .x
-        n <- nrow(df)
-        if (n == 0) return(df)
+    dplyr::group_by(Chromosome) %>%
+    dplyr::arrange(Pos, .by_group = TRUE) %>%
+    dplyr::mutate(
+      gap = dplyr::lead(Pos) - Pos,
+      gap = ifelse(is.na(gap), 0, gap)
+    ) %>%
+    dplyr::group_modify(~ {
+      df <- .x
+      n <- nrow(df)
+      if (n == 0) return(df)
 
-        current_bin_id <- 1
-        start_index <- 1
-        bin <- integer(n)
+      current_bin_id <- 1
+      start_index <- 1
+      bin <- integer(n)
 
-        for (i in 1:n) {
-          bin[i] <- current_bin_id
-          bin_count    <- i - start_index + 1
-          current_span <- df$Pos[i] - df$Pos[start_index]
+      for (i in 1:n) {
+        bin[i] <- current_bin_id
+        bin_count    <- i - start_index + 1
+        current_span <- df$Pos[i] - df$Pos[start_index]
 
-          # look-ahead
-          if (i < n) {
-            next_count <- bin_count + 1
-            next_span  <- df$Pos[i + 1] - df$Pos[start_index]
-            next_gap   <- df$Pos[i + 1] - df$Pos[i]
-          } else {
-            next_count <- Inf; next_span <- Inf; next_gap <- 0
-          }
-
-          # close BEFORE overshoot; always respect maxbinsize
-          if ( current_span >= maxbinsize ||
-               (current_span >= minbinsize &&
-                (next_count > snpnum || next_span > maxbinsize || next_gap > maxgap)) ) {
-
-            current_bin_id <- current_bin_id + 1
-            start_index <- i + 1
-          }
+        # look-ahead
+        if (i < n) {
+          next_count <- bin_count + 1
+          next_span  <- df$Pos[i + 1] - df$Pos[start_index]
+          next_gap   <- df$Pos[i + 1] - df$Pos[i]
+        } else {
+          next_count <- Inf; next_span <- Inf; next_gap <- 0
         }
 
-        df$bin <- bin
-        df
-      }) %>%
-      dplyr::ungroup()
+        # close BEFORE overshoot; always respect maxbinsize
+        if ( current_span >= maxbinsize ||
+             (current_span >= minbinsize &&
+              (next_count > snpnum || next_span > maxbinsize || next_gap > maxgap)) ) {
 
-    ## summarize boundaries
-    boundary <- boundary  %>%
-      dplyr::group_by(Chromosome, bin) %>%
-      dplyr::summarise(
-        Start = min(Pos),
-        End = max(Pos),
-        size = max(Pos) - min(Pos),
-        snp_count = dplyr::n())
+          current_bin_id <- current_bin_id + 1
+          start_index <- i + 1
+        }
+      }
 
-    ## overlap data with boundary to get snps in each bin
-    data <- data %>%
-      dplyr::filter( alt_count >0 & ref_count >0)
-    data.table::setDT(data)
-    data.table::setDT(boundary)
-    data$Pos_end <- data$Pos
-    data.table::setkey( data , Chromosome, Pos, Pos_end )
-    data.table::setkey( boundary, Chromosome, Start, End )
-    binned <- data.table::foverlaps(
-      data, boundary,
-      by.x = c("Chromosome", "Pos","Pos_end"),
-      by.y = c("Chromosome","Start","End"),
-      type = "within", nomatch = 0
-    )
+      df$bin <- bin
+      df
+    }) %>%
+    dplyr::ungroup()
+
+  ## summarize boundaries
+  boundary <- boundary  %>%
+    dplyr::group_by(Chromosome, bin) %>%
+    dplyr::summarise(
+      Start = min(Pos),
+      End = max(Pos),
+      size = max(Pos) - min(Pos),
+      snp_count = dplyr::n())
+
+  ## overlap data with boundary to get snps in each bin
+  data <- data %>%
+    dplyr::filter( alt_count >0 & ref_count >0)
+  data.table::setDT(data)
+  data.table::setDT(boundary)
+  data$Pos_end <- data$Pos
+  data.table::setkey( data , Chromosome, Pos, Pos_end )
+  data.table::setkey( boundary, Chromosome, Start, End )
+  binned <- data.table::foverlaps(
+    data, boundary,
+    by.x = c("Chromosome", "Pos","Pos_end"),
+    by.y = c("Chromosome","Start","End"),
+    type = "within", nomatch = 0
+  )
 
   if( datatype == "tumor"){
     binned <- binned %>%
       dplyr::group_by(Chromosome, bin, Start, End, size, snp_count) %>%
-      dplyr::summarise( Estimated_maf = list(EstimateMAFbyGMM(maf_values = maf[maf != 0] )),
-      nonzero_count = sum(maf != 0),
-      each_maf = paste(maf[maf != 0 ], collapse = ";"),
-      .groups = "drop"
+      dplyr::summarise(
+        Estimated_maf = list(EstimateMAFbyGMM(maf_values = maf)),
+        nonzero_count = sum(maf != 0),
+        each_maf = paste(maf[maf != 0 ], collapse = ";"),
+        each_baf = paste(maf[maf != 0 ], collapse = ";"),
+        .groups = "drop"
       ) %>%
-  tidyr::unnest_wider(col = "Estimated_maf")%>%
-  dplyr::filter( !is.na( gmm_mean))
+      tidyr::unnest_wider(col = "Estimated_maf")%>%
+      dplyr::filter( !is.na( gmm_mean))
   }else{
     ## summarise snp sites in each bin for each sample
     binned <- binned %>%
@@ -465,14 +817,11 @@ BinMaf <- function(data, datatype,
 #'
 #' @param seg_row Data frame row (list or tibble row) representing a single segment. Must have columns: Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, Segment_Mean_raw, Count, Baseline_cov, gatk_gender, pipeline_gender, size.
 #' @param maf Data frame or tibble containing MAF data. Must include columns: Chromosome, Pos, maf.
-#' @param mergeai Numeric. Threshold for the difference in MAF (gmm_mean) between adjacent segments to allow merging under \code{"merge"} mode segmentation.
-#' @param snpmin Numeric. Minimum SNP count required for a segment to be considered as a separate segment under \code{"merge"} mode segmentation.
 #' @param maxgap Numeric. Maximum allowed gap between SNPs within a bin.
 #' @param snpnum Integer. Target number of SNPs per bin.
 #' @param maxbinsize Numeric. Maximum allowed bin size (bp).
 #' @param minbinsize Numeric. Minimum allowed bin size (bp). The minimum segment size under \code{"merge"} mode is 2*minbinsize.
 #' @param minsnpcov Integer. Minimum coverage of SNP sites to be included.
-#' @param segmethod Character. Segmentation method to use: if \code{"merge"}, perform stepwise merging; if \code{"cbs"}, perform CBS (circular binary segmentation).
 #' @param cbssmooth Character. If using the \code{"cbs"} segmentation method, set to \code{"yes"} to apply smoothing before segmentation, or \code{"no"} to skip smoothing.
 #' @param pon_ref Data frame. Panel of normal reference for bias correction (required for bias correction step).
 #' @param gender Character. If \code{"female"}, the X chromosome will also be proceed.
@@ -487,12 +836,10 @@ BinMaf <- function(data, datatype,
 #' @importFrom DNAcopy CNA smooth.CNA segment
 #' @export
 SearchBreakpoint <- function(seg_row, maf, pon_ref, gender, out_dir, prefix,
-                             mergeai = 0.15,
-                             snpmin = 3,
+                             snpmin = 4,
                              maxgap = 1000000, snpnum = 20,
                              maxbinsize = 1000000,minbinsize = 500000,
                              minsnpcov = 20,
-                             segmethod = "cbs",
                              cbssmooth = "no"){
 
   tmp_seg <- data.frame(
@@ -514,133 +861,94 @@ SearchBreakpoint <- function(seg_row, maf, pon_ref, gender, out_dir, prefix,
     MAF_gmm_weight = NA,
     #MAF_gmm_variance = NA,
     size = seg_row$size)
-if( ! seg_row$Chromosome %in% c("X", "Y") ) {
-  tmp_maf <- maf %>%
-    dplyr::filter( Chromosome == seg_row$Chromosome & Pos >= seg_row$Start & Pos <= seg_row$End ) %>%
-    dplyr::filter( maf != 0 ) %>%
-    dplyr::mutate( BAF = alt_count/(alt_count + ref_count))
-  n_maf <- nrow(tmp_maf)
-  if( is.null(n_maf) ){ n_maf <- 0}
-  if( n_maf > snpmin ){
-    binned_data <- BinMaf(data = tmp_maf,
-                          datatype = "tumor",
-                          maxgap = maxgap,
-                          snpnum = snpnum,
-                          maxbinsize = maxbinsize,
-                          minbinsize = minbinsize,
-                          minsnpcov = minsnpcov)
-    max_nonzero_n <- max(binned_data$nonzero_count,na.rm = T)
+  if( ! seg_row$Chromosome %in% c("X", "Y") ) {
+    tmp_maf <- maf %>%
+      dplyr::filter( Chromosome == seg_row$Chromosome & Pos >= seg_row$Start & Pos <= seg_row$End ) %>%
+      dplyr::filter( maf != 0 ) %>%
+      dplyr::mutate( BAF = alt_count/(alt_count + ref_count))
+    n_maf <- nrow(tmp_maf)
+    if( is.null(n_maf) ){ n_maf <- 0}
+    if( n_maf > snpmin ){
+      binned_data <- BinMaf(data = tmp_maf,
+                            datatype = "tumor",
+                            maxgap = maxgap,
+                            snpnum = snpnum,
+                            maxbinsize = maxbinsize,
+                            minbinsize = minbinsize,
+                            minsnpcov = minsnpcov)
+      max_nonzero_n <- max(binned_data$nonzero_count,na.rm = T)
 
-
-    if(segmethod == "merge"){
-
-      for ( min_prob in c(0: min( snpmin, max_nonzero_n - 1 ) ) ){
-        binned_data <- binned_data %>% dplyr::filter(nonzero_count >= min_prob )
-        binned_data <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai = mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
-      }
-      binned_data <- binned_data %>% dplyr::filter( End - Start >= 2*minbinsize)
-      if( nrow(binned_data) > 0 ){
-        merge_ai <- CallMerge(data = binned_data, AIorSeg = "AI", mergeai= mergeai, snpmin = snpmin, tmp_maf = tmp_maf)
-        merge_ai <- merge_ai %>%
-          dplyr::select(-bin) %>%
-          dplyr::mutate(size = End - Start)
-        tmp_seg <- data.frame(
-          Sample = seg_row$Sample,
-          Chromosome = seg_row$Chromosome,
-          Start = merge_ai$Start,
-          End = merge_ai$End,
-          Num_Probes = round(seg_row$Num_Probes * as.numeric(merge_ai$size/sum(merge_ai$size)),digits = 0),
-          Segment_Mean = seg_row$Segment_Mean,
-          gatk_SM_raw = seg_row$Segment_Mean_raw,
-          gatk_count = seg_row$Count,
-          gatk_baselinecov = seg_row$Baseline_cov,
-          gatk_gender = seg_row$gatk_gender,
-          pipeline_gender = seg_row$pipeline_gender,
-          cov_mad = seg_row$MAD,
-          MAF = merge_ai$gmm_mean,
-          MAF_Probes = merge_ai$nonzero_count,
-          MAF_gmm_G = merge_ai$gmm_G,
-          MAF_gmm_weight = merge_ai$gmm_weight,
-          #MAF_gmm_variance = merge_ai$gmm_variance,
-          size = merge_ai$End - merge_ai$Start
+      if(segmethod == "cbs"){
+        # Prepare data for CBS (use gmm_mean as the segmentation track)
+        maf_seg_data <- data.frame(
+          chrom = binned_data$Chromosome,
+          maploc = binned_data$Start,    # or bin center if you prefer
+          maf = binned_data$gmm_mean,
+          weights = binned_data$nonzero_count
         )
 
-        tmp_seg[1,"Start"] <- min( seg_row$Start, merge_ai$Start ,na.rm = T)
-        tmp_seg[nrow(tmp_seg),"End"] <- max( seg_row$End, merge_ai$End, na.rm = T)
+        # Create CNA object
+        maf_CNA <- DNAcopy::CNA(
+          genomdat = maf_seg_data$maf,
+          chrom = maf_seg_data$chrom,
+          maploc = maf_seg_data$maploc,
+          data.type = "logratio"
+        )
+
+        if( cbssmooth == "yes"){
+          maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA)
+          maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, weights = maf_seg_data$weights, verbose = 1)
+        }else{
+          maf_cbs <- DNAcopy::segment(maf_CNA,  weights = maf_seg_data$weights, verbose = 1 )
+        }
+        maf_cbs$segRows <- maf_cbs$segRows %>%
+          dplyr::mutate( n_bins = endRow - startRow + 1,
+                         seg_id = dplyr::row_number())
+        binned_data$merge_index <- rep( maf_cbs$segRows$seg_id, times = maf_cbs$segRows$n_bins  )
+        tmp_seg <- binned_data %>%
+          dplyr::group_by( Chromosome, merge_index) %>%
+          dplyr::summarise(
+            Start = min( Start),
+            End = max(End),
+            size = max(End) - min( Start),
+            Estimated_maf = list(EstimateMAFbyGMM(maf_values = as.numeric( unlist(strsplit(each_maf, ";")) ))),
+            nonzero_count = sum(nonzero_count),
+            each_maf = paste(  as.numeric( unlist(strsplit(each_maf,";")) ) , collapse = ";")
+          ) %>%
+          tidyr::unnest_wider(col = Estimated_maf) %>%
+          dplyr::mutate( Sample = seg_row$Sample,
+                         Num_Probes = round(seg_row$Num_Probes * as.numeric(size/sum(size)) , digits =  0 ),
+                         Segment_Mean = seg_row$Segment_Mean,
+                         gatk_SM_raw = seg_row$Segment_Mean_raw,
+                         gatk_count = seg_row$Count,
+                         gatk_baselinecov = seg_row$Baseline_cov,
+                         gatk_gender = seg_row$gatk_gender,
+                         pipeline_gender = seg_row$pipeline_gender,
+                         cov_mad = seg_row$MAD,
+                         MAF = gmm_mean,
+                         MAF_Probes = nonzero_count,
+                         MAF_gmm_G = gmm_G,
+                         MAF_gmm_weight = gmm_weight
+          ) %>%
+          dplyr::select( -gmm_mean, -nonzero_count, -gmm_G, -gmm_weight, -merge_index, -each_maf) %>%
+          dplyr::relocate( Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw,
+                           gatk_count, gatk_baselinecov, gatk_gender, pipeline_gender, cov_mad,
+                           MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size )
 
       }
-    }
-    if(segmethod == "cbs"){
-      # Prepare data for CBS (use gmm_mean as the segmentation track)
-      maf_seg_data <- data.frame(
-        chrom = binned_data$Chromosome,
-        maploc = binned_data$Start,    # or bin center if you prefer
-        maf = binned_data$gmm_mean,
-        weights = binned_data$nonzero_count
-      )
-
-      # Create CNA object
-      maf_CNA <- DNAcopy::CNA(
-        genomdat = maf_seg_data$maf,
-        chrom = maf_seg_data$chrom,
-        maploc = maf_seg_data$maploc,
-        data.type = "logratio"
-      )
-
-      if( cbssmooth == "yes"){
-        maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA)
-        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, weights = maf_seg_data$weights, verbose = 1)
-      }else{
-        maf_cbs <- DNAcopy::segment(maf_CNA,  weights = maf_seg_data$weights, verbose = 1 )
-      }
-      maf_cbs$segRows <- maf_cbs$segRows %>%
-        dplyr::mutate( n_bins = endRow - startRow + 1,
-                seg_id = dplyr::row_number())
-      binned_data$merge_index <- rep( maf_cbs$segRows$seg_id, times = maf_cbs$segRows$n_bins  )
-      tmp_seg <- binned_data %>%
-        dplyr::group_by( Chromosome, merge_index) %>%
-        dplyr::summarise(
-          Start = min( Start),
-          End = max(End),
-          size = max(End) - min( Start),
-          Estimated_maf = list(EstimateMAFbyGMM(maf_values = as.numeric( unlist(strsplit(each_maf, ";")) ))),
-          nonzero_count = sum(nonzero_count),
-          each_maf = paste(  as.numeric( unlist(strsplit(each_maf,";")) ) , collapse = ";")
-        ) %>%
-        tidyr::unnest_wider(col = Estimated_maf) %>%
-        dplyr::mutate( Sample = seg_row$Sample,
-                Num_Probes = round(seg_row$Num_Probes * as.numeric(size/sum(size)) , digits =  0 ),
-                Segment_Mean = seg_row$Segment_Mean,
-                gatk_SM_raw = seg_row$Segment_Mean_raw,
-                gatk_count = seg_row$Count,
-                gatk_baselinecov = seg_row$Baseline_cov,
-                gatk_gender = seg_row$gatk_gender,
-                pipeline_gender = seg_row$pipeline_gender,
-                cov_mad = seg_row$MAD,
-                MAF = gmm_mean,
-                MAF_Probes = nonzero_count,
-                MAF_gmm_G = gmm_G,
-                MAF_gmm_weight = gmm_weight
-        ) %>%
-        dplyr::select( -gmm_mean, -nonzero_count, -gmm_G, -gmm_weight, -merge_index, -each_maf) %>%
-        dplyr::relocate( Sample, Chromosome, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw,
-                  gatk_count, gatk_baselinecov, gatk_gender, pipeline_gender, cov_mad,
-                  MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size )
-
-    }
 
 
-  tmp_seg<- CorrectBias( tmp_seg, pon_ref, tmp_maf, out_dir, prefix )
+      tmp_seg<- RefineMAF( tmp_seg, pon_ref, tmp_maf, out_dir, prefix )
     }else{ tmp_seg$gmm_mean_corr <- NA
-          tmp_seg$balance_tag <- NA
-  }
-  if(nrow(tmp_seg) > 1){
-    tmp_seg$BreakpointSource <- "Postprocess"}else{tmp_seg$BreakpointSource <- "GATK"}
-}else{
+    tmp_seg$balance_tag <- NA
+    }
+    if(nrow(tmp_seg) > 1){
+      tmp_seg$BreakpointSource <- "Postprocess"}else{tmp_seg$BreakpointSource <- "GATK"}
+  }else{
     tmp_seg$gmm_mean_corr <- NA
     tmp_seg$balance_tag <- NA
- tmp_seg["BreakpointSource"] <- "GATK"
-}
+    tmp_seg["BreakpointSource"] <- "GATK"
+  }
   return(tmp_seg)
 }
 
@@ -731,29 +1039,29 @@ AddQualTag <- function(Chromosome, MAF, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, s
     if(cov_mad < 1.5){ cov_tag <- "PASS"}else{
       cov_tag <- "FAILED"
     }
-    }
+  }
 
-high_gc_chrom <- c("9","16","17","21","22", "19","Y")
+  high_gc_chrom <- c("9","16","17","21","22", "19","Y")
   if(sampletype == "ffpe"){
     if( ! Chromosome %in% high_gc_chrom ){
       if( cov_mad <= 3){ cov_tag <- "PASS" }else{ cov_tag <- "FAILED" }
-      }else if( Chromosome %in% c("9","16","17","21","22") ){
-        if( cov_mad <= 4 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
-      }else if( Chromosome %in% c("19","Y") ) {
-        if( cov_mad <= 6 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
-      }
+    }else if( Chromosome %in% c("9","16","17","21","22") ){
+      if( cov_mad <= 4 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
+    }else if( Chromosome %in% c("19","Y") ) {
+      if( cov_mad <= 6 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
     }
+  }
 
 
   if( maf_tag == "PASS" && cov_tag == "PASS" ) {
-  Qualtag <- "PASS"
-}else{
+    Qualtag <- "PASS"
+  }else{
     Qualtag <- "FAILED" }
 
 
- if(Chromosome %in% c("X","Y")){
-   Qualtag <- "EXCLUDE"
- }
+  if(Chromosome %in% c("X","Y")){
+    Qualtag <- "EXCLUDE"
+  }
   return(Qualtag)
 }
 
@@ -940,14 +1248,14 @@ PlotBAF <- function( seg_corr, out_dir, prefix ){
       )
 
     }
-    }
-
   }
 
+}
 
-#' Correct MAF Bias in Segments Using Panel of Normal Reference
+
+#' Refine MAF by using BAF and panel of normal samples
 #'
-#' Adjusts the minor allele frequency (MAF) values in each segment for systematic bias using a panel of normal (PoN) reference. For each segment, compares the segment MAF to the PoN MAF distribution, and applies a logit-based correction if the segment MAF is not significantly different from the PoN. If the segment MAF is significantly different, retains the original value.
+#' Adjusts the minor allele frequency (MAF) values in each segment based on BAF distribution and panel of normal samples
 #'
 #' @param tmp_seg Data frame or data.table. Segmented data to be corrected, must include columns: Chromosome, Start, End, Sample, Num_Probes, Segment_Mean, gatk_SM_raw, gatk_count, gatk_baselinecov, gatk_gender, pipeline_gender, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size.
 #' @param pon_ref Data frame or data.table. Panel of normal reference, must include columns: Chromosome, Start, End, pon_mafs (comma-separated string of PoN MAF values).
@@ -961,9 +1269,8 @@ PlotBAF <- function( seg_corr, out_dir, prefix ){
 #' @importFrom data.table setDT setkey foverlaps
 #' @importFrom dplyr group_by summarise mutate select relocate filter
 #' @export
-CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
-  logit  <- function(p) qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
-  ilogit <- function(x) plogis(x)
+RefineMAF <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
+
   extract_BAF <- function( tmp_maf, Start, End){
 
     each_BAFs <- tmp_maf %>%
@@ -996,45 +1303,6 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
     return(re)
   }
 
-  test_balance_GMM <- function( each_BAFs){
-    each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
-    ## cluster to filter out noise
-    each_BAFs <- each_BAFs[ each_BAFs > 0.1 & each_BAFs < 0.9]
-    noise <- Mclust(each_BAFs, G = c(1:2) )
-    if( !is.null(noise) ){
-      if( noise$G == 1 ){ balance <- TRUE }else{
-
-        if( min(noise$parameters$pro) > 0.3 ){
-            if( noise$G == 2 && abs(noise$parameters$mean[1] - noise$parameters$mean[2] ) <= 0.1 ){
-              balance <- TRUE
-              }else{
-              balance <- FALSE ## after remove extreme values, has two peaks
-            }
-
-        }else{ if( abs(noise$parameters$mean[1] - noise$parameters$mean[2] ) <= 0.05 ){balance <- TRUE}else{
-
-          keep <- c(1:2)[order(noise$parameters$pro)][2] ## remove noise
-          fit <- Mclust(each_BAFs[noise$classification == keep], G = c(1:2) )
-          if(!is.null(fit)){
-            mu  <- fit$parameters$mean
-            pi  <- fit$parameters$pro
-            pi <- pi[order(pi)]
-            balance <- ( fit$G == 1 ||
-                           ( fit$G == 2 && pi[1] <= 0.3 ) ||
-                           abs( fit$parameters$mean[1] - fit$parameters$mean[2] ) <= 0.1 ) ## only one peak or has two peaks, however, the smaller peak is noise.
-
-          }else{ balance <- mean(each_BAFs[noise$classification == keep]) >= 0.43 }
-        }
-         }
-
-      }
-
-    }else{
-      balance <- ifelse( mean(each_BAFs) >= 0.4, TRUE, FALSE )
-    }
-
-    return(balance)
-  }
 
   test_balance_KDE <- function( each_BAFs){
     each_BAFs <- each_BAFs[ !is.na(each_BAFs)]
@@ -1054,38 +1322,70 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
     }
     return(balance)
   }
-  correct <- function( pon_mafs, each_BAFs, gmm_mean, out_dir, prefix ){
+
+  adjustmaf <- function( pon_bafs, tumor_bafs, gmm_mean){
     gmm_mean <- gmm_mean[1]
-    pon_mafs <- as.numeric(unlist(strsplit(pon_mafs, ",")))
-    each_BAFs <- as.numeric(unlist(strsplit(each_BAFs, ";")))
-    pon_median <- median(pon_mafs,na.rm = T)
-    gmm_mean_corr <- NA
+    pon_bafs <- as.numeric(unlist(strsplit(pon_bafs, ",")))
+    tumor_bafs <- as.numeric(unlist(strsplit(tumor_bafs, ";")))
 
+    ## BAF balance test
     if( !is.na(gmm_mean) ){
-      if(gmm_mean >= 0.38 && gmm_mean < 0.45 ){
-        balanced <- test_balance_KDE( each_BAFs )
-        }else if( gmm_mean < 0.38 ){
-          balanced <- FALSE
-        }else if(gmm_mean >= 0.45){
-          balanced <- TRUE
-        }
-    }else{
-      balanced <- NA }
+      if(gmm_mean >= 0.35 && gmm_mean < 0.5 ){
+        balanced <- test_balance_KDE( tumor_bafs )
+      }else if( gmm_mean < 0.35 ){
+        balanced <- FALSE
+      }else if( gmm_mean == 0.5){
+        balanced <- TRUE
+      }else{
+        balanced <- NA }
+    }else{ balanced <- NA }
+    # ============================================================
+    # NEW:
+    # RAW BAF-BASED ESTIMATION
+    #
+    # Only run this additional estimator when the original
+    # GMM estimate is in the difficult near-balanced region. gmm_mean >= 0.35
+    # ============================================================
 
-    if ( !is.na(balanced) && balanced ){
-      y_centered = logit(gmm_mean) - logit( pon_median )
-      gmm_mean_corr = pmin( ilogit(y_centered), 0.5 )
-      if(gmm_mean_corr >= 0.47){ gmm_mean_corr = 0.5 }
-      balance_tag <- "balanced"
-    }else if( !is.na(balanced) && ! balanced ){
-      gmm_mean_corr = gmm_mean
-      balance_tag <- "imbalanced"
-    }else{
-      gmm_mean_corr = gmm_mean
-      balance_tag <- NA
+    if ( is.finite(gmm_mean) && gmm_mean > 0.35) {
+
+      baf_estimate <-
+        EstimateMAFfromBAF(
+          tumor_bafs = tumor_bafs,
+          normal_bafs = pon_bafs,
+          baf_lower = 0.15,
+          baf_upper = 0.85,
+          min_n = 10L,
+          n_resample = 100L,
+          normal_bic_quantile = 0.95,
+          bic_margin = 1,
+          min_component_weight = 0.25,
+          min_separation_sd = 2,
+          center_lower = 0.42,
+          center_upper = 0.58,
+          seed = 1L
+        )
     }
-    return( list(gmm_mean_corr = gmm_mean_corr, balance_tag = balance_tag) )
+
+    if( is.na(balanced) ){
+      if(is.na(baf_estimate$baf_peak2)){
+        balanced <- "balanced_weak"
+      }else{ balanced <- "imbalanced_weak"}
+    }else{
+      if( balanced && !is.na( baf_estimate$baf_peak2 ){
+        balance_tag <- "ambigious"
+      } )
+
+
+    }
+
+    if( is.na( baf_estimate$baf_peak2 ) && balanced ){ balanced = TRUE }
+    if( !is.na(balanced) ){ if(balanced ) { balance_tag <- "balanced" }else{ balance_tag <- "imbalanced" } }else{ balance_tag <- NA }
+
+    return( list(gmm_mean_corr = baf_estimate$baf_maf, balance_tag = balance_tag) )
   }
+
+
 
   data.table::setDT(tmp_seg)
   data.table::setDT(pon_ref)
@@ -1098,9 +1398,8 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
     type = "any", nomatch = 0
   ) %>%
     dplyr::group_by( Chromosome, Sample, Start, End, Num_Probes, Segment_Mean, gatk_SM_raw, gatk_count, gatk_baselinecov, gatk_gender,
-              pipeline_gender, cov_mad, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
-    dplyr::summarise( pon_mafs = paste( pon_mafs, collapse = ","),
-                      pon_bafs = paste( pon_bafs, collapse = ","))
+                     pipeline_gender, cov_mad, MAF, MAF_Probes, MAF_gmm_G, MAF_gmm_weight, size ) %>%
+    dplyr::summarise( pon_bafs = paste( pon_bafs, collapse = ","))
 
 
   if( nrow(seg_corr) > 0){
@@ -1110,9 +1409,10 @@ CorrectBias <- function( tmp_seg, pon_ref, tmp_maf, out_dir, prefix ){
     ## Plot BAF distribution
 
     PlotBAF( seg_corr, out_dir, prefix )
-    ##
+
+    ## Refine MAF
     seg_corr <- seg_corr %>%
-      dplyr::mutate( gmm_mean_corr = list(correct(pon_mafs, each_BAFs, gmm_mean=MAF))) %>%
+      dplyr::mutate( gmm_mean_corr = list(adjustmaf(pon_bafs= pon_bafs, tumor_bafs = each_BAFs, gmm_mean=MAF))) %>%
       tidyr::unnest_wider( gmm_mean_corr) %>%
       dplyr::select( -pon_mafs, -each_BAFs, -pon_bafs)
   }
