@@ -168,7 +168,6 @@ EstimateMAFbyGMM <- function(maf_values){
       re <- ClusterAdjacent(values = means, weights = weights, threshold = 0.01)
       means <- re$means
       weights <- re$weights
-      #variances <- gmm_model$parameters$variance$sigmasq
       num_components <- length(re$means)
     }else{
       num_components <- gmm_model$G
@@ -575,7 +574,16 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
         chrom = binned_data$Chromosome,
         maploc = binned_data$Start,    # or bin center if you prefer
         maf = binned_data$gmm_mean,
-        weights = binned_data$nonzero_count
+        weights = ifelse(
+          binned_data$nonzero_count > 30, 1,
+          ifelse(
+            binned_data$nonzero_count >= 20, 0.75,
+            ifelse(
+              binned_data$nonzero_count >= 10, 0.5,
+              0.2
+            )
+          )
+        )
       )
 
       # Create CNA object
@@ -586,12 +594,10 @@ if( ! seg_row$Chromosome %in% c("X", "Y") ) {
         data.type = "logratio"
       )
 
-      if( cbssmooth == "yes"){
-        maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA)
-        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, weights = maf_seg_data$weights, verbose = 1)
-      }else{
-        maf_cbs <- DNAcopy::segment(maf_CNA,  weights = maf_seg_data$weights, verbose = 1 )
-      }
+        maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA, smooth.region = 7)
+
+        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed,weights = maf_seg_data$weights, min.width = 3,verbose = 1)
+
       maf_cbs$segRows <- maf_cbs$segRows %>%
         dplyr::mutate( n_bins = endRow - startRow + 1,
                 seg_id = dplyr::row_number())
