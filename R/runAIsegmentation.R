@@ -10,8 +10,8 @@
 #' @param sampletype Character, "ff" or "ffpe".
 #' @param out_dir Output directory path.
 #' @param prefix Output file prefix.
-#' @param mergeai Numeric, MAF difference threshold for merging segments (default: 0.15).
-#' @param mergecov Numeric, CNV difference threshold for merging segments (default: 0.2).
+#' @param mergeai Numeric, MAF difference threshold for merging segments (default: 0.05).
+#' @param mergecov Numeric, CNV difference threshold for merging segments (default: 0.1).
 #' @param snpmin Numeric, minimum SNPs for MAF segmentation (default: 4).
 #' @param minsnpcov Numeric, minimum coverage of SNPs to included (default: 20).
 #' @param maxgap Maximum gap size inside a bin. If exceed then start another bin.( default: 2000000)
@@ -33,8 +33,8 @@
 #' @export
 RunAIsegmentation <- function(
     seg, cov, ai, gender, out_dir, prefix, ai_pon, sampletype,
-    mergeai = 0.15,
-    mergecov = 0.2,
+    mergeai = 0.05,
+    mergecov = 0.1,
     snpmin = 4,
     minsnpcov = 20,
     mergecovminsize = 500000,
