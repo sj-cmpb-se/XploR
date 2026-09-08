@@ -489,11 +489,13 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
   q <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = 0.5,color="black",linewidth=0.7) +
     ggplot2::geom_hline(yintercept = c(0,1),color="grey",linewidth=0.5,linetype="dashed") +
-    ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
-                                 xend = bin_end,
-                                 y= smoothed_ai - 0.05,
-                                 yend = smoothed_ai + 0.05 ,
-                                 color = seqnames ),alpha = 0.2,linewidth = 1) +
+    #ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
+    #                             xend = bin_end,
+    #                             y= smoothed_ai - 0.05,
+    #                             yend = smoothed_ai + 0.05 ,
+    #                             color = seqnames ),alpha = 0.2,linewidth = 1) +
+    ggplot2::geom_point( data = df_ai, ggplot2::aes(
+      x = bin_start, y = smoothed_ai, color = seqnames ),alpha = 0.15, shape = 16) +
     ggplot2::scale_color_manual(values = color) +
     ggplot2::geom_segment(data = call_seg,
                  ggplot2::aes(x = loc.start, xend = loc.end, y= MAF, yend = MAF),

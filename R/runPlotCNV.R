@@ -65,9 +65,11 @@ RunPlotCNV <- function(
     dplyr::mutate(af = ifelse(allelePreference[REF_NUCLEOTIDE] > allelePreference[ALT_NUCLEOTIDE],
                               REF_COUNT / (REF_COUNT + ALT_COUNT),
                               ALT_COUNT / (REF_COUNT + ALT_COUNT)))
-  ai <- split(ai, f= ai$CONTIG)
-  rounded_ai <- RoundAI(ai = ai)
-
+  #ai <- split(ai, f= ai$CONTIG)
+  #rounded_ai <- RoundAI(ai = ai)
+  rounded_ai <- ai %>%
+    dplyr::select(CONTIG, POSITION, REF_COUNT, ALT_COUNT, af) %>%
+    dplyr::rename(norm_af = af)
   # Only keep whitelist region
   whitelist <- utils::read.table(whitelist ,header = T, stringsAsFactors = F,quote = "")
   whitelist <- whitelist %>%
@@ -80,7 +82,11 @@ RunPlotCNV <- function(
   }
   clean_cov <- KeepWhitelistCov(smooth_cov = smooth_cov, whitelist = whitelist, gender = gender)
   clean_ai <- CleanHomalt(rounded_ai = rounded_ai, call_seg = seg)
-  final_ai <- SmoothAI(df = clean_ai, ai_binsize = ai_binsize, gender = gender)
+  #final_ai <- SmoothAI(df = clean_ai, ai_binsize = ai_binsize, gender = gender)
+  final_ai <- clean_ai %>%
+    dplyr::select(seqnames, POSITION, norm_af ) %>%
+    dplyr::rename(smoothed_ai = norm_af) %>%
+    dplyr::rename(bin_start = POSITION)
 
   colnames(seg)[1] <- "seqnames"
   final_plot <- PlotCov(
