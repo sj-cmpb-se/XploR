@@ -41,7 +41,10 @@ RunPlotCNV <- function(
     cov <- cov %>% dplyr::filter(CONTIG != "Y")
   }
   purity <- as.numeric(unique(seg$rho))
-  purity <- purity[!is.na(purity)]
+  if( is.na(purity)){
+    purity <- 1
+  }
+
   sf <- as.numeric(unique(seg$mu))
   sf <- sf[!is.na(sf)]
   cov <- CRCorrectPurity(cr = cov, gender = gender, purity = purity, sf = sf)

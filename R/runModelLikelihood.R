@@ -229,7 +229,12 @@ RunModelLikelihood <- function(
   }
   print(paste0("Reporting final calls at: ", paste0(out_dir,"/",paste0(prefix, "_final_calls.tsv"))))
   final_call$Model_source <- model_source
-  final_call$rho <- return_models$Final_model$Final_rho
+  if( model_source == "Diploid"){
+    final_call$rho <- NA
+  }else{
+    final_call$rho <- return_models$Final_model$Final_rho
+  }
+
   final_call$mu <- return_models$Final_model$Final_mu
   write.table(final_call, file = file.path(out_dir, paste0(prefix, "_final_calls.tsv")), row.names = FALSE, quote = FALSE, sep = "\t")
   if (!is.null(return_models$dis_df)) {
