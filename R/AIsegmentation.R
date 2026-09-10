@@ -974,7 +974,6 @@ SearchBreakpoint <- function(seg_row, maf, pon_ref, gender, out_dir, prefix,
     }
     return(df)
   }
-
   tmp_seg <- data.frame(
     Sample = seg_row$Sample,
     Chromosome = seg_row$Chromosome,
@@ -1070,9 +1069,14 @@ if( seg_row$Chromosome != "Y" || ( seg_row$Chromosome != "X" && gender != "male"
         maploc = maf_seg_data$maploc,
         data.type = "logratio"
       )
+        if( nrow(maf_seg_data) >= 3){
+          maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA, smooth.region = 5)
+          maf_cbs <- DNAcopy::segment(maf_CNA_smoothed, weights = maf_seg_data$weights, min.width = 3,verbose = 1)
+        }else{
 
-        maf_CNA_smoothed <- DNAcopy::smooth.CNA(maf_CNA, smooth.region = 5)
-        maf_cbs <- DNAcopy::segment(maf_CNA_smoothed,weights = maf_seg_data$weights, min.width = 3,verbose = 1)
+          maf_cbs <- DNAcopy::segment(maf_CNA, weights = maf_seg_data$weights, min.width = 3,verbose = 1)
+        }
+
 
         # Combine segRows with segmentation information
         seg_info <- maf_cbs$segRows %>%
@@ -1231,7 +1235,7 @@ AddQualTag <- function(Chromosome, MAF, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, s
 
   ## coverage quality tag
   if(sampletype == "ff"){
-    if(cov_mad < 1.5){ cov_tag <- "PASS"}else{
+    if(cov_mad < 0.5){ cov_tag <- "PASS"}else{
       cov_tag <- "FAILED"
     }
     }
@@ -1239,11 +1243,11 @@ AddQualTag <- function(Chromosome, MAF, MAF_gmm_weight, MAF_Probes, MAF_gmm_G, s
 high_gc_chrom <- c("9","16","17","21","22", "19","Y")
   if(sampletype == "ffpe"){
     if( ! Chromosome %in% high_gc_chrom ){
-      if( cov_mad <= 3){ cov_tag <- "PASS" }else{ cov_tag <- "FAILED" }
+      if( cov_mad <= 0.8){ cov_tag <- "PASS" }else{ cov_tag <- "FAILED" }
       }else if( Chromosome %in% c("9","16","17","21","22") ){
-        if( cov_mad <= 4 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
+        if( cov_mad <= 1 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
       }else if( Chromosome %in% c("19","Y") ) {
-        if( cov_mad <= 6 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
+        if( cov_mad <= 3 ){ cov_tag <- "PASS"}else{ cov_tag <- "FAILED" }
       }
     }
 

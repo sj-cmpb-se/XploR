@@ -438,7 +438,6 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
   y_lim <- ifelse(y_lim < 4 , 4, y_lim)
 
 
-
   if( y_lim >=10){
     p_margin <- ggplot2::margin(t = 1, r = 1, b = 0.5, l = 2, unit = "pt")
     q_margin <- ggplot2::margin(t = 0, r = 1, b = 0.5, l = 7, unit = "pt")

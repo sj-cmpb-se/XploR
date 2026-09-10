@@ -15,64 +15,52 @@ CalMedian <- function( chrom, start, end, cov){
   return(median(tmp$COUNT,na.rm = T))
 }
 
-#' Calculate Robust Coverage Variability (MAD) for a Genomic Segment
+#' Calculate Coverage Variability (MAD) for a Genomic Segment
 #'
 #' Computes a library-size–invariant measure of coverage variability within a
 #' genomic segment using the median absolute deviation (MAD) of
-#' log2-transformed bin counts relative to the segment median.
-#'
-#' Specifically, for each bin \eqn{i} in the segment, the value
-#' \eqn{\log_2((count_i + pc)/(median(count) + pc))} is computed, and the MAD
-#' (scaled to be comparable to standard deviation) is returned.
+#' segment mean.
 #'
 #' @param chrom Chromosome name corresponding to \code{cov$CONTIG}.
 #' @param start Segment start position (1-based, inclusive).
 #' @param end Segment end position (1-based, inclusive).
-#' @param cov Data frame or tibble of per-bin coverage with columns
-#'   \code{CONTIG}, \code{START}, \code{END}, and \code{COUNT}.
+#' @param cr Data frame or tibble of denoised per-bin copy ratio with columns
+#'   \code{CONTIG}, \code{START}, \code{END}, and \code{LOG2_COPY_RATIO}.
 #'
 #' @return A single numeric value giving the robust MAD of normalized coverage
 #'   within the specified genomic segment. Returns \code{NA} if no bins fall
 #'   within the region.
 #'
 #' @details
-#' This metric is robust to outliers and does not require knowledge of library
-#' size, making it suitable for comparing coverage noisiness across samples in
-#' CNV analysis.
+#' Calculates MAD for each segment by using log2 copy ratio
 #'
 #' @seealso \code{\link[stats]{mad}}, \code{\link[stats]{median}}
 #'
 #' @importFrom dplyr filter
 #'
 #' @examples
-#' cov <- data.frame(
+#' cr <- data.frame(
 #'   CONTIG = c("chr1", "chr1", "chr1"),
 #'   START  = c(1, 1001, 2001),
 #'   END    = c(1000, 2000, 3000),
-#'   COUNT  = c(100, 95, 110)
+#'   LOG2_COPY_RATIO  = c(1, 1.05, 0)
 #' )
 #'
-#' CalMAD("chr1", 1, 3000, cov)
+#' CalMAD("chr1", 1, 3000, cr)
 #'
 #' @export
-CalMAD <- function( chrom, start, end, cov){
+CalMAD <- function( chrom, start, end, cr){
 
   # Robust MAD scaled to SD
-  mad_sd <- function(x) {
+  calmad <- function(x){
+
     mad(x, center = median(x, na.rm = TRUE), constant = 1.4826, na.rm = TRUE)
   }
 
-  # counts = numeric vector of bin counts for ONE segment
-  segment_mad_log2_ratio <- function(counts, pseudocount = 0.5) {
-    center <- median(counts, na.rm = TRUE)
-    x <- log2((counts + pseudocount) / (center + pseudocount))
-    mad_sd(x)
-  }
-
-  tmp <- cov %>%
-    dplyr::filter( CONTIG == chrom & START >= start & END <= end )
-
-  variance <- segment_mad_log2_ratio(counts = tmp$COUNT)
+  tmp <- cr %>%
+    dplyr::filter( CONTIG == chrom & START >= start & END <= end ) %>%
+    dplyr::filter( is.finite(LOG2_COPY_RATIO) )
+  variance <- calmad(x = tmp$LOG2_COPY_RATIO)
 
   return(variance)
 
@@ -115,6 +103,7 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
 #' If gender information is missing or set to "unknown", the function will infer gender automatically.
 #'
 #' @param cov Data frame. Coverage data.
+#' @param cr Data frame. CR data.
 #' @param seg Character. Path to segmentation data file.
 #' @param gender Character. Provided gender information; use "unknown" to trigger automatic detection.
 #'
@@ -123,7 +112,7 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
 #' @importFrom dplyr filter mutate
 #' @importFrom data.table fread
 #' @export
-Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
+Runcheckgender <- function( cov, cr, seg, gender, out_dir, prefix){
 
   seg_df <- data.table::fread(seg) %>%
     dplyr::mutate(size = End - Start)
@@ -134,7 +123,7 @@ Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
   lines <- readLines(cov)
   filtered_lines <- grep("^\\s*@", lines, invert = TRUE, value = TRUE)
   cov_df <- data.table::fread(text = filtered_lines)
-  seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender)
+  seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender, cr = cr_df)
   gender <- as.character(seg_df$pipeline_gender[1])
   outFile <- file.path(out_dir, paste0(prefix, "_gender.txt"))
   write.table(gender,file=outFile,quote = F,row.names = F)
@@ -145,14 +134,15 @@ Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
 
 #' Check and Adjust Gender in GATK Segmentation Data
 #'
-#' @param cov Coverage data frame
+#' @param cov Count data frame
+#' @param cr Coverage CR data frame
 #' @param seg Segmentation data frame
 #' @param gender Gender from clinical information (character, "male", "female" or "unknown")
 #' @return Modified segmentation seg data frame with gender information
 #' @importFrom dplyr filter rowwise mutate
 #' @importFrom stats median
 #' @export
-CheckGender <- function( cov, seg, gender ){
+CheckGender <- function( cov, cr, seg, gender ){
   ## check what is the baseline cov is used in autosome and x and Y separately.
 
   seg <- seg %>%
@@ -161,7 +151,7 @@ CheckGender <- function( cov, seg, gender ){
     #filter( Num_Probes >= 500 | Chromosome %in% c("X","Y")) %>%
     dplyr::rowwise() %>%
     dplyr::mutate( Baseline_cov = CalbaselineCov( chrom = Chromosome, cr = Segment_Mean, count = Count )) %>%
-    dplyr::mutate( MAD = CalMAD( chrom = Chromosome, start = Start, end = End, cov = cov ))
+    dplyr::mutate( MAD = CalMAD( chrom = Chromosome, start = Start, end = End, cr=cr ))
 
   autobasecov <- seg %>%
     dplyr::filter( ! Chromosome %in% c("X","Y") ) %>%
