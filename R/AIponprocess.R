@@ -47,7 +47,7 @@ ReadPonAI <- function( ai_pon_file, aitype, minsnpcov, gender ){
 #'
 #' @importFrom data.table as.data.table
 #' @importFrom stats quantile
-#' @export
+#' @noRd
 ChooseNbins <- function(normals_dt,
                         target_bins = 8, min_rows_per_stratum = 2000,
                         min_unique_bins = 100, max_bins = 10, min_bins = 3) {
@@ -86,7 +86,7 @@ ChooseNbins <- function(normals_dt,
 #' where \eqn{p} is the observed BAF, and \eqn{d} is the median depth.
 #'
 #' @importFrom dplyr left_join filter group_by summarise mutate ungroup
-#' @export
+#' @noRd
 EstimateTheta <- function(normals_dt, pon_ref, n_bins) {
 
   dt <- normals_dt %>%

@@ -7,14 +7,19 @@
 RunAIsegmentation(
   seg,
   cov,
+  cr,
   ai,
   gender,
   out_dir,
   prefix,
   ai_pon,
   sampletype,
-  mergeai = 0.15,
-  mergecov = 0.2,
+  covminvalleydrop = 0.1,
+  covminproportion = 0.2,
+  covminpeakdiff = 0.5,
+  bafminproportion = 0.25,
+  mergeai = 0.05,
+  mergecov = 0.05,
   snpmin = 4,
   minsnpcov = 20,
   mergecovminsize = 5e+05,
@@ -22,6 +27,9 @@ RunAIsegmentation(
   snpnum = 20,
   maxbinsize = 1e+06,
   minbinsize = 5e+05,
+  mafqcweightcutoff = 0.4,
+  cov_mad_cutoff1 = 0.6,
+  cov_mad_cutoff2 = 0.3,
   aitype = "gatk",
   segmethod = "cbs",
   cbssmooth = "no"
@@ -31,6 +39,8 @@ RunAIsegmentation(
 \item{seg}{Path to the GATK segment file.}
 
 \item{cov}{Path to the GATK denoised coverage count file.}
+
+\item{cr}{Path to the GATK denoised coverage ratio file.}
 
 \item{ai}{Path to the BAF file or allelic count file.}
 
@@ -44,9 +54,18 @@ RunAIsegmentation(
 
 \item{sampletype}{Character, "ff" or "ffpe".}
 
-\item{mergeai}{Numeric, MAF difference threshold for merging segments (default: 0.15).}
+\item{covminvalleydrop}{minimum valley drop in the finding peaks of coverage track quality control, default is 0.1}
 
-\item{mergecov}{Numeric, CNV difference threshold for merging segments (default: 0.2).}
+\item{covminproportion}{minimum proportion of peak in the finding peaks of coverage track quality control, default is 0.2}
+
+\item{covminpeakdiff}{minimum peak difference in the finding peaks of coverage track quality control, default is 0.5}
+
+\item{bafminproportion}{Minimum proportion of SNPs required for a BAF peak
+to be retained for MAF estimation; smaller peaks are excluded. default is 0.25}
+
+\item{mergeai}{Numeric, MAF difference threshold for merging segments (default: 0.05).}
+
+\item{mergecov}{Numeric, CNV difference threshold for merging segments (default: 0.05).}
 
 \item{snpmin}{Numeric, minimum SNPs for MAF segmentation (default: 4).}
 
@@ -61,6 +80,13 @@ RunAIsegmentation(
 \item{maxbinsize}{Maximum bin size.( default: 1000000 )}
 
 \item{minbinsize}{Minimum bin size.( default: 500000 )}
+
+\item{mafqcweightcutoff}{Numeric. Minimum SNP proportion in the main MAF peak
+required to pass MAF QC. Values below this cutoff fail QC. Default is 0.4.}
+
+\item{cov_mad_cutoff1}{Numeric. Over this value will directly Fail qc. default is 0.6}
+
+\item{cov_mad_cutoff2}{Numeric. Over this value, but lower than cov_mad_cutoff1, if multiple peaks will fail the qc. default is 0.3}
 
 \item{aitype}{Character. Type of allelic imbalance data: \code{"gatk"} or \code{"other"} or \code{"dragen"}
 If \code{"GATK"}, the input must include columns \code{CONTIG}, \code{POSITION}, \code{ALT_COUNT}, \code{REF_COUNT}, \code{REF_NUCLEOTIDE}, and \code{ALT_NUCLEOTIDE}.

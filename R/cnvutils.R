@@ -1,5 +1,4 @@
 #' @importFrom magrittr %>%
-#' @export
 magrittr::`%>%`
 
 
@@ -14,8 +13,7 @@ magrittr::`%>%`
 #'
 #' @examples
 #' CalSM(Segcov = 150, max_L_mu = 1, gender = "female", Chromosome = "1")
-#'
-#' @export
+#' @noRd
 CalSM <- function(Segcov, max_L_mu, gender, Chromosome) {
   diploid_cov <- 100 * max_L_mu
   uniploid_cov <- 50 * max_L_mu
@@ -42,7 +40,7 @@ CalSM <- function(Segcov, max_L_mu, gender, Chromosome) {
 #'
 #' @return A list with \code{CNF_correct} and \code{MAF_correct}.
 #'
-#' @export
+#' @noRd
 CorrectPurity <- function(chromosome, cov_segmentmean, MAF_observe, gender, purity) {
   if (gender == "male" & chromosome %in% c("X", "Y")) {
     CNF_observe = 2^cov_segmentmean
@@ -92,7 +90,7 @@ CorrectPurity <- function(chromosome, cov_segmentmean, MAF_observe, gender, puri
 #' @examples
 #' CallwoModel("1", CNF_correct = 2.8, MAF_correct = 0.1, MAF_gmm_G = 2, MAF_Probes = 15, MAF_gmm_weight = 0.5, gender = "female")
 #'
-#' @export
+#' @noRd
 CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Probes, MAF_gmm_weight, callcovcutoff = 0.3, callaicutoff = 0.3, minsnpcallaicutoff = 10, gender ) {
   if ( gender == "male" && chromosome %in% c("X", "Y")) {
     if (CNF_correct >= (1 + callcovcutoff)) {
@@ -134,7 +132,7 @@ CallwoModel <- function(chromosome, CNF_correct, MAF_correct, MAF_gmm_G, MAF_Pro
 #'
 #' @return Integer. Rounded copy number.
 #'
-#' @export
+#' @noRd
 RoundCN <- function(gender, Chrom, Call, CNF) {
   diff_cn <- abs(round(CNF) - CNF)
   if (diff_cn < 0.3) {
