@@ -139,6 +139,10 @@ Runcheckgender <- function( cov, cr, seg, gender, out_dir, prefix,
   lines <- readLines(cov)
   filtered_lines <- grep("^\\s*@", lines, invert = TRUE, value = TRUE)
   cov_df <- data.table::fread(text = filtered_lines)
+
+  cr_lines <- readLines(cr)
+  cr_filtered_lines <- grep("^\\s*@", cr_lines, invert = TRUE, value = TRUE)
+  cr_df <- data.table::fread(text = cr_filtered_lines)
   seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender, cr = cr_df,
                         covminvalleydrop = covminvalleydrop,
                         covminproportion = covminproportion,
