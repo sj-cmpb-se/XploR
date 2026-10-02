@@ -1426,7 +1426,7 @@ PlotBAF <- function( seg_corr, out_dir, prefix ){
       # Dashed guide lines:
       # 0.1, 0.2, 0.3, 0.4, 0.6, ..., 1.0
       # 0.5 is excluded because it will be a solid gray line
-      baf_guides <- seq(0.1, 1.0, by = 0.05)
+      baf_guides <- seq(0.1, 1.0, by = 0.1)
       baf_guides <- baf_guides[abs(baf_guides - 0.5) > 1e-8]
 
       # ------------------------------------------------------------
@@ -1474,7 +1474,7 @@ PlotBAF <- function( seg_corr, out_dir, prefix ){
 
         ggplot2::scale_x_continuous(
           limits = c(0, 1),
-          breaks = seq(0, 1, by = 0.05),
+          breaks = seq(0, 1, by = 0.1),
           expand = c(0, 0)
         ) +
 
