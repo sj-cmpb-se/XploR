@@ -4,14 +4,14 @@
 \alias{PlotModelDot}
 \title{Plot Model Total Log-Likelihoods as a Dot Plot}
 \usage{
-PlotModelDot(models, prefix, out_dir, tier1_index)
+PlotModelDot(models, out_dir, prefix, tier1_index)
 }
 \arguments{
 \item{models}{Data frame or tibble. Must include a \code{total_log_likelihood} column.}
 
-\item{prefix}{Character. Output file prefix.}
-
 \item{out_dir}{Character. Output directory for saving the plot.}
+
+\item{prefix}{Character. Output file prefix.}
 
 \item{tier1_index}{Integer. The index (rank) of the tier 1 model to highlight.}
 }

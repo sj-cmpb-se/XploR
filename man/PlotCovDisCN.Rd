@@ -15,7 +15,7 @@ PlotCovDisCN(dis, purity, min_dis, prefix, out_dir)
 
 \item{prefix}{Character. Output file prefix.}
 
-\item{out_dir}{Character. Output directory for saving the plot.}
+\item{out_dir}{Character. Output directory to save the file.}
 }
 \value{
 Invisibly returns the ggplot object (or \code{FALSE} if plotting failed). The plot is saved as a PNG file in the output directory.

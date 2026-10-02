@@ -173,7 +173,7 @@ FindCytoband <- function(cytoband, chrom, pos) {
 #' @examples
 #' # CalculateGaps("1", 10000, 50000, 0, 25000, 25001, 100000)
 #'
-#' @export
+#' @noRd
 CalculateGaps <- function(Chrom, Start, End, p_chromStart, p_chromEnd, q_chromStart, q_chromEnd) {
   acrocentric_chr <- c("13", "14", "15", "21", "22")
   Start <- ifelse(Chrom %in% acrocentric_chr, max(c(q_chromStart, Start)), max(c(p_chromStart, Start)))

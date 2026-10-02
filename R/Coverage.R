@@ -7,7 +7,7 @@
 #'
 #' @return Median coverage (numeric)
 #' @importFrom dplyr filter
-#' @export
+#' @noRd
 CalMedian <- function( chrom, start, end, cov){
 
   tmp <- cov %>%
@@ -15,66 +15,64 @@ CalMedian <- function( chrom, start, end, cov){
   return(median(tmp$COUNT,na.rm = T))
 }
 
-#' Calculate Robust Coverage Variability (MAD) for a Genomic Segment
+#' Calculate Coverage Variability (MAD) for a Genomic Segment
 #'
 #' Computes a library-size–invariant measure of coverage variability within a
 #' genomic segment using the median absolute deviation (MAD) of
-#' log2-transformed bin counts relative to the segment median.
-#'
-#' Specifically, for each bin \eqn{i} in the segment, the value
-#' \eqn{\log_2((count_i + pc)/(median(count) + pc))} is computed, and the MAD
-#' (scaled to be comparable to standard deviation) is returned.
+#' segment mean.
 #'
 #' @param chrom Chromosome name corresponding to \code{cov$CONTIG}.
 #' @param start Segment start position (1-based, inclusive).
 #' @param end Segment end position (1-based, inclusive).
-#' @param cov Data frame or tibble of per-bin coverage with columns
-#'   \code{CONTIG}, \code{START}, \code{END}, and \code{COUNT}.
+#' @param cr Data frame or tibble of denoised per-bin copy ratio with columns
+#'   \code{CONTIG}, \code{START}, \code{END}, and \code{LOG2_COPY_RATIO}.
+#' @param covminvalleydrop minimum valley drop in the finding peaks
+#' @param covminproportion minimum proportion of peak in the finding peaks
+#' @param covminpeakdiff minimum peak difference in the finding peaks
+#'
 #'
 #' @return A single numeric value giving the robust MAD of normalized coverage
 #'   within the specified genomic segment. Returns \code{NA} if no bins fall
 #'   within the region.
 #'
 #' @details
-#' This metric is robust to outliers and does not require knowledge of library
-#' size, making it suitable for comparing coverage noisiness across samples in
-#' CNV analysis.
-#'
-#' @seealso \code{\link[stats]{mad}}, \code{\link[stats]{median}}
-#'
+#' Calculates MAD and peak counts that pass all cutoffs
 #' @importFrom dplyr filter
 #'
 #' @examples
-#' cov <- data.frame(
+#' cr <- data.frame(
 #'   CONTIG = c("chr1", "chr1", "chr1"),
 #'   START  = c(1, 1001, 2001),
 #'   END    = c(1000, 2000, 3000),
-#'   COUNT  = c(100, 95, 110)
+#'   LOG2_COPY_RATIO  = c(1, 1.05, 0)
 #' )
 #'
-#' CalMAD("chr1", 1, 3000, cov)
+#' CalMAD("chr1", 1, 3000, cr)
 #'
-#' @export
-CalMAD <- function( chrom, start, end, cov){
+#' @noRd
+CalMAD <- function( chrom, start, end, cr, covminvalleydrop, covminproportion, covminpeakdiff  ){
 
   # Robust MAD scaled to SD
-  mad_sd <- function(x) {
-    mad(x, center = median(x, na.rm = TRUE), constant = 1.4826, na.rm = TRUE)
+  calmad <- function(x){
+
+    mad(x, center = median(x, na.rm = TRUE), na.rm = TRUE, constant = 1)
   }
 
-  # counts = numeric vector of bin counts for ONE segment
-  segment_mad_log2_ratio <- function(counts, pseudocount = 0.5) {
-    center <- median(counts, na.rm = TRUE)
-    x <- log2((counts + pseudocount) / (center + pseudocount))
-    mad_sd(x)
+  tmp <- cr %>%
+    dplyr::filter( CONTIG == chrom & START >= start & END <= end ) %>%
+    dplyr::filter( is.finite(LOG2_COPY_RATIO) )
+  variance <- calmad(x = tmp$LOG2_COPY_RATIO)
+  cov_distribution <- find_peaks(tmp$LOG2_COPY_RATIO, min_valley_drop = covminvalleydrop )
+  cov_distribution <- cov_distribution %>% dplyr::filter( proportion >= covminproportion ) %>% dplyr::arrange( - proportion)
+  peak_count <- nrow(cov_distribution)
+  if(peak_count > 1){
+    cov_diff <- abs(cov_distribution$peak_mean[1] - cov_distribution$peak_mean[2])
+    if( cov_diff <= covminpeakdiff ){
+      peak_count <- peak_count - 1
+    }
   }
-
-  tmp <- cov %>%
-    dplyr::filter( CONTIG == chrom & START >= start & END <= end )
-
-  variance <- segment_mad_log2_ratio(counts = tmp$COUNT)
-
-  return(variance)
+  re <- list( cov_mad = variance, cov_peak_count = peak_count)
+  return( re )
 
 }
 
@@ -87,7 +85,7 @@ CalMAD <- function( chrom, start, end, cov){
 #' @param cr Segment mean
 #' @param count Coverage count
 #' @return Baseline coverage (numeric)
-#' @export
+#' @noRd
 CalbaselineCov <- function( chrom, cr, count ){
   baseline <- count/(2^cr)
   return(baseline)
@@ -100,7 +98,7 @@ CalbaselineCov <- function( chrom, cr, count ){
 #' @param gatkgender Gender from GATK
 #' @param pipeline_gender Gender from clinical info
 #' @return Adjusted segment mean
-#' @export
+#' @noRd
 FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
   if(gatkgender == "male" && pipeline_gender == "female"){
     sm <- sm-1
@@ -115,15 +113,22 @@ FixsegmentMean<- function( sm, gatkgender, pipeline_gender ){
 #' If gender information is missing or set to "unknown", the function will infer gender automatically.
 #'
 #' @param cov Data frame. Coverage data.
+#' @param cr Data frame. CR data.
 #' @param seg Character. Path to segmentation data file.
 #' @param gender Character. Provided gender information; use "unknown" to trigger automatic detection.
+#' @param covminvalleydrop minimum valley drop in the finding peaks, default is 0.1
+#' @param covminproportion minimum proportion of peak in the finding peaks, default is 0.2
+#' @param covminpeakdiff minimum peak difference in the finding peaks, default is 0.5
 #'
 #' @return Character. Predicted gender ("male" or "female").
 #'
 #' @importFrom dplyr filter mutate
 #' @importFrom data.table fread
 #' @export
-Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
+Runcheckgender <- function( cov, cr, seg, gender, out_dir, prefix,
+                            covminvalleydrop = 0.1,
+                            covminproportion = 0.2,
+                            covminpeakdiff = 0.5){
 
   seg_df <- data.table::fread(seg) %>%
     dplyr::mutate(size = End - Start)
@@ -134,7 +139,14 @@ Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
   lines <- readLines(cov)
   filtered_lines <- grep("^\\s*@", lines, invert = TRUE, value = TRUE)
   cov_df <- data.table::fread(text = filtered_lines)
-  seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender)
+
+  cr_lines <- readLines(cr)
+  cr_filtered_lines <- grep("^\\s*@", cr_lines, invert = TRUE, value = TRUE)
+  cr_df <- data.table::fread(text = cr_filtered_lines)
+  seg_df <- CheckGender(cov = cov_df, seg = seg_df, gender = gender, cr = cr_df,
+                        covminvalleydrop = covminvalleydrop,
+                        covminproportion = covminproportion,
+                        covminpeakdiff = covminpeakdiff)
   gender <- as.character(seg_df$pipeline_gender[1])
   outFile <- file.path(out_dir, paste0(prefix, "_gender.txt"))
   write.table(gender,file=outFile,quote = F,row.names = F)
@@ -145,14 +157,19 @@ Runcheckgender <- function( cov, seg, gender, out_dir, prefix){
 
 #' Check and Adjust Gender in GATK Segmentation Data
 #'
-#' @param cov Coverage data frame
+#' @param cov Count data frame
+#' @param cr Coverage CR data frame
 #' @param seg Segmentation data frame
 #' @param gender Gender from clinical information (character, "male", "female" or "unknown")
+#' @param covminvalleydrop minimum valley drop in the finding peaks
+#' @param covminproportion minimum proportion of peak in the finding peaks
+#' @param covminpeakdiff minimum peak difference in the finding peaks
+#'
 #' @return Modified segmentation seg data frame with gender information
 #' @importFrom dplyr filter rowwise mutate
 #' @importFrom stats median
-#' @export
-CheckGender <- function( cov, seg, gender ){
+#' @noRd
+CheckGender <- function( cov, cr, seg, gender, covminvalleydrop, covminproportion, covminpeakdiff ){
   ## check what is the baseline cov is used in autosome and x and Y separately.
 
   seg <- seg %>%
@@ -161,7 +178,11 @@ CheckGender <- function( cov, seg, gender ){
     #filter( Num_Probes >= 500 | Chromosome %in% c("X","Y")) %>%
     dplyr::rowwise() %>%
     dplyr::mutate( Baseline_cov = CalbaselineCov( chrom = Chromosome, cr = Segment_Mean, count = Count )) %>%
-    dplyr::mutate( MAD = CalMAD( chrom = Chromosome, start = Start, end = End, cov = cov ))
+    dplyr::mutate( MAD = list(CalMAD( chrom = Chromosome, start = Start, end = End, cr=cr ,
+                                 covminvalleydrop = covminvalleydrop,
+                                 covminproportion = covminproportion,
+                                 covminpeakdiff = covminpeakdiff)) ) %>%
+    tidyr::unnest_wider(col = MAD)
 
   autobasecov <- seg %>%
     dplyr::filter( ! Chromosome %in% c("X","Y") ) %>%
@@ -224,7 +245,7 @@ CheckGender <- function( cov, seg, gender ){
 #'
 #' @return Logical value: \code{TRUE} if the two segments should be merged, \code{FALSE} otherwise.
 #'
-#' @export
+#' @noRd
 MergeSegCheck <- function(cur_row,next_row, mergecov){
   # check merge conditions
   # ai segment diff <= mergeai
@@ -251,7 +272,7 @@ MergeSegCheck <- function(cur_row,next_row, mergecov){
 #' This function uses \code{\link{MergeSegCheck}} to determine if two adjacent segments should be merged.
 #'
 #' @importFrom dplyr arrange
-#' @export
+#' @noRd
 MergeSegRow <- function(df, mergecov) {
 
   if(nrow(df) > 1 ){
@@ -274,7 +295,8 @@ MergeSegRow <- function(df, mergecov) {
           size = next_row$End - cur_row$Start,
           Count = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Count, next_row$Count),
           Baseline_cov = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Baseline_cov, next_row$Baseline_cov),
-          MAD = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$MAD, next_row$MAD),
+          cov_mad = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$cov_mad, next_row$cov_mad),
+          cov_peak_count = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$cov_peak_count, next_row$cov_peak_count ),
           gatk_gender = cur_row$gatk_gender,
           pipeline_gender = cur_row$pipeline_gender,
           Segment_Mean_raw = ifelse( cur_row$Num_Probes > next_row$Num_Probes, cur_row$Segment_Mean_raw, next_row$Segment_Mean_raw)
@@ -287,6 +309,10 @@ MergeSegRow <- function(df, mergecov) {
   }
   return(df)
 }
+
+
+
+
 
 
 

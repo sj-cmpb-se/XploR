@@ -22,7 +22,7 @@
 #' Checkmode("model", purity = 0.7, dicovsf = NULL, chromosome = NULL, start = NULL, end = NULL, call = call_df)
 #' Checkmode("region", purity = NULL, dicovsf = NULL, chromosome = "1", start = 100000, end = 200000, call = call_df)
 #'
-#' @export
+#' @noRd
 
 Checkmode <- function(mode, purity, dicovsf, chromosome, start, end, call ){
 
@@ -71,7 +71,7 @@ Checkmode <- function(mode, purity, dicovsf, chromosome, start, end, call ){
 #' # EstimateCovSF("3", start = NULL, end = NULL, seg = seg_df)
 #' # EstimateCovSF("7", start = 100000, end = 500000, seg = seg_df)
 #'
-#' @export
+#' @noRd
 
 EstimateCovSF <- function( chromosome, start, end, seg ){
   raw_mu <- as.numeric(seg$mu[1])
@@ -117,7 +117,7 @@ EstimateCovSF <- function( chromosome, start, end, seg ){
 #' # ParseParm(purity = "0.5:0.7", dicovsf = NULL, models = models_df, top_rows = top_likelihood_rows)
 #' # ParseParm(purity = 0.6, dicovsf = 1.1, models = models_df, top_rows = top_likelihood_rows)
 #'
-#' @export
+#' @noRd
 ParseParm <- function( purity, dicovsf, models, top_rows ){
  top_rows <- top_rows %>%
    dplyr::select(mu, rho) %>%

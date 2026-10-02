@@ -26,7 +26,10 @@ ReadPonAI <- function( ai_pon_file, aitype, minsnpcov, gender ){
   })
 
   aipondt <- do.call(rbind, aipondt)
-
+  aipondt <- aipondt %>%
+    dplyr::filter( (ref_count + alt_count) >= minsnpcov ) %>%
+    dplyr::mutate(baf = alt_count /(alt_count + ref_count) ) %>%
+    dplyr::relocate(baf, .after = maf)
   return(aipondt)
 
 }
@@ -44,7 +47,7 @@ ReadPonAI <- function( ai_pon_file, aitype, minsnpcov, gender ){
 #'
 #' @importFrom data.table as.data.table
 #' @importFrom stats quantile
-#' @export
+#' @noRd
 ChooseNbins <- function(normals_dt,
                         target_bins = 8, min_rows_per_stratum = 2000,
                         min_unique_bins = 100, max_bins = 10, min_bins = 3) {
@@ -83,7 +86,7 @@ ChooseNbins <- function(normals_dt,
 #' where \eqn{p} is the observed BAF, and \eqn{d} is the median depth.
 #'
 #' @importFrom dplyr left_join filter group_by summarise mutate ungroup
-#' @export
+#' @noRd
 EstimateTheta <- function(normals_dt, pon_ref, n_bins) {
 
   dt <- normals_dt %>%
@@ -172,6 +175,7 @@ PONAIprocess <- function( ai_pon_file, aitype, minsnpcov = 20, output,
       pon_mean_snp_median_baf = median(psb_snp_median_baf, na.rm = TRUE),
       pon_mean_snp_median_maf = median(psb_snp_median_maf, na.rm = TRUE),
       pon_mafs = paste( psb_snp_mafs , collapse = ","),
+      pon_bafs = paste( psb_snp_bafs , collapse = ","),
       pon_depth_median  = median(psb_snp_median_depth, na.rm = TRUE),
       n_normals     = sum(is.finite(psb_snp_baf)),
       .groups = "drop"
