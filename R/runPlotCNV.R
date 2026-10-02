@@ -41,7 +41,8 @@ RunPlotCNV <- function(
     cov <- cov %>% dplyr::filter(CONTIG != "Y")
   }
   purity <- as.numeric(unique(seg$rho))
-  if( is.na(purity)){
+  purity <- purity[!is.na(purity)]
+  if( length(purity) == 0 ){
     purity <- 1
   }
 
