@@ -17,7 +17,7 @@
 #' SegmentMeanToOriCov(SM = 0, gender = "male", chromosome = "X", diploid_cov = 100)
 #' SegmentMeanToOriCov(SM = 0.5, gender = "female", chromosome = "3", diploid_cov = 100)
 #'
-#' @export
+#' @noRd
 SegmentMeanToOriCov <- function( SM, gender, chromosome, diploid_cov ){
   # According to the segment mean, calculate the original coverage of the segment.
   # Assume the diploid coverage is diploid_cov (e.g., 100).
@@ -47,7 +47,7 @@ SegmentMeanToOriCov <- function( SM, gender, chromosome, diploid_cov ){
 #' @examples
 #' EstimateVariance(c(1, 2, 3, 4, 5))
 #'
-#' @export
+#' @noRd
 EstimateVariance <- function(x){
   # Estimate variance and standard deviation
   variance_x <- var(x)  # Variance
@@ -77,7 +77,7 @@ EstimateVariance <- function(x){
 #' @examples
 #' Calccf(CN = 4, mu = 100, rho = 0.6, C_i = 2)
 #'
-#' @export
+#' @noRd
 Calccf <- function(CN, mu, rho, C_i){
 
   ccf <- ((C_i * 2 / (mu * 100)) - ((1 - rho) * 2) - (rho * 2))/(rho* ((CN ) -2))
@@ -114,7 +114,7 @@ Calccf <- function(CN, mu, rho, C_i){
 #' @examples
 #' CcfLOH(minor = 1, major = 2, rho = 0.7, MAF = 0.6)
 #'
-#' @export
+#' @noRd
 CcfLOH <- function(minor, major, rho, MAF  ){
   # ccf from AI information
   # if MAF_ex is 0.5 then ccf is 0
@@ -145,7 +145,7 @@ CcfLOH <- function(minor, major, rho, MAF  ){
 #' @examples
 #' GenerateCombinations(3)
 #'
-#' @export
+#' @noRd
 GenerateCombinations <- function(CN) {
   tmp <- expand.grid(
     major = 0:CN,
@@ -177,7 +177,7 @@ GenerateCombinations <- function(CN) {
 #' combos <- GenerateCombinations(3)
 #' AssignPriors(combos, lambda = 0.5)
 #'
-#' @export
+#' @noRd
 
 AssignPriors <- function(combinations, lambda ) {
   # prior assigned by exponential decay, lambda controls decay rate
@@ -224,7 +224,7 @@ AssignPriors <- function(combinations, lambda ) {
 #' @importFrom dplyr rowwise mutate group_by summarise arrange filter ungroup
 #' @importFrom tidyr unnest_wider
 #' @importFrom tibble as_tibble
-#' @export
+#' @noRd
 EstimatePurityCov <- function( seg, gender ){
   seg_df <- seg
   purity_array <- seq(0.02, 1, by = 0.02)
@@ -304,7 +304,7 @@ EstimatePurityCov <- function( seg, gender ){
 #' # seg_df must have columns: size, FILTER, MAF_Probes, MAF, Segment_Mean
 #' # ModelSource(seg_df, modelminprobes)
 #'
-#' @export
+#' @noRd
 ModelSource <- function( seg_df, modelminprobes  ) {
   # Define model source according to MAF
   # If all 0.5 >= MAF > 0.4 and abs(Segment_Mean) >= 0.1, then Coverage otherwise Coverage + MAF
@@ -597,7 +597,7 @@ RunCallikelihood <- function( purity_sf, data, sigma_C, lambda = 1, gamma = 1, e
 #'
 #' @importFrom dplyr filter mutate group_by group_modify arrange slice_max ungroup select rows_update slice_head between row_number n
 #' @importFrom tidyr unnest_wider
-#' @export
+#' @noRd
 SelectCallpersegment <- function( results ){
   # Assign extremely small likelihood for likelihood 0 term
   likelihood_min <- results %>% dplyr::filter( MAF_likelihood != 0 )
@@ -685,7 +685,7 @@ SelectCallpersegment <- function( results ){
 #' vals <- sort(runif(20, 0, 10), decreasing = TRUE)
 #' FindTier1Models(vals, fold = 1.5)
 #'
-#' @export
+#' @noRd
 FindTier1Models<- function(values, fold) {
   n <- length(values)
   diffs <- -diff(values)  # Compute negative differences (drops)
@@ -737,7 +737,7 @@ FindTier1Models<- function(values, fold) {
 #'   \item{total_distance_to_integer}{Sum of diploid and non-diploid mean distances.}
 #'
 #' @importFrom dplyr filter mutate arrange
-#' @export
+#' @noRd
 SelectModelByDis <- function(tier1, df, seg, gender){
 
 
@@ -802,7 +802,7 @@ SelectModelByDis <- function(tier1, df, seg, gender){
 #' df <- data.frame(MAF = c(0.3, 0.45, 0.5), Tag = c("Include", "Exclude", "Include"))
 #' EstimateMinPurity(df)
 #'
-#' @export
+#' @noRd
 EstimateMinPurity <- function( df ){
 
   df <- df %>%
@@ -847,7 +847,7 @@ EstimateMinPurity <- function( df ){
 #' @examples
 #' # RefineTier1Models(tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes = 20, gender = "female", callcov = 0.3, modelminAIsize = 500000)
 #'
-#' @export
+#' @noRd
 RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_min, seg, modelminprobes, gender, callcov,modelminAIsize  ){
 
   tier1_refine_tmp <- lapply( 1:nrow(tier1),function(i){
@@ -920,18 +920,19 @@ RefineTier1Models <- function( tier1, results, top_likelihood_rows, likelihood_m
 #' group_id <- Groupvalues(x)
 #' table(group_id)
 #'
-#' @export
+#' @noRd
 Groupvalues <- function(x) {
   # Load required package
+  n <- length(x)
+  if( any(is.na(x)) ){ group_id <- rep(1,n)}else{
+    # Detect change points in the mean
+    cpt <- cpt.mean(x, method = "PELT", penalty = "MBIC" )
+    change_points <- cpts(cpt)
 
-  # Detect change points in the mean
-  cpt <- cpt.mean(x, method = "PELT", penalty = "MBIC" )
-  change_points <- cpts(cpt)
-
-  # Assign group IDs
-  group_id <- rep(1:(length(change_points) + 1),
-                  times = diff(c(0, change_points, length(x))))
-
+    # Assign group IDs
+    group_id <- rep(1:(length(change_points) + 1),
+                    times = diff(c(0, change_points, length(x))))
+  }
   return(group_id)
 }
 
@@ -960,7 +961,7 @@ Groupvalues <- function(x) {
 #' # models_dis <- ... # output from SelectModelByDis
 #' # ClusterModels(models_dis)
 #'
-#' @export
+#' @noRd
 ClusterModels <- function( models_dis ){
 
   ## Group models based on total likelihood, diploid distance to integer and nondiploid distance to integer when there is
@@ -1212,7 +1213,7 @@ SelectFinalModel <- function( results, top_likelihood_rows, groupinfo, prefix, g
 #' @examples
 #' # ExtractCall(df, max_L_mu = 1, max_L_rho = 0.7, seg)
 #'
-#' @export
+#' @noRd
 ExtractCall <- function( df, max_L_mu, max_L_rho, seg  ){
   seg$index <- as.character(seg$index)
   df$index <- as.character(df$index)
@@ -1250,13 +1251,13 @@ ExtractCall <- function( df, max_L_mu, max_L_rho, seg  ){
 #' @examples
 #' # RefineCalls(df, max_L_mu = 1, max_L_rho = 0.7, gender = "female")
 #'
-#' @export
+#' @noRd
 RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
   ## Refine the values and calls according to the final model
   chrom_levels <- c(c(1:22,"X","Y"))
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad","cov_peak_count", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight","balance_tag", "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",  "index",
                 "gatk_SM_raw", "gatk_count", "gatk_baselinecov",
@@ -1312,12 +1313,12 @@ RefineCalls<- function( df , max_L_mu, max_L_rho, gender){
 #' @examples
 #' # RefineCallsSecond(df, results, final_mu = 1, final_rho = 0.7, gender = "female", callcov = 0.3)
 #'
-#' @export
+#' @noRd
 RefineCallsSecond <- function( df, results, final_mu, final_rho, gender, callcov ){
   # refine individual call that not matching cov profile and AI profile
   col_name <- c("Chromosome", "Start", "End","size", "Num_Probes", "Call", "ccf", "ccf_MAF",
                 "Segment_Mean", "CNF_correct", "major", "minor", "CN",
-                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad", "MAF_Probes",
+                "MAF", "MAF_correct", "expected_maf", "expected_cov","cov_mad","cov_peak_count", "MAF_Probes",
                 "MAF_gmm_G", "MAF_gmm_weight","balance_tag",
                 "BreakpointSource", "FILTER",
                 "maf_ll", "MAF_likelihood", "mu", "rho",

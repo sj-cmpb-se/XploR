@@ -9,15 +9,21 @@ SearchBreakpoint(
   maf,
   pon_ref,
   gender,
-  mergeai = 0.15,
+  out_dir,
+  prefix,
+  mergeai = 0.05,
   snpmin = 3,
   maxgap = 1e+06,
   snpnum = 20,
   maxbinsize = 1e+06,
   minbinsize = 5e+05,
   minsnpcov = 20,
+  bafminseparationsd = 1.1,
+  bafminproportion = 0.25,
   segmethod = "cbs",
-  cbssmooth = "no"
+  cbssmooth = "yes",
+  covmad_cutoff,
+  sampletype
 )
 }
 \arguments{
@@ -42,6 +48,11 @@ SearchBreakpoint(
 \item{minbinsize}{Numeric. Minimum allowed bin size (bp). The minimum segment size under \code{"merge"} mode is 2*minbinsize.}
 
 \item{minsnpcov}{Integer. Minimum coverage of SNP sites to be included.}
+
+\item{bafminseparationsd}{Minimum peak separation in units of fitted SD. Default 1.1.}
+
+\item{bafminproportion}{Minimum proportion of SNPs required for a BAF peak
+to be retained for MAF estimation; smaller peaks are excluded. default is 0.25}
 
 \item{segmethod}{Character. Segmentation method to use: if \code{"merge"}, perform stepwise merging; if \code{"cbs"}, perform CBS (circular binary segmentation).}
 

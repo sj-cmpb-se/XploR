@@ -16,7 +16,7 @@
 #' @examples
 #' # CorrectGender(cov, seg)
 #'
-#' @export
+#' @noRd
 CorrectGender <- function(cov, seg){
   gatkgender <- unique(seg$gatk_gender)[1]
   pipelinegender <- unique(seg$pipeline_gender)[1]
@@ -59,7 +59,7 @@ CorrectGender <- function(cov, seg){
 #' @examples
 #' # CRCorrectPurity(cr, gender = "female", purity = 0.7, sf = 1)
 #'
-#' @export
+#' @noRd
 CRCorrectPurity <- function(cr, gender, purity, sf ){
 
   # Calculate the CNF according to purity and cr from denoised file.
@@ -96,7 +96,7 @@ CRCorrectPurity <- function(cr, gender, purity, sf ){
 #' @examples
 #' # CovBin(cov, cov_binsize = 10000)
 #'
-#' @export
+#' @noRd
 CovBin <- function(cov,cov_binsize){
   # from cov file generate bin file with window 300bp
   # smooth the bin file to cov_binsize window.
@@ -143,7 +143,7 @@ CovBin <- function(cov,cov_binsize){
 #' # ai_list <- list(chr1 = data.frame(af = runif(10), contig = "1", start = 1:10, stop = 11:20, allele1Count = 1:10, allele2Count = 11:20))
 #' # RoundAI(ai_list)
 #'
-#' @export
+#' @noRd
 RoundAI <- function(ai){
   ## round the baf value into 20bin.
   round_chr_ai <- lapply(ai,function(chr_ai){
@@ -176,7 +176,7 @@ RoundAI <- function(ai){
 #' @examples
 #' # KeepWhitelistCov(smooth_cov, whitelist)
 #'
-#' @export
+#' @noRd
 KeepWhitelistCov <- function(smooth_cov, whitelist, gender){
 
   # keep bins in whitelist only
@@ -216,7 +216,7 @@ KeepWhitelistCov <- function(smooth_cov, whitelist, gender){
 #' @examples
 #' # KeepWhitelistAI(rounded_ai, whitelist)
 #'
-#' @export
+#' @noRd
 KeepWhitelistAI <- function(rounded_ai, whitelist){
   # keep bins in whitelist only
   rounded_ai_range <- GenomicRanges::makeGRangesFromDataFrame(
@@ -258,7 +258,7 @@ KeepWhitelistAI <- function(rounded_ai, whitelist){
 #' @examples
 #' # CleanHomalt(rounded_ai, call_seg)
 #'
-#' @export
+#' @noRd
 CleanHomalt <- function(rounded_ai, call_seg){
   # Clean homozygous AI bins
   call_seg <- call_seg %>% dplyr::filter(MAF > 0.7 | MAF < 0.3)
@@ -310,7 +310,7 @@ CleanHomalt <- function(rounded_ai, call_seg){
 #' x <- sample(c(0.1, 0.2, 0.3, 0.4), 100, replace = TRUE)
 #' AIbinSmooth(baf = x)
 #'
-#' @export
+#' @noRd
 AIbinSmooth <- function(baf) {
   # Return a vector of same frequency if the length is higher than 30
   baf <- baf[!is.na(baf)]
@@ -353,7 +353,7 @@ AIbinSmooth <- function(baf) {
 #' @examples
 #' # SmoothAI(df, ai_binsize = 10000, gender = "female")
 #'
-#' @export
+#' @noRd
 SmoothAI <- function(df, ai_binsize , gender){
   # Smooth AI bins by ai_binsize, for each bin keep 30 datapoints.
   ai_bin_chr <- split(df, f = df$seqnames)
@@ -438,7 +438,6 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
   y_lim <- ifelse(y_lim < 4 , 4, y_lim)
 
 
-
   if( y_lim >=10){
     p_margin <- ggplot2::margin(t = 1, r = 1, b = 0.5, l = 2, unit = "pt")
     q_margin <- ggplot2::margin(t = 0, r = 1, b = 0.5, l = 7, unit = "pt")
@@ -489,11 +488,13 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
   q <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = 0.5,color="black",linewidth=0.7) +
     ggplot2::geom_hline(yintercept = c(0,1),color="grey",linewidth=0.5,linetype="dashed") +
-    ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
-                                 xend = bin_end,
-                                 y= smoothed_ai - 0.05,
-                                 yend = smoothed_ai + 0.05 ,
-                                 color = seqnames ),alpha = 0.2,linewidth = 1) +
+    #ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
+    #                             xend = bin_end,
+    #                             y= smoothed_ai - 0.05,
+    #                             yend = smoothed_ai + 0.05 ,
+    #                             color = seqnames ),alpha = 0.2,linewidth = 1) +
+    ggplot2::geom_point( data = df_ai, ggplot2::aes(
+      x = bin_start, y = smoothed_ai, color = seqnames ),alpha = 0.15, shape = 16) +
     ggplot2::scale_color_manual(values = color) +
     ggplot2::geom_segment(data = call_seg,
                  ggplot2::aes(x = loc.start, xend = loc.end, y= MAF, yend = MAF),

@@ -4,14 +4,32 @@
 \alias{Runcheckgender}
 \title{Run automatic gender detection}
 \usage{
-Runcheckgender(cov, seg, gender, out_dir, prefix)
+Runcheckgender(
+  cov,
+  cr,
+  seg,
+  gender,
+  out_dir,
+  prefix,
+  covminvalleydrop = 0.1,
+  covminproportion = 0.2,
+  covminpeakdiff = 0.5
+)
 }
 \arguments{
 \item{cov}{Data frame. Coverage data.}
 
+\item{cr}{Data frame. CR data.}
+
 \item{seg}{Character. Path to segmentation data file.}
 
 \item{gender}{Character. Provided gender information; use "unknown" to trigger automatic detection.}
+
+\item{covminvalleydrop}{minimum valley drop in the finding peaks, default is 0.1}
+
+\item{covminproportion}{minimum proportion of peak in the finding peaks, default is 0.2}
+
+\item{covminpeakdiff}{minimum peak difference in the finding peaks, default is 0.5}
 }
 \value{
 Character. Predicted gender ("male" or "female").

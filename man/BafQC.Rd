@@ -4,7 +4,15 @@
 \alias{BafQC}
 \title{Summarise BAF QC from CNV Segment Annotation}
 \usage{
-BafQC(annofile, out_dir, prefix)
+BafQC(
+  annofile,
+  out_dir,
+  prefix,
+  passpercentcutoff = 0.9,
+  mediansegcutoff = 9,
+  medianmadcutoff = 0.6,
+  failchrcountcutoff = 2
+)
 }
 \arguments{
 \item{annofile}{Path to the CNV annotation file (e.g., *_CNV_annotation.tsv).}
@@ -12,6 +20,21 @@ BafQC(annofile, out_dir, prefix)
 \item{out_dir}{Path to QC output file.}
 
 \item{prefix}{Prefix of QC output file.}
+
+\item{passpercentcutoff}{Numeric. Minimum size-weighted proportion of passing
+segments required for a chromosome to pass QC. Default is 0.9.}
+
+\item{mediansegcutoff}{Numeric. Maximum allowed median number of segments per
+chromosome. Samples with a median segment count above this cutoff fail
+sample-level QC. Default is 9.}
+
+\item{medianmadcutoff}{Numeric. Maximum allowed median MAD of the coverage
+track across chromosomes. Samples with a median MAD above this cutoff fail
+sample-level QC. Default is 0.6.}
+
+\item{failchrcountcutoff}{Numeric. Maximum allowed number of failed
+chromosomes. Samples with more failed chromosomes than this cutoff fail
+sample-level QC. Default is 2.}
 }
 \value{
 Invisibly returns the summary data frame.

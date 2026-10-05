@@ -5,6 +5,20 @@
 #' @param annofile Path to the CNV annotation file (e.g., *_CNV_annotation.tsv).
 #' @param out_dir Path to QC output file.
 #' @param prefix Prefix of QC output file.
+#' @param passpercentcutoff Numeric. Minimum size-weighted proportion of passing
+#'   segments required for a chromosome to pass QC. Default is 0.9.
+#'
+#' @param mediansegcutoff Numeric. Maximum allowed median number of segments per
+#'   chromosome. Samples with a median segment count above this cutoff fail
+#'   sample-level QC. Default is 9.
+#'
+#' @param medianmadcutoff Numeric. Maximum allowed median MAD of the coverage
+#'   track across chromosomes. Samples with a median MAD above this cutoff fail
+#'   sample-level QC. Default is 0.6.
+#'
+#' @param failchrcountcutoff Numeric. Maximum allowed number of failed
+#'   chromosomes. Samples with more failed chromosomes than this cutoff fail
+#'   sample-level QC. Default is 2.
 #'
 #' @return Invisibly returns the summary data frame.
 #'
@@ -12,7 +26,11 @@
 #' @importFrom data.table fread
 #' @importFrom utils write.table
 #' @export
-BafQC <- function(annofile, out_dir, prefix) {
+BafQC <- function(annofile, out_dir, prefix,
+                  passpercentcutoff = 0.9,
+                  mediansegcutoff = 9,
+                  medianmadcutoff = 0.6,
+                  failchrcountcutoff = 2) {
   data <- data.table::fread(annofile)
   model_source <- as.character(data$Model_source[1])
   purity <- data$rho[1]
@@ -22,6 +40,7 @@ BafQC <- function(annofile, out_dir, prefix) {
   select_col <- c("chrom", "loc.start", "loc.end","cov_mad", "FILTER")
   data <- data %>% dplyr::select(dplyr::all_of(select_col))
   data$length <- data$loc.end - data$loc.start
+  data$cov_mad <- as.numeric(data$cov_mad)
 
   # summary overall pass count
   summary_pass_count <- data %>%
@@ -81,7 +100,7 @@ BafQC <- function(annofile, out_dir, prefix) {
   sample_qc <- data.frame(
     Median_chr_seg_num = median(summary$Total_segment_count,na.rm=T),
     Median_chr_cov_MAD = median(data$cov_mad, na.rm =T),
-    Fail_chr_count = nrow( summary %>% filter(PASS_Seg_Size_Percent < 0.9) ),
+    Fail_chr_count = nrow( summary %>% filter(PASS_Seg_Size_Percent < passpercentcutoff) ),
     Model_Source = model_source,
     Purity = purity,
     DiploidCov_scale = scale_factor,
@@ -90,7 +109,9 @@ BafQC <- function(annofile, out_dir, prefix) {
   )
 
   sample_qc <- sample_qc %>%
-    dplyr::mutate( QC_suggestion = ifelse( Median_chr_seg_num > 9 || Median_chr_cov_MAD > 2 || Fail_chr_count > 2, "Fail","PASS"))
+    dplyr::mutate( QC_suggestion = ifelse( Median_chr_seg_num > mediansegcutoff ||
+                                             Median_chr_cov_MAD > medianmadcutoff ||
+                                             Fail_chr_count > failchrcountcutoff, "Fail","PASS"))
 
   outfile_chr <- paste0(out_dir,"/", prefix,"_PASS_STAT_chr.txt")
   outfile_sample <- paste0(out_dir,"/", prefix,"_sample_qc.txt")

@@ -10,6 +10,7 @@ RerunCNV(
   models,
   call,
   gender,
+  raw,
   callcov = 0.3,
   dicovsf = NULL,
   purity = NULL,
@@ -17,7 +18,8 @@ RerunCNV(
   start = NULL,
   end = NULL,
   mode = NULL,
-  out_file
+  out_dir,
+  prefix
 )
 }
 \arguments{
@@ -30,6 +32,8 @@ RerunCNV(
 \item{call}{Character. Path to the final call file.}
 
 \item{gender}{Character. Sample gender, either \code{"male"} or \code{"female"}.}
+
+\item{raw}{Character. Path to the raw likelihood result file.}
 
 \item{callcov}{Numeric. Subclonal events calling cutoff based on coverage.}
 
@@ -45,7 +49,9 @@ RerunCNV(
 
 \item{mode}{Character. Rerun mode: either \code{"model"} or \code{"region"}.}
 
-\item{out_file}{Character. Output file path for the final calls.}
+\item{out_dir}{Character. Output file path for the final calls.}
+
+\item{prefix}{Character. Prefix for the output.}
 }
 \value{
 Invisibly returns the final call data frame.
@@ -68,11 +74,13 @@ RerunCNV(
   input = "sample_top_likelihood_calls.tsv",
   models = "sample_Models_likelihood.tsv",
   call = "sample_final_call.tsv",
+  raw = "sample_likelihood_raw.tsv",
   gender = "female",
   dicovsf = "0.95:1.05",
   purity = "0.6:0.8",
   mode = "model",
-  out_file = "sample_final_call_refined.tsv"
+  out_dir = "output_path",
+  prefix = "sample"
 )
 
 # Rerun using a user-defined diploid region
@@ -86,7 +94,8 @@ RerunCNV(
   start = 1e6,
   end = 5e7,
   mode = "region",
-  out_file = "sample_final_call_refined.tsv"
+  out_dir = "output_path",
+  prefix = "sample"
 )
 }
 
