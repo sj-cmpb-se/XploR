@@ -96,6 +96,8 @@ BafQC <- function(annofile, out_dir, prefix,
   summary$chrom <- factor(summary$chrom,levels = chrom_levels)
   summary <- summary %>%
     dplyr::arrange( chrom)
+  summary <- summary %>%
+    dplyr::mutate( FILTER = ifelse( PASS_Seg_Size_Percent >= passpercentcutoff,"PASS","FAILED"))
 
   sample_qc <- data.frame(
     Median_chr_seg_num = median(summary$Total_segment_count,na.rm=T),
