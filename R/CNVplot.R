@@ -449,11 +449,20 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
   }
 
   df_cov <- df_cov %>% dplyr::mutate(smoothed_bin_cnf = ifelse( smoothed_bin_cnf >= y_lim, y_lim, smoothed_bin_cnf ))
+  cn_breaks <- seq(0, y_lim, by = 0.5)
+  cn_guides <- cn_breaks[cn_breaks != 2]
+  baf_breaks <- seq(0, 1, by = 0.1)
+  baf_guides <- baf_breaks[baf_breaks != 0.5]
 
 
   p <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = 2,color="black",linewidth=1) +
-    ggplot2::geom_hline(yintercept = line_pos,color="grey",linewidth=0.5,linetype = "dashed") +
+    ggplot2::geom_hline(
+      yintercept = cn_guides,
+      color = "grey75",
+      linewidth = 0.35,
+      linetype = "dashed"
+    ) +
     ggplot2::geom_segment(data = whitelist, ggplot2::aes(x = start-100000, xend = end+100000,y = y_lim,yend = y_lim,color = seqnames ), linewidth = 2) +
     ggplot2::geom_segment(data = df_cov,
                  ggplot2::aes(x = start, xend = end, y = smoothed_bin_cnf - 0.1, yend = smoothed_bin_cnf + 0.1, color = seqnames),
@@ -463,7 +472,7 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
     ggplot2::geom_segment( data = call_seg, ggplot2::aes(x = loc.start, xend = loc.end,y = CN, yend = CN),color="cyan3",linewidth = 1 ) +
     ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x") +
     ggplot2::theme_minimal() +
-    ggplot2::scale_y_continuous(limits = c(0, y_lim), breaks = seq(0,y_lim), labels = label_number(accuracy = 0.01) )  +
+    ggplot2::scale_y_continuous(limits = c(0, y_lim), breaks = cn_breaks, labels = label_number(accuracy = 0.1) )  +
     ggplot2::labs( title = prefix, y = "Copy Number") +
     ggplot2::theme(legend.position = "none",
           panel.spacing = grid::unit(0, "lines"),
@@ -487,7 +496,12 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
 
   q <- ggplot2::ggplot() +
     ggplot2::geom_hline(yintercept = 0.5,color="black",linewidth=0.7) +
-    ggplot2::geom_hline(yintercept = c(0,1),color="grey",linewidth=0.5,linetype="dashed") +
+    ggplot2::geom_hline(
+      yintercept = baf_guides,
+      color = "grey75",
+      linewidth = 0.35,
+      linetype = "dashed"
+    ) +
     #ggplot2::geom_segment(data=df_ai, ggplot2::aes(x = bin_start,
     #                             xend = bin_end,
     #                             y= smoothed_ai - 0.05,
@@ -503,7 +517,7 @@ PlotCov <- function(df_cov, df_ai, call_seg , whitelist , gender, prefix, purity
                   ggplot2::aes(x = loc.start, xend = loc.end, y = 1-MAF, yend = 1-MAF),
                   linewidth = 1, color = "cyan3") +
     ggplot2::facet_grid(cols = vars(seqnames), scales = "free_x", space = "free_x")+
-    ggplot2::scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25)) +
+    ggplot2::scale_y_continuous(limits = c(0, 1), breaks = baf_breaks, labels = function(x) sprintf("%.1f", x)) +
     ggplot2::theme_minimal() +
     ggplot2::labs( y = "BAF" ) +
     ggplot2::theme(legend.position = "none",
