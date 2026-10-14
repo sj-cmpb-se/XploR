@@ -156,7 +156,25 @@ PlotModel <- function( data, out_dir, prefix, max_L_mu, max_L_rho ){
       ggplot2::scale_fill_gradientn(colors = color_palette, values = scales::rescale(range) ) +
       ggplot2::xlab("Tumor Purity") +
       ggplot2::ylab("Adjusted Factor for Diploid Coverage") +
-      ggplot2::theme_bw()
+      ggplot2::scale_x_continuous(
+        breaks = seq(0, 1, by = 0.1)
+      ) +
+      ggplot2::scale_y_continuous(
+        breaks = seq(
+          floor(min(data$mu, na.rm = TRUE) / 0.2) * 0.2,
+          ceiling(max(data$mu, na.rm = TRUE) / 0.2) * 0.2,
+          by = 0.2
+        )
+      ) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(
+        panel.grid.major = element_line(
+          color = "grey70",
+          linewidth = 0.4,
+          linetype = "dashed"
+        ),
+        panel.grid.minor = element_blank()
+      )
     TRUE
   }, error = function(e) {
     message <- conditionMessage(e)
